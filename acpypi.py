@@ -392,7 +392,7 @@ Usage: antechamber -i   input file name
 
         return True
 
-    def createACTopology(self):
+    def createACTopol(self):
         """
             If successful, a Amber Top and Xyz file will be generated
         """
@@ -421,25 +421,117 @@ Usage: antechamber -i   input file name
         else:
             print "Pickle file %s already present... doing nothing" % pklFile
 
+    def createMolTopol(self):
+        """
+            Create molTop obj
+        """
+        self.molTopol = MolTopol(self)
+
 class MolTopol:
     """"
-        http://amber.scripps.edu/formats.html
+        http://amber.scripps.edu/formats.html (not updated to amber 10 yet)
+        Parser, take information in AC xyz and top files and convert to objects
+        INPUTS: acFileXyz and acFileTop
+        RETURN: molTopol obj or None
     """
-    pass
+    def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None):
+
+        if acTopolObj:
+            if not acFileXyz: acFileXyz = acTopolObj.acXyz
+            if not acFileTop: acFileTop = acTopolObj.acTop
+        if not os.path.exists(acFileXyz) and not os.path.exists(acFileTop):
+            print "ERROR: Files '%s' and '%s' don't exist"
+            print "       molTopol object won't be created"
+            return None
+
+        self.xyzFile = open(acFileXyz, 'r').readlines()
+        self.topFile = open(acFileTop, 'r').readlines()
+
+        self.getResidueLabel()
+
+        self.getAtoms()
+
+        # a list of FLAGS from acTopFile that matter
+        self.flags = ( 'POINTERS', 'ATOM_NAME', 'CHARGE', 'MASS', 'ATOM_TYPE_INDEX',
+                  'NUMBER_EXCLUDED_ATOMS', 'NONBONDED_PARM_INDEX',
+                  'RESIDUE_LABEL', 'BOND_FORCE_CONSTANT', 'BOND_EQUIL_VALUE',
+                  'ANGLE_FORCE_CONSTANT', 'ANGLE_EQUIL_VALUE',
+                  'DIHEDRAL_FORCE_CONSTANT', 'DIHEDRAL_PERIODICITY',
+                  'DIHEDRAL_PHASE', 'AMBER_ATOM_TYPE' )
+
+    def getFlagData(self, flag):
+        """
+            For a given acFileTop flag, return a list of the data related
+        """
+        block = False
+        tFlag = '%FLAG ' + flag
+        data = ''
+
+        for rawLine in self.topFile:
+            line = rawLine[:-1]
+            if '%FORMAT' in line: continue
+            if tFlag in line:
+                block = True
+                continue
+            if block and '%FLAG ' in line: break
+            if block: data += line
+        sdata = data.split()
+        if '+' and '.' in data: # it's a float
+            ndata = map(float, sdata)
+        else:
+            try: # try if it's integer
+                ndata = map(int, sdata)
+            except: # it's string
+                ndata = sdata
+        return ndata # a list
+
+    def getResidueLabel(self):
+        """
+            Get a 3 capital letters code from acFileTop
+        """
+        residueLabel = self.getFlagData('RESIDUE_LABEL')
+        self.residueLabel = residueLabel[0]
+
+    def getAtoms(self):
+        """
+            Returns a tuple with all atoms objects build from dat in acFileTop
+            Set also if molTopol atom type system is gaff or amber
+            Set also molTopol total charge
+        """
+        atomNameList = self.getFlagData('ATOM_NAME')
+        atomTypeList = self.getFlagData('AMBER_ATOM_TYPE')
+        massList = self.getFlagData('MASS')
+        chargeList = self.getFlagData('CHARGE')
+
+        atoms = []
+        totalCharge = 0.0
+        for atomName in atomNameList:
+            id = atomNameList.index(atomName)
+            atomType = atomTypeList[id]
+            mass = massList[id]
+            charge = chargeList[id]
+            totalCharge += charge
+            atom = Atom(atomName, atomType, mass, charge)
+            atoms.append(atom)
+        if atomType[0].islower:
+            self.atomType = 'gaff'
+        else:
+            self.atomType = 'amber'
+
+        self.totalCharge = int(totalCharge)
+
+        self.atoms = atoms
 
 class Atom:
     """
-        attributes: id, atomType, charge
         charges in prmtop file has to be divide by 18.2223 to convert to charge
         in units of the electron charge
     """
-    pass
-
-class AtomType:
-    """
-        attributes: mass, vdw
-    """
-    pass
+    def __init__(self, atomName, atomType, mass, charge):
+        self.atomName = atomName
+        self.atomType = atomType
+        self.mass = mass
+        self.charge = charge / 18.2223
 
 class Bond:
     """
@@ -447,8 +539,7 @@ class Bond:
     """
     pass
 
-
-class Parser:
+class Angle:
     pass
 
 class CnsWriter:
@@ -479,4 +570,4 @@ if __name__ == '__main__':
     #molecule.execTleap()
     #print molecule.tleapLog, molecule.parmchkLog
 
-    molecule.createACTopology()
+    molecule.createACTopol()
