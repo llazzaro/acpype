@@ -819,7 +819,7 @@ if __name__ == '__main__':
     cT = argsDict.get('-c', 'bcc')
     cV = argsDict.get('-n', None)
     mt = argsDict.get('-m', '1')
-    at = argsDict.get('-F', 'gaff')
+    at = argsDict.get('-a', 'gaff')
     fs = False
     if '-f' in argsDict.keys(): fs = True
 
