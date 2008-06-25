@@ -8,7 +8,9 @@ import sys
 
 # input parameters: file.pdb [file.mol2] [-c gas|bcc] [-nc 0]
 
-#call antechamber
+leapGaffFile = 'leaprc.gaff'
+leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03' #'oldff/leaprc.ff99'
+
 USAGE = \
 """
     acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f]
@@ -22,8 +24,8 @@ USAGE = \
 
 SLEAP_TEMPLATE = \
 """
-source leaprc.ff03
-source leaprc.gaff
+source %(leapAmberFile)s
+source %(leapGaffFile)s
 set default fastbld on
 %(base)s = loadpdb %(base)s.pdb
 saveamberparm %(base)s %(base)s.top %(base)s.xyz
@@ -33,7 +35,8 @@ quit
 TLEAP_TEMPLATE = \
 """
 verbosity 1
-source leaprc.gaff
+source %(leapAmberFile)s
+source %(leapGaffFile)s
 mods = loadamberparams frcmod
 %(base)s = loadmol2 %(acMol2File)s
 saveamberparm %(base)s %(base)s.top %(base)s.xyz
@@ -126,10 +129,16 @@ class ACTopol:
         self.atomType = atomType
         self.force = force
         self.acExe = getoutput('which antechamber') or None
+        if not self.acExe:
+            print "ERROR: no 'antechamber' executable!"
+            return None
         self.tleapExe = getoutput('which tleap') or None
         self.sleapExe = getoutput('which sleap') or None
         self.parmchkExe = getoutput('which parmchk') or None
         self.babelExe = getoutput('which babel') or None
+        if not self.babelExe:
+            print "ERROR: no 'babel' executable!"
+            return None
         self.acXyz = None
         self.acTop = None
         if self.chargeVal == None:
@@ -138,7 +147,9 @@ class ACTopol:
                 print "ERROR: failed to guess charge"
         acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
         self.acMol2File = acMol2File
-        self.acParDict = {'base':base,'ext':ext[1:], 'acMol2File':acMol2File}
+        self.acParDict = {'base':base,'ext':ext[1:], 'acMol2File':acMol2File,
+                          'leapAmberFile':leapAmberFile,
+                          'leapGaffFile':leapGaffFile}
 
     def guessCharge(self):
         """
@@ -294,6 +305,10 @@ Usage: antechamber -i   input file name
 
         if self.chargeType != 'bcc':
             print "WARNING: Sleap works only with bcc charge method"
+            return True
+
+        if self.atomType != 'gaff':
+            print "WARNING: Sleap works only with gaff atom type"
             return True
 
         sleapScpt = SLEAP_TEMPLATE % self.acParDict
@@ -634,9 +649,10 @@ class MolTopol:
             # in amber are to be ignored; if id4 < 0, dihedral is improper
             # TODO: investigate if id3 signal is important for CNS and GMX.
             # using only id4 signal for the moment.
-            idAtom3 = dihCodeList[i+2] / 3 # can be negative
+            idAtom3raw = dihCodeList[i+2] / 3 # can be negative
             idAtom4raw = dihCodeList[i+3] / 3 # can be negative
-            idAtom4 = idAtom4raw
+            idAtom3 = abs(idAtom3raw)
+            idAtom4 = abs(idAtom4raw)
             dihTypeId = dihCodeList[i+4] - 1
             atom1 = self.atoms[idAtom1]
             atom2 = self.atoms[idAtom2]
@@ -741,6 +757,50 @@ class MolTopol:
             #   ca   ca       819971.66        531.10
             #   ca   ha        76245.15        104.66
             #   ha   ha         5716.30         18.52
+        
+            For proper dihedrals: a quartet of atoms may appear with more than 
+            one set of parameters and to convert to GMX they are treated as RBs;
+            use the algorithm:
+              for(my $j=$i;$j<=$lines;$j++){
+                my $period = $pn{$j};
+                if($pk{$j}>0) { 
+                  $V[$period] = 2*$pk{$j}*$cal; 
+                } 
+                # assign V values to C values as predefined #
+                if($period==1){
+                  $C[0]+=0.5*$V[$period];
+                  if($phase{$j}==0){
+                    $C[1]-=0.5*$V[$period];
+                  }else{
+                    $C[1]+=0.5*$V[$period];
+                  }
+                }elsif($period==2){
+                  if(($phase{$j}==180)||($phase{$j}==3.14)){
+                    $C[0]+=$V[$period];
+                    $C[2]-=$V[$period];
+                  }else{
+                    $C[2]+=$V[$period];
+                  }
+                }elsif($period==3){
+                  $C[0]+=0.5*$V[$period];
+                  if($phase{$j}==0){
+                    $C[1]+=1.5*$V[$period];
+                    $C[3]-=2*$V[$period];
+                  }else{
+                    $C[1]-=1.5*$V[$period];
+                    $C[3]+=2*$V[$period];
+                  }
+                }elsif($period==4){
+                  if(($phase{$j}==180)||($phase{$j}==3.14)){
+                    $C[2]+=4*$V[$period];
+                    $C[4]-=4*$V[$period];
+                  }else{
+                    $C[0]+=$V[$period];
+                    $C[2]-=4*$V[$period];
+                    $C[4]+=4*$V[$period];
+                  }
+                }
+              }        
         """
 
 class Atom:
@@ -825,6 +885,14 @@ if __name__ == '__main__':
 
     molecule = ACTopol(iF, chargeType = cT, chargeVal = cV,
                                multiplicity = mt, atomType = at, force = fs)
+    
+    if not molecule.acExe:
+        print "ERROR: no 'antechamber' executable... aborting!"
+        sys.exit(1)
+
+    if not molecule.babelExe:
+        print "ERROR: no 'babel' executable... aborting!"
+        sys.exit(1)
 
     #molecule.convertPdbToMol2()
     #print molecule.babelLog
