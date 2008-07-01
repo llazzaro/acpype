@@ -562,13 +562,24 @@ class MolTopol:
 
         for rawLine in self.topFile:
             line = rawLine[:-1]
-            if '%FORMAT' in line: continue
             if tFlag in line:
                 block = True
                 continue
             if block and '%FLAG ' in line: break
-            if block: data += line
-        sdata = data.split()
+            if block:
+                if '%FORMAT' in line:
+                    line = line.strip().strip('%FORMAT()').split('.')[0]
+                    for c in line:
+                        if c.isalpha():
+                            f = int(line.split(c)[1])
+                            break
+                    continue
+                data += line
+        # data need format
+        fdata = ''
+        for i in range(0,len(data),f):
+            fdata += (data[i:i+f])+' '
+        sdata = fdata.split()
         if '+' and '.' in data: # it's a float
             ndata = map(float, sdata)
         else:
@@ -653,8 +664,6 @@ class MolTopol:
     def getBonds(self):
         uniqKbList = self.getFlagData('BOND_FORCE_CONSTANT')
         uniqReqList = self.getFlagData('BOND_EQUIL_VALUE')
-        #numbnd = len(uniqKbList)
-        # for list below, true atom number = index/3 + 1
         bondCodeHList = self.getFlagData('BONDS_INC_HYDROGEN')
         bondCodeNonHList = self.getFlagData('BONDS_WITHOUT_HYDROGEN')
         bondCodeList = bondCodeHList + bondCodeNonHList
@@ -1070,8 +1079,13 @@ System %s, Residue %s
             aTypeName = aType.atomTypeName
             A = aType.ACOEF
             B = aType.BCOEF
-            sigma = 0.1 * math.pow((A/B), (1.0/6))
-            epsilon = cal * B*B/(4 * A)
+            # one cannot infer sigma or epsilon for B = 0, assuming 0 for them
+            if B == 0.0:
+                sigma = 0
+                epsilon = 0
+            else:
+                sigma = 0.1 * math.pow((A/B), (1.0/6))
+                epsilon = cal * B*B/(4 * A)
             line = " %-8s %-11s %3.5f  %3.5f   A %s %13.5e %13.5e\n" % \
             (aTypeName, aTypeName, 0.0, 0.0,7*' ', sigma, epsilon)
             topFile.write(line)
