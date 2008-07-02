@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    This code is released under GNU General Public License V4.
+    This code is released under GNU General Public License V3.
 
           <<<  NO WARRANTY AT ALL!!!  >>>
 
@@ -17,6 +17,13 @@
 
     If you use this code, I am glad if you cite:
         >>> COMING <<<<
+
+    Alan Wilter S. da Silva, D.Sc. - CCPN Research Associate
+    Department of Biochemistry, University of Cambridge.
+    80 Tennis Court Road, Cambridge CB2 1GA, UK.
+    >>http://www.bio.cam.ac.uk/~awd28<<
+
+    alanwilter _at_ gmail _dot com
 """
 
 from commands import getoutput
@@ -48,6 +55,7 @@ USAGE = \
     -f    force recalculate topologies
     -d    for debugging porposes, don't delete any temporary file created
     -o    output topologies: all (default), gmx, cns
+    -e    engine: sleap (default) or tleap
 """
 
 SLEAP_TEMPLATE = \
@@ -80,11 +88,12 @@ def parseArgs(args):
 
     import getopt
 
-    options = 'hi:c:n:m:o:a:fd'
+    options = 'hi:c:n:m:o:a:e:fd'
 
     ctList = ['gas', 'bcc']
     atList = ['gaff', 'amber', 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
+    enList = ['sleap', 'tleap']
 
     try:
         opt_list, args = getopt.getopt(args, options) #, long_options)
@@ -105,7 +114,7 @@ def parseArgs(args):
     if not d and not args:
         invalidArgs()
 
-    not_none = ('-i', '-c', '-n', '-m','-a', '-o')
+    not_none = ('-i', '-c', '-n', '-m','-a', '-o', '-e')
 
     for option in not_none:
         if option in d:
@@ -122,6 +131,10 @@ def parseArgs(args):
 
     if '-o' in d.keys():
         if d['-o'] not in tpList:
+            invalidArgs()
+
+    if '-e' in d.keys():
+        if d['-e'] not in enList:
             invalidArgs()
 
     if '-h' in d.keys():
@@ -146,7 +159,7 @@ class ACTopol:
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
                  multiplicity = '1', atomType = 'gaff', force = False,
-                debug = False, outTopol = 'all'):
+                debug = False, outTopol = 'all', engine = 'sleap'):
 
         self.inputFile = inputFile
         self.rootDir = os.path.abspath('.')
@@ -162,6 +175,7 @@ class ACTopol:
         self.multiplicity = multiplicity
         self.atomType = atomType
         self.force = force
+        self.engine = engine
         self.acExe = getoutput('which antechamber') or None
         if not self.acExe:
             print "ERROR: no 'antechamber' executable!"
@@ -368,6 +382,7 @@ Usage: antechamber -i   input file name
         else:
             try: os.remove(self.acTop) ; os.remove(self.acXyz)
             except: pass
+            print "Executing Sleap..."
             self.sleapLog = getoutput(cmd)
 
             if self.checkXyzAndTopFiles():
@@ -462,11 +477,17 @@ Usage: antechamber -i   input file name
 
     def createACTopol(self):
         """
-            If successful, a Amber Top and Xyz file will be generated
+            If successful, Amber Top and Xyz files will be generated
         """
-        if self.execSleap():
+        sleap = False
+        if self.engine == 'sleap':
+            sleap = self.execSleap()
+        if sleap:
             print "ERROR: Sleap failed"
             print "... trying Tleap"
+            if self.execTleap():
+                print "ERROR: Tleap failed"
+        if self.engine == 'tleap':
             if self.execTleap():
                 print "ERROR: Tleap failed"
         if not self.debug:
@@ -881,8 +902,11 @@ class MolTopol:
         """
             Write a new PDB file with the atom names defined by Antechamber
             Input: file path string
+            The format generated here use is slightly different from
+            http://www.wwpdb.org/documentation/format23/sect9.html respected to
+            atom name
         """
-        #TODO: assuming only one residues ('1')
+        #TODO: assuming only one residue ('1')
         pdbFile = open(file, 'w')
         for atom in self.atoms:
             id = self.atoms.index(atom) + 1
@@ -892,7 +916,7 @@ class MolTopol:
             x = atom.coords[0]
             y = atom.coords[1]
             z = atom.coords[2]
-            line = "%-6s%5d  %-3s %3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
+            line = "%-6s%5d  %-4s%3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
             ('ATOM', id, aName, rName, 1, 4*' ', x, y, z, 1.0, 0.0, 10*' ', s)
             pdbFile.write(line)
         pdbFile.write('END\n')
@@ -996,16 +1020,20 @@ class MolTopol:
                 }
               }
         """
-
         gmxDir = os.path.join(os.path.abspath('.'),'GMX')
         if not os.path.exists(gmxDir):
             os.mkdir(gmxDir)
 
-        topFileName = os.path.join(gmxDir, self.baseName+'.top')
-        groFileName = os.path.join(gmxDir, self.baseName+'.gro')
+        top = self.baseName+'.top'
+        itp = self.baseName+'.itp'
+        gro = self.baseName+'.gro'
+        topFileName = os.path.join(gmxDir, top)
+        groFileName = os.path.join(gmxDir, gro)
+        itpFileName = os.path.join(gmxDir, itp)
 
         topFile = open(topFileName, 'w')
         groFile = open(groFileName, 'w')
+        itpFile = open(itpFileName, 'w')
         now = datetime.now()
         date = now.ctime()
 
@@ -1016,10 +1044,26 @@ class MolTopol:
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
 1               2               yes             0.5     0.8333
 """
+        headItp = \
+"""
+; Include %s topology
+#include "%s"
+"""
+        headSystem = \
+"""
+[ system ]
+System %s, Residue %s
+"""
+        headMols = \
+"""
+[ molecules ]
+; Compound        nmols
+ %-16s 1
+"""
         headAtomtypes = \
 """
 [ atomtypes ]
-;name   bond_type     mass     charge   ptype        sigma       epsilon
+;name   bond_type     mass     charge   ptype   sigma         epsilon       Amb
 """
         headMoleculetype = \
 """
@@ -1059,88 +1103,105 @@ class MolTopol:
 ; treated as propers in GROMACS to use correct AMBER analytical function
 ; i   j   k   l func  phase     kd      pn
 """
-        headSystem = \
-"""
-[ system ]
-System %s, Residue %s
-"""
-        headMols = \
-"""
-[ molecules ]
-; Compound        nmols
- %-16s 1
-"""
-        print "Writing Gromacs TOP file\n"
-        topFile.write("; " + head % (os.path.basename(topFileName), date))
-        topFile.write(headDefault)
 
-        topFile.write(headAtomtypes)
+        print "Writing Gromacs TOP file\n"
+        topFile.write("; " + head % (top, date))
+        topFile.write(headDefault)
+        topFile.write(headItp % (itp, itp))
+        topFile.write(headSystem % (self.baseName, self.residueLabel))
+        topFile.write(headMols % self.baseName)
+
+        print "Writing Gromacs ITP file\n"
+        itpFile.write("; " + head % (itp, date))
+        itpFile.write(headAtomtypes)
         for aType in self.atomTypes:
             aTypeName = aType.atomTypeName
             A = aType.ACOEF
             B = aType.BCOEF
             # one cannot infer sigma or epsilon for B = 0, assuming 0 for them
             if B == 0.0:
-                sigma = 0
-                epsilon = 0
+                sigma, epsilon, r0, epAmber = 0, 0, 0, 0
             else:
+                r0 = 0.5 * math.pow((2*A/B), (1.0/6))
+                epAmber = 0.25 * B*B/A
                 sigma = 0.1 * math.pow((A/B), (1.0/6))
-                epsilon = cal * B*B/(4 * A)
-            line = " %-8s %-11s %3.5f  %3.5f   A %s %13.5e %13.5e\n" % \
-            (aTypeName, aTypeName, 0.0, 0.0,7*' ', sigma, epsilon)
-            topFile.write(line)
+                epsilon = cal * epAmber
+            line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
+            (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
+            " ; %4.2f  %1.4f\n" % (r0, epAmber)
+            itpFile.write(line)
 
-        topFile.write(headMoleculetype % self.baseName)
+        itpFile.write(headMoleculetype % self.baseName)
 
-        topFile.write(headAtoms)
+        itpFile.write(headAtoms)
+        qtot = 0.0
         for atom in self.atoms:
             id = self.atoms.index(atom) + 1
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
+            charge = atom.charge
+            mass = atom.mass
+            qtot += charge
             resnr = 1
-            line = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f\n" % (id, aType,resnr,
-                   self.residueLabel, aName, id, atom.charge, atom.mass)
-            topFile.write(line)
+            line = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
+            (id, aType,resnr, self.residueLabel, aName, id, charge, mass, qtot)
+            itpFile.write(line)
 
-        topFile.write(headBonds)
+        itpFile.write(headBonds)
         for bond in self.bonds:
+            a1Name = bond.atoms[0].atomName
+            a2Name = bond.atoms[1].atomName
             id1 = self.atoms.index(bond.atoms[0]) + 1
             id2 = self.atoms.index(bond.atoms[1]) + 1
-            line = "%6i %6i %3i %13.4e %13.4e\n" % (id1, id2, 1,
-                   bond.rEq * 0.1, bond.kBond * 200 * cal)
-            topFile.write(line)
+            line = "%6i %6i %3i %13.4e %13.4e ; %6s-%6s\n" % (id1, id2, 1,
+                   bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
+            itpFile.write(line)
 
-        topFile.write(headPairs)
+        itpFile.write(headPairs)
         for pair in self.atomPairs:
+            a1Name = pair[0].atomName
+            a2Name = pair[1].atomName
             id1 = self.atoms.index(pair[0]) + 1
             id2 = self.atoms.index(pair[1]) + 1
-            line = "%6i %6i %6i\n" % (id1, id2, 1)
-            topFile.write(line)
+            line = "%6i %6i %6i ; %6s-%6s\n" % (id1, id2, 1, a1Name, a2Name)
+            itpFile.write(line)
 
-        topFile.write(headAngles)
+        itpFile.write(headAngles)
         for angle in self.angles:
+            a1 = angle.atoms[0].atomName
+            a2 = angle.atoms[1].atomName
+            a3 = angle.atoms[2].atomName
             id1 = self.atoms.index(angle.atoms[0]) + 1
             id2 = self.atoms.index(angle.atoms[1]) + 1
             id3 = self.atoms.index(angle.atoms[2]) + 1
-            line = "%6i %6i %6i %6i %13.4e %13.4e\n" % (id1, id2, id3, 1,
-                                angle.thetaEq * 180/Pi, 2 * cal * angle.kTheta)
-            topFile.write(line)
+            line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s-%6s-%6s\n" % (id1, id2,
+            id3, 1, angle.thetaEq * 180/Pi, 2 * cal * angle.kTheta, a1, a2, a3)
+            itpFile.write(line)
 
-        topFile.write(headProDih)
+        itpFile.write(headProDih)
         self.setProperDihedralsCoefRB()
         for dih in self.properDihedralsCoefRB:
+            a1 = dih[0][0].atomName
+            a2 = dih[0][1].atomName
+            a3 = dih[0][2].atomName
+            a4 = dih[0][3].atomName
             id1 = self.atoms.index(dih[0][0]) + 1
             id2 = self.atoms.index(dih[0][1]) + 1
             id3 = self.atoms.index(dih[0][2]) + 1
             id4 = self.atoms.index(dih[0][3]) + 1
             c0, c1, c2, c3, c4, c5 = dih[1]
             line = \
-                "%3i %3i %3i %3i %3i %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f\n" %\
-                                (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5)
-            topFile.write(line)
+            "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
+            (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
+            + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
+            itpFile.write(line)
 
-        topFile.write(headImpDih)
+        itpFile.write(headImpDih)
         for dih in self.improperDihedrals:
+            a1 = dih.atoms[0].atomName
+            a2 = dih.atoms[1].atomName
+            a3 = dih.atoms[2].atomName
+            a4 = dih.atoms[3].atomName
             id1 = self.atoms.index(dih.atoms[0]) + 1
             id2 = self.atoms.index(dih.atoms[1]) + 1
             id3 = self.atoms.index(dih.atoms[2]) + 1
@@ -1148,13 +1209,9 @@ System %s, Residue %s
             kd = dih.kPhi * cal
             pn = dih.period
             ph = dih.phase * 180/Pi
-            line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i\n" % \
-                                            (id1, id2, id3, id4, 1, ph, kd, pn)
-            topFile.write(line)
-
-        topFile.write(headSystem % (self.baseName, self.residueLabel))
-
-        topFile.write(headMols % self.baseName)
+            line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
+                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+            itpFile.write(line)
 
         print "Writing Gromacs GRO file\n"
         groFile.write(head % (os.path.basename(groFileName), date))
@@ -1252,6 +1309,7 @@ if __name__ == '__main__':
     mt = argsDict.get('-m', '1')
     at = argsDict.get('-a', 'gaff')
     ot = argsDict.get('-o', 'all')
+    en = argsDict.get('-e', 'sleap')
     fs = False
     dg = False
     if '-f' in argsDict.keys(): fs = True
@@ -1259,7 +1317,7 @@ if __name__ == '__main__':
 
     molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                        multiplicity = mt, atomType = at, force = fs,
-                       outTopol = ot)
+                       outTopol = ot, engine = en)
 
     if not molecule.acExe:
         print "ERROR: no 'antechamber' executable... aborting!"
