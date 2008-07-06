@@ -34,6 +34,8 @@ import os
 import cPickle as pickle
 import sys
 
+amber = True
+
 # List of Topology Formats created by acpypi so far:
 outTopols = ['gmx', 'cns']
 
@@ -43,10 +45,13 @@ leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03' #'oldff/leaprc.ff99'
 cal = 4.184
 Pi = 3.141594
 
+head = "%s created by acpypi on %s\n"
+
+date = datetime.now().ctime()
 
 USAGE = \
 """
-    acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f]
+    acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc.
     -i    input file name with either extension '.pdb' or '.mol2' (mandatory)
     -c    charge method: gas, bcc (default)
     -n    net molecular charge (int), for gas default is 0
@@ -64,7 +69,7 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
 %(base)s = loadpdb %(base)s.pdb
-saveamberparm %(base)s %(base)s.top %(base)s.xyz
+saveamberparm %(base)s %(acBase)s.top %(acBase)s.xyz
 quit
 """
 
@@ -75,7 +80,7 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 mods = loadamberparams frcmod
 %(base)s = loadmol2 %(acMol2File)s
-saveamberparm %(base)s %(base)s.top %(base)s.xyz
+saveamberparm %(base)s %(acBase)s.top %(acBase)s.xyz
 quit
 """
 
@@ -189,6 +194,9 @@ class ACTopol:
             return None
         self.acXyz = None
         self.acTop = None
+        acBase = base + '_AC'
+        self.acXyzFileName = acBase + '.xyz'
+        self.acTopFileName = acBase + '.top'
         self.debug = debug
         if self.chargeVal == None:
             print "WARNING: no charge value given, trying to guess one..."
@@ -199,7 +207,8 @@ class ACTopol:
         self.outTopols = [outTopol]
         if outTopol == 'all':
             self.outTopols = outTopols
-        self.acParDict = {'base':base,'ext':ext[1:], 'acMol2File':acMol2File,
+        self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
+                          'acMol2File' : acMol2File,
                           'leapAmberFile':leapAmberFile,
                           'leapGaffFile':leapGaffFile}
 
@@ -337,7 +346,9 @@ Usage: antechamber -i   input file name
 
     def delOutputFiles(self):
         delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
-                    'frcmod', 'divcon.pdb', 'leap.log']
+                    'frcmod', 'divcon.pdb', 'leap.log', 'fixbo.log',
+                    'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
+                    'fragment.mol2']
         print "Removing temporary files..."
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
@@ -345,8 +356,8 @@ Usage: antechamber -i   input file name
                 os.remove(file)
 
     def checkXyzAndTopFiles(self):
-        fileXyz = self.baseName + '.xyz'
-        fileTop = self.baseName + '.top'
+        fileXyz = self.acXyzFileName
+        fileTop = self.acTopFileName
         if os.path.exists(fileXyz) and os.path.exists(fileTop):
             self.acXyz = fileXyz
             self.acTop = fileTop
@@ -742,7 +753,7 @@ class MolTopol:
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
             # in amber are to be ignored; if id4 < 0, dihedral is improper
             idAtom3raw = dihCodeList[i+2] / 3 # can be negative
-            idAtom4raw = dihCodeList[i+3] / 3 # can be negative
+            idAtom4raw = dihCodeList[i+3] / 3 # can be negative -> Improper
             idAtom3 = abs(idAtom3raw)
             idAtom4 = abs(idAtom4raw)
             dihTypeId = dihCodeList[i+4] - 1
@@ -756,8 +767,10 @@ class MolTopol:
             atoms = [atom1, atom2, atom3, atom4]
             dihedral = Dihedral(atoms, kPhi, period, phase)
             if idAtom4raw > 0:
+                try: atomsPrev = properDih[-1].atoms
+                except: atomsPrev = []
                 properDih.append(dihedral)
-                if idAtom3raw < 0:
+                if idAtom3raw < 0 and atomsPrev == atoms:
                     condProperDih[-1].append(dihedral)
                 else:
                     condProperDih.append([dihedral])
@@ -908,6 +921,8 @@ class MolTopol:
         """
         #TODO: assuming only one residue ('1')
         pdbFile = open(file, 'w')
+        fbase = os.path.basename(file)
+        pdbFile.write("REMARK "+ head % (fbase, date))
         for atom in self.atoms:
             id = self.atoms.index(atom) + 1
             aName = atom.atomName
@@ -1020,13 +1035,14 @@ class MolTopol:
                 }
               }
         """
-        gmxDir = os.path.join(os.path.abspath('.'),'GMX')
-        if not os.path.exists(gmxDir):
-            os.mkdir(gmxDir)
+        #gmxDir = os.path.join(os.path.abspath('.'),'GMX')
+        gmxDir = os.path.abspath('.')
+        #if not os.path.exists(gmxDir):
+        #    os.mkdir(gmxDir)
 
-        top = self.baseName+'.top'
-        itp = self.baseName+'.itp'
-        gro = self.baseName+'.gro'
+        top = self.baseName+'_GMX.top'
+        itp = self.baseName+'_GMX.itp'
+        gro = self.baseName+'_GMX.gro'
         topFileName = os.path.join(gmxDir, top)
         groFileName = os.path.join(gmxDir, gro)
         itpFileName = os.path.join(gmxDir, itp)
@@ -1034,10 +1050,7 @@ class MolTopol:
         topFile = open(topFileName, 'w')
         groFile = open(groFileName, 'w')
         itpFile = open(itpFileName, 'w')
-        now = datetime.now()
-        date = now.ctime()
 
-        head = "%s created by acpypi on %s\n"
         headDefault = \
 """
 [ defaults ]
@@ -1214,7 +1227,7 @@ System %s, Residue %s
             itpFile.write(line)
 
         print "Writing Gromacs GRO file\n"
-        groFile.write(head % (os.path.basename(groFileName), date))
+        groFile.write(head % (gro, date))
         groFile.write(" %i\n" % len(self.atoms))
         for atom in self.atoms:
             coords = [c * 0.1 for c in atom.coords]
@@ -1231,14 +1244,105 @@ System %s, Residue %s
         groFile.write("%11.5f%11.5f%11.5f\n" % (boxX, boxY, boxZ))
 
     def writeCnsTopolFiles(self):
-        cnsDir = os.path.join(os.path.abspath('.'),'CNS')
-        if not os.path.exists(cnsDir):
-            os.mkdir(cnsDir)
+        #cnsDir = os.path.join(os.path.abspath('.'),'CNS')
+        cnsDir = os.path.abspath('.')
+        #if not os.path.exists(cnsDir):
+        #    os.mkdir(cnsDir)
 
-        pdbFileName = os.path.join(cnsDir, self.baseName+'.pdb')
+        pdb = self.baseName+'_CNS.pdb'
+        par = self.baseName+'_CNS.par'
+        top = self.baseName+'_CNS.top'
+        inp = self.baseName+'_CNS.inp'
+
+        pdbFileName = os.path.join(cnsDir, pdb)
+        parFileName = os.path.join(cnsDir, par)
+        topFileName = os.path.join(cnsDir, top)
+        inpFileName = os.path.join(cnsDir, inp)
+
+        parFile = open(parFileName, 'w')
+        topFile = open(topFileName, 'w')
+        inpFile = open(inpFileName, 'w')
+
+        cnsHead = "Remarks " + head % (top, date)
 
         print "Writing CNS PDB file\n"
         self.writePdb(pdbFileName)
+
+        print "Writing CNS PAR file\n"
+        parFile.write(cnsHead)
+        parFile.write("\nset echo=false end\n")
+
+        parFile.write("\n{ Bonds: atomType1 atomType2 kb r0 }\n")
+        lineSet = set()
+        for bond in self.bonds:
+            a1Type = bond.atoms[0].atomType.atomTypeName
+            a2Type = bond.atoms[1].atomType.atomTypeName
+            kb = 1000.0
+            if amber:
+                kb = bond.kBond
+            r0 = bond.rEq
+            line = "BOND %5s %5s %8.1f %8.4f\n" % (a1Type, a2Type, kb, r0)
+            lineSet.add(line)
+        for item in lineSet:
+            parFile.write(item)
+
+        parFile.write("\n{ Angles: aType1 aType2 aType3 kt t0 }\n")
+        lineSet = set()
+        for angle in self.angles:
+            a1 = angle.atoms[0].atomType.atomTypeName
+            a2 = angle.atoms[1].atomType.atomTypeName
+            a3 = angle.atoms[2].atomType.atomTypeName
+            kt = 500.0
+            if amber:
+                kt = angle.kTheta
+            t0 = angle.thetaEq * 180/Pi
+            line = "ANGLe %5s %5s %5s %8.1f %8.2f\n" % (a1, a2, a3, kt, t0)
+            lineSet.add(line)
+        for item in lineSet:
+            parFile.write(item)
+
+        parFile.write("\n{ Proper Dihedrals: aType1 aType2 aType3 aType4 kt per\
+iod phase }\n")
+        lineSet = set()
+        #for dih in self.properDihedrals:
+        for item in self.condensedProperDihedrals:
+            seq = ''
+            for dih in item:
+                id = item.index(dih)
+                l = len(item)
+                a1 = dih.atoms[0].atomType.atomTypeName
+                a2 = dih.atoms[1].atomType.atomTypeName
+                a3 = dih.atoms[2].atomType.atomTypeName
+                a4 = dih.atoms[3].atomType.atomTypeName
+                kp = 750.0
+                if amber:
+                    kp = dih.kPhi
+                p = dih.period
+                ph = dih.phase * 180/Pi
+                if l > 1:
+                    if id == 0:
+                        line = "DIHEdral %5s %5s %5s %5s  MULT %1i %5.1f %4i %8.2f\n" % (a1, a2, a3, a4, l, kp, p, ph)
+                    else:
+                        line = "%s %5.1f %4i %8.2f\n" % (40*" ", kp, p, ph)
+                if l == 4:
+                    print [a.atomName for a in dih.atoms]
+                else:
+                    line = "DIHEdral %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3, a4, kp, p, ph)
+                seq += line
+            print seq
+            lineSet.add(seq)
+        for item in lineSet:
+            parFile.write(item)
+        #for item in self.condensedProperDihedrals:
+        #    print len(item)
+        #print len(self.condensedProperDihedrals)
+
+
+        print "Writing CNS TOP file\n"
+        topFile.write(cnsHead)
+
+        print "Writing CNS INP file\n"
+        inpFile.write(cnsHead)
 
 class Atom:
     """
