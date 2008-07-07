@@ -4,8 +4,17 @@
 
           <<<  NO WARRANTY AT ALL!!!  >>>
 
-    It was inspired by amb2gmx.pl (Eric Sorin, David Mobley and John Chodera)
-    and depends on Antechamber and Openbabel
+    It was inspired by:
+
+    - amb2gmx.pl (Eric Sorin, David Mobley and John Chodera)
+      and depends on Antechamber and Openbabel
+
+    - YASARA Autosmiles:
+      http://www.yasara.org/autosmiles.htm (Elmar Krieger)
+
+    - topolbuild (Bruce Ray)
+
+    - xplo2d (G.J. Kleywegt)
 
     For Antechamber, please cite:
     1.  Wang, J., Wang, W., Kollman P. A.; Case, D. A. "Automatic atom type and
@@ -926,12 +935,14 @@ class MolTopol:
         for atom in self.atoms:
             id = self.atoms.index(atom) + 1
             aName = atom.atomName
+            if len(aName) != 4:
+                aName = ' ' + aName
             s = aName[0]
             rName = self.residueLabel
             x = atom.coords[0]
             y = atom.coords[1]
             z = atom.coords[2]
-            line = "%-6s%5d  %-4s%3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
+            line = "%-6s%5d %-5s%3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
             ('ATOM', id, aName, rName, 1, 4*' ', x, y, z, 1.0, 0.0, 10*' ', s)
             pdbFile.write(line)
         pdbFile.write('END\n')
@@ -1248,8 +1259,8 @@ System %s, Residue %s
         groFile.write("%11.5f%11.5f%11.5f\n" % (boxX, boxY, boxZ))
 
     def writeCnsTopolFiles(self):
-        autoAngleFlag = False
-        autoDihFlag   = False
+        autoAngleFlag = True
+        autoDihFlag   = False # better be always False because of MULT
         cnsDir = os.path.abspath('.')
 
         pdb = self.baseName+'_CNS.pdb'
@@ -1279,7 +1290,7 @@ System %s, Residue %s
         parFile.write("\nset echo=false end\n")
 
         parFile.write("\n{ Bonds: atomType1 atomType2 kb r0 }\n")
-        lineSet = set()
+        lineSet = []
         for bond in self.bonds:
             a1Type = bond.atoms[0].atomType.atomTypeName
             a2Type = bond.atoms[1].atomType.atomTypeName
@@ -1288,12 +1299,15 @@ System %s, Residue %s
                 kb = bond.kBond
             r0 = bond.rEq
             line = "BOND %5s %5s %8.1f %8.4f\n" % (a1Type, a2Type, kb, r0)
-            lineSet.add(line)
+            lineRev = "BOND %5s %5s %8.1f %8.4f\n" % (a2Type, a1Type, kb, r0)
+            if line not in lineSet:
+                if lineRev not in lineSet:
+                    lineSet.append(line)
         for item in lineSet:
             parFile.write(item)
 
         parFile.write("\n{ Angles: aType1 aType2 aType3 kt t0 }\n")
-        lineSet = set()
+        lineSet = []
         for angle in self.angles:
             a1 = angle.atoms[0].atomType.atomTypeName
             a2 = angle.atoms[1].atomType.atomTypeName
@@ -1303,7 +1317,10 @@ System %s, Residue %s
                 kt = angle.kTheta
             t0 = angle.thetaEq * 180/Pi
             line = "ANGLe %5s %5s %5s %8.1f %8.2f\n" % (a1, a2, a3, kt, t0)
-            lineSet.add(line)
+            lineRev = "ANGLe %5s %5s %5s %8.1f %8.2f\n" % (a3, a2, a1, kt, t0)
+            if line not in lineSet:
+                if lineRev not in lineSet:
+                    lineSet.append(line)
         for item in lineSet:
             parFile.write(item)
 
@@ -1356,7 +1373,7 @@ eriod phase }\n")
         for item in lineSet:
             parFile.write(item)
 
-        parFile.write("\n{ Nonbonded: aType Emin sigma ; (1-4): Emin/2 sigma\n")
+        parFile.write("\n{ Nonbonded: Type Emin sigma; (1-4): Emin/2 sigma }\n")
         for at in self.atomTypes:
             A = at.ACOEF
             B = at.BCOEF
@@ -1394,8 +1411,8 @@ eriod phase }\n")
             atName = at.atomName
             atType = at.atomType.atomTypeName
             charge = at.charge
-            line = "ATOM %-5s TYPE=%-5s CHARGE=%8.4f END\n" % (atName, atType,
-                                                               charge)
+            line = "ATOM %-5s TYPE= %-5s CHARGE= %8.4f END\n" % (atName, atType,
+                                                                 charge)
             topFile.write(line)
 
         topFile.write("\n{ Bonds: atomName1  atomName2 }\n")
@@ -1448,10 +1465,69 @@ eriod phase }\n")
 
         print "Writing CNS INP file\n"
         inpFile.write("Remarks " + head % (inp, date))
+        inpData = \
+"""
+topology
+  @%(CNS_top)s
+end
 
+parameters
+  @%(CNS_par)s
+  nbonds
+      atom cdie shift eps=1.0  e14fac=0.4   tolerance=0.5
+      cutnb=9.0 ctonnb=7.5 ctofnb=8.0
+      nbxmod=5 vswitch wmin 1.0
+  end
+  remark dielectric constant eps set to 1.0
+end
 
+flags exclude elec ? end
 
+segment name="Z   "
+  chain
+   coordinates @%(CNS_pdb)s
+  end
+end
+coordinates @%(CNS_pdb)s
 
+! Remarks If you want to shake up the coordinates a bit ...
+! do (x=x+rand(0.1)-0.05) (all)
+! do (y=y+rand(0.1)-0.05) (all)
+! do (z=z+rand(0.1)-0.05) (all)
+
+print threshold=0.02 bonds
+print threshold=3.0 angles
+print threshold=3.0 dihedrals
+print threshold=3.0 impropers
+
+Remarks Do Powell energy minimisation
+minimise powell
+  nstep=250 drop=40.0
+end
+
+write coordinates output=%(CNS_min)s end
+write structure   output=%(CNS_psf)s end
+
+! constraints interaction (not hydro) (not hydro) end
+
+print threshold=0.02 bonds
+print threshold=3.0 angles
+print threshold=3.0 dihedrals
+print threshold=3.0 impropers
+
+flags exclude * include vdw end energy end
+distance from=(not hydro) to=(not hydro) cutoff=2.6 end
+
+stop
+"""
+        dictInp = {}
+        dictInp['CNS_top'] = top
+        dictInp['CNS_par'] = par
+        dictInp['CNS_pdb'] = pdb
+        dictInp['CNS_min'] = self.baseName+'_CNS_min.pdb'
+        dictInp['CNS_psf'] = self.baseName+'_CNS.psf'
+        line = inpData % dictInp
+        inpFile.write(line)
 
 class Atom:
     """
