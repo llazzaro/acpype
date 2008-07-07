@@ -937,7 +937,7 @@ class MolTopol:
             aName = atom.atomName
             if len(aName) != 4:
                 aName = ' ' + aName
-            s = aName[0]
+            s = aName[1]
             rName = self.residueLabel
             x = atom.coords[0]
             y = atom.coords[1]
