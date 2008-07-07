@@ -192,8 +192,8 @@ class ACTopol:
         if not self.babelExe:
             print "ERROR: no 'babel' executable!"
             return None
-        self.acXyz = None
-        self.acTop = None
+        #self.acXyz = None
+        #self.acTop = None
         acBase = base + '_AC'
         self.acXyzFileName = acBase + '.xyz'
         self.acTopFileName = acBase + '.top'
@@ -359,8 +359,8 @@ Usage: antechamber -i   input file name
         fileXyz = self.acXyzFileName
         fileTop = self.acTopFileName
         if os.path.exists(fileXyz) and os.path.exists(fileTop):
-            self.acXyz = fileXyz
-            self.acTop = fileTop
+            #self.acXyz = fileXyz
+            #self.acTop = fileTop
             return True
         return False
 
@@ -391,7 +391,7 @@ Usage: antechamber -i   input file name
         if self.checkXyzAndTopFiles() and not self.force:
             print "Topologies files already present... doing nothing"
         else:
-            try: os.remove(self.acTop) ; os.remove(self.acXyz)
+            try: os.remove(self.acTopFileName) ; os.remove(self.acXyzFileName)
             except: pass
             print "Executing Sleap..."
             self.sleapLog = getoutput(cmd)
@@ -430,7 +430,7 @@ Usage: antechamber -i   input file name
         if self.checkXyzAndTopFiles() and not self.force:
             print "Topologies files already present... doing nothing"
         else:
-            try: os.remove(self.acTop) ; os.remove(self.acXyz)
+            try: os.remove(self.acTopFileName) ; os.remove(self.acXyzFileName)
             except: pass
             self.tleapLog = getoutput(cmd)
 
@@ -546,16 +546,16 @@ class MolTopol:
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None):
 
         if acTopolObj:
-            if not acFileXyz: acFileXyz = acTopolObj.acXyz
-            if not acFileTop: acFileTop = acTopolObj.acTop
+            if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
+            if not acFileTop: acFileTop = acTopolObj.acTopFileName
             self._parent = acTopolObj
         if not os.path.exists(acFileXyz) and not os.path.exists(acFileTop):
             print "ERROR: Files '%s' and '%s' don't exist"
             print "       molTopol object won't be created"
             return None
 
-        self.xyzFile = open(acFileXyz, 'r').readlines()
-        self.topFile = open(acFileTop, 'r').readlines()
+        self.xyzFileData = open(acFileXyz, 'r').readlines()
+        self.topFileData = open(acFileTop, 'r').readlines()
 
 #        self.pointers = self.getFlagData('POINTERS')
 
@@ -592,7 +592,7 @@ class MolTopol:
         tFlag = '%FLAG ' + flag
         data = ''
 
-        for rawLine in self.topFile:
+        for rawLine in self.topFileData:
             line = rawLine[:-1]
             if tFlag in line:
                 block = True
@@ -627,7 +627,7 @@ class MolTopol:
             [[x1,y1,z1],[x2,y2,z2], etc.]
         """
         data = ''
-        for rawLine in self.xyzFile[2:]:
+        for rawLine in self.xyzFileData[2:]:
             line = rawLine[:-1]
             data += line
         sdata = data.split()
@@ -1047,6 +1047,10 @@ class MolTopol:
         groFileName = os.path.join(gmxDir, gro)
         itpFileName = os.path.join(gmxDir, itp)
 
+        self.GmxTopFileName = topFileName
+        self.GmxItpFileName = itpFileName
+        self.GmxGroFileName = groFileName
+
         topFile = open(topFileName, 'w')
         groFile = open(groFileName, 'w')
         itpFile = open(itpFileName, 'w')
@@ -1244,10 +1248,9 @@ System %s, Residue %s
         groFile.write("%11.5f%11.5f%11.5f\n" % (boxX, boxY, boxZ))
 
     def writeCnsTopolFiles(self):
-        #cnsDir = os.path.join(os.path.abspath('.'),'CNS')
+        autoAngleFlag = False
+        autoDihFlag   = False
         cnsDir = os.path.abspath('.')
-        #if not os.path.exists(cnsDir):
-        #    os.mkdir(cnsDir)
 
         pdb = self.baseName+'_CNS.pdb'
         par = self.baseName+'_CNS.par'
@@ -1259,17 +1262,20 @@ System %s, Residue %s
         topFileName = os.path.join(cnsDir, top)
         inpFileName = os.path.join(cnsDir, inp)
 
+        self.CnsTopFileName = topFileName
+        self.CnsInpFileName = inpFileName
+        self.CnsParFileName = parFileName
+        self.CnsPdbFileName = pdbFileName
+
         parFile = open(parFileName, 'w')
         topFile = open(topFileName, 'w')
         inpFile = open(inpFileName, 'w')
-
-        cnsHead = "Remarks " + head % (top, date)
 
         print "Writing CNS PDB file\n"
         self.writePdb(pdbFileName)
 
         print "Writing CNS PAR file\n"
-        parFile.write(cnsHead)
+        parFile.write("Remarks " + head % (par, date))
         parFile.write("\nset echo=false end\n")
 
         parFile.write("\n{ Bonds: atomType1 atomType2 kb r0 }\n")
@@ -1304,7 +1310,6 @@ System %s, Residue %s
         parFile.write("\n{ Proper Dihedrals: aType1 aType2 aType3 aType4 kt per\
 iod phase }\n")
         lineSet = set()
-        #for dih in self.properDihedrals:
         for item in self.condensedProperDihedrals:
             seq = ''
             for dih in item:
@@ -1321,28 +1326,132 @@ iod phase }\n")
                 ph = dih.phase * 180/Pi
                 if l > 1:
                     if id == 0:
-                        line = "DIHEdral %5s %5s %5s %5s  MULT %1i %5.1f %4i %8.2f\n" % (a1, a2, a3, a4, l, kp, p, ph)
+                        line = "DIHEdral %5s %5s %5s %5s  MULT %1i %5.1f %4i %8\
+.2f\n" % (a1, a2, a3, a4, l, kp, p, ph)
                     else:
                         line = "%s %5.1f %4i %8.2f\n" % (40*" ", kp, p, ph)
-                if l == 4:
-                    print [a.atomName for a in dih.atoms]
                 else:
-                    line = "DIHEdral %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3, a4, kp, p, ph)
+                    line = "DIHEdral %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1,
+                                                          a2, a3, a4, kp, p, ph)
                 seq += line
-            print seq
             lineSet.add(seq)
         for item in lineSet:
             parFile.write(item)
-        #for item in self.condensedProperDihedrals:
-        #    print len(item)
-        #print len(self.condensedProperDihedrals)
 
+        parFile.write("\n{ Improper Dihedrals: aType1 aType2 aType3 aType4 kt p\
+eriod phase }\n")
+        lineSet = set()
+        for idh in self.improperDihedrals:
+            a1 = idh.atoms[0].atomType.atomTypeName
+            a2 = idh.atoms[1].atomType.atomTypeName
+            a3 = idh.atoms[2].atomType.atomTypeName
+            a4 = idh.atoms[3].atomType.atomTypeName
+            kp = 750.0
+            if amber:
+                kp = dih.kPhi
+            p = dih.period
+            ph = dih.phase * 180/Pi
+            line = "IMPRoper %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3, a4, kp, p, ph)
+            lineSet.add(line)
+        for item in lineSet:
+            parFile.write(item)
+
+        parFile.write("\n{ Nonbonded: aType Emin sigma ; (1-4): Emin/2 sigma\n")
+        for at in self.atomTypes:
+            A = at.ACOEF
+            B = at.BCOEF
+            atName = at.atomTypeName
+            if B == 0.0:
+                sigma, epAmber = 0, 0
+            else:
+                epAmber = 0.25 * B*B/A
+                ep2 = epAmber/2.0
+                sigma = math.pow((A/B), (1.0/6))
+                sig2 = sigma
+            line = "NONBonded %5s %11.6f %11.6f %11.6f %11.6f\n" % (atName,
+                    epAmber, sigma, ep2, sig2)
+            parFile.write(line)
+        parFile.write("\nset echo=true end\n")
 
         print "Writing CNS TOP file\n"
-        topFile.write(cnsHead)
+        topFile.write("Remarks " + head % (top, date))
+        topFile.write("\nset echo=false end\n")
+        topFile.write("\nautogenerate angles=%s dihedrals=%s end\n" %
+                      (autoAngleFlag, autoDihFlag))
+
+        topFile.write("\n{ atomType  mass }\n")
+        for at in self.atomTypes:
+            atType = at.atomTypeName
+            mass = at.mass
+            line = "MASS %-5s %8.3f\n" % (atType, mass)
+            topFile.write(line)
+
+        topFile.write("\nRESIdue %s\n" % self.residueLabel)
+        topFile.write("\nGROUP\n")
+
+        topFile.write("\n{ atomName  atomType  Charge }\n")
+        for at in self.atoms:
+            atName = at.atomName
+            atType = at.atomType.atomTypeName
+            charge = at.charge
+            line = "ATOM %-5s TYPE=%-5s CHARGE=%8.4f END\n" % (atName, atType,
+                                                               charge)
+            topFile.write(line)
+
+        topFile.write("\n{ Bonds: atomName1  atomName2 }\n")
+        for bond in self.bonds:
+            a1Name = bond.atoms[0].atomName
+            a2Name = bond.atoms[1].atomName
+            line = "BOND %-5s %-5s\n" % (a1Name, a2Name)
+            topFile.write(line)
+
+        if not autoAngleFlag:
+            topFile.write("\n{ Angles: atomName1 atomName2 atomName3}\n")
+            for angle in self.angles:
+                a1Name = angle.atoms[0].atomName
+                a2Name = angle.atoms[1].atomName
+                a3Name = angle.atoms[2].atomName
+                line = "ANGLe %-5s %-5s %-5s\n" % (a1Name, a2Name, a3Name)
+                topFile.write(line)
+
+        if not autoDihFlag:
+            topFile.write("\n{ Proper Dihedrals: name1 name2 name3 name4 }\n")
+            for item in self.condensedProperDihedrals:
+                for dih in item:
+                    l = len(item)
+                    a1Name = dih.atoms[0].atomName
+                    a2Name = dih.atoms[1].atomName
+                    a3Name = dih.atoms[2].atomName
+                    a4Name = dih.atoms[3].atomName
+                    if l > 1:
+                        line = "DIHEdral %-5s %-5s %-5s %-5s MULT %1i\n" % (
+                                            a1Name, a2Name, a3Name, a4Name, l)
+                        break
+                    else:
+                        line = "DIHEdral %-5s %-5s %-5s %-5s\n" % (a1Name,
+                                                        a2Name, a3Name, a4Name)
+                topFile.write(line)
+
+        topFile.write("\n{ Improper Dihedrals: aName1 aName2 aName3 aName4 }\n")
+        for dih in self.improperDihedrals:
+            a1Name = dih.atoms[0].atomName
+            a2Name = dih.atoms[1].atomName
+            a3Name = dih.atoms[2].atomName
+            a4Name = dih.atoms[3].atomName
+            line = "IMPRoper %-5s %-5s %-5s %-5s\n" % (a1Name, a2Name, a3Name,
+                                                       a4Name)
+            topFile.write(line)
+
+        topFile.write("\nEND {RESIdue %s}\n" % self.residueLabel)
+
+        topFile.write("\nset echo=true end\n")
 
         print "Writing CNS INP file\n"
-        inpFile.write(cnsHead)
+        inpFile.write("Remarks " + head % (inp, date))
+
+
+
+
 
 class Atom:
     """
