@@ -1263,7 +1263,7 @@ System %s, Residue %s
         autoDihFlag   = False # better be always False because of MULT
         cnsDir = os.path.abspath('.')
 
-        pdb = self.baseName+'_CNS.pdb'
+        pdb = self.baseName+'_NEW.pdb'
         par = self.baseName+'_CNS.par'
         top = self.baseName+'_CNS.top'
         inp = self.baseName+'_CNS.inp'
@@ -1282,7 +1282,7 @@ System %s, Residue %s
         topFile = open(topFileName, 'w')
         inpFile = open(inpFileName, 'w')
 
-        print "Writing CNS PDB file\n"
+        print "Writing NEW PDB file\n"
         self.writePdb(pdbFileName)
 
         print "Writing CNS PAR file\n"
@@ -1485,10 +1485,10 @@ flags exclude elec ? end
 
 segment name="Z   "
   chain
-   coordinates @%(CNS_pdb)s
+   coordinates @%(NEW_pdb)s
   end
 end
-coordinates @%(CNS_pdb)s
+coordinates @%(NEW_pdb)s
 
 ! Remarks If you want to shake up the coordinates a bit ...
 ! do (x=x+rand(0.1)-0.05) (all)
@@ -1523,8 +1523,8 @@ stop
         dictInp = {}
         dictInp['CNS_top'] = top
         dictInp['CNS_par'] = par
-        dictInp['CNS_pdb'] = pdb
-        dictInp['CNS_min'] = self.baseName+'_CNS_min.pdb'
+        dictInp['NEW_pdb'] = pdb
+        dictInp['CNS_min'] = self.baseName+'_NEW_min.pdb'
         dictInp['CNS_psf'] = self.baseName+'_CNS.psf'
         line = inpData % dictInp
         inpFile.write(line)
