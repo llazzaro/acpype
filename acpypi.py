@@ -1550,7 +1550,7 @@ end
 
 flags exclude elec ? end
 
-segment name="Z   "
+segment name="    "
   chain
    coordinates @%(NEW_pdb)s
   end
@@ -1558,9 +1558,10 @@ end
 coordinates @%(NEW_pdb)s
 
 ! Remarks If you want to shake up the coordinates a bit ...
-! do (x=x+rand(0.1)-0.05) (all)
-! do (y=y+rand(0.1)-0.05) (all)
-! do (z=z+rand(0.1)-0.05) (all)
+ do (x=x+rand(10)-5) (all)
+ do (y=y+rand(10)-5) (all)
+ do (z=z+rand(10)-5) (all)
+ write coordinates output=%(CNS_ran)s end
 
 print threshold=0.02 bonds
 print threshold=3.0 angles
@@ -1593,6 +1594,7 @@ stop
         dictInp['NEW_pdb'] = pdb
         dictInp['CNS_min'] = self.baseName+'_NEW_min.pdb'
         dictInp['CNS_psf'] = self.baseName+'_CNS.psf'
+        dictInp['CNS_ran'] = self.baseName+'_rand.pdb'
         line = inpData % dictInp
         inpFile.write(line)
 
