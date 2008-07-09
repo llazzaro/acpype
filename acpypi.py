@@ -38,6 +38,7 @@
 from commands import getoutput
 from datetime import datetime
 from shutil import copy2
+from shutil import rmtree
 import math
 import os
 import cPickle as pickle
@@ -190,7 +191,7 @@ class ACTopol:
         self.atomType = atomType
         self.force = force
         self.engine = engine
-        self.acExe = getoutput('which antechamber') or None
+        self.acExe = getoutput('which antechamber') or None # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not self.acExe:
             print "ERROR: no 'antechamber' executable!"
             return None
@@ -224,11 +225,11 @@ class ACTopol:
     def guessCharge(self):
         """
             Guess the charge of a system based on antechamber
-            Returns None i case of error
+            Returns None in case of error
         """
         charge = 0
         localDir = os.path.abspath('.')
-        tmpDir = '/tmp/acpypi'
+        tmpDir = '.acpypi.tmp'
         if not os.path.exists(tmpDir):
             os.mkdir(tmpDir)
         if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
@@ -238,18 +239,34 @@ class ACTopol:
             cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                   self.baseName)
             _out = getoutput(cmd)
-            # print _out
-        cmd = '%s -i %s.mol2 -fi mol2 -o tmp.mol2 -fo mol2 -c gas' % \
+            print _out
+
+        cmd = '%s -i %s.mol2 -fi mol2 -o tmp -fo ac -c gas -pf y' % \
                                                     (self.acExe, self.baseName)
+
+        if self.debug:
+            print "Debugging..."
+            cmd = cmd.replace('-pf y', '-pf n')
+        #print cmd
+
         log = getoutput(cmd)
         #print log
         m = log.split()
         if len(m) >= 21:
-            charge = int(float(m[14].replace('(','').replace(')','')))
+            charge = float(m[14].replace('(','').replace(')',''))
+        elif len(m) == 0:
+            print "An old version of Antechamber? Still trying to get charge..."
+            tmpFile = open('tmp', 'r')
+            tmpData = tmpFile.readlines()
+            for line in tmpData:
+                if 'ATOM' in line:
+                    charge += float(line[54:64])
         else:
             print "ERROR: guessCharge failed"
             os.chdir(localDir)
+            print log
             return True
+        charge = int(charge)
         self.chargeVal = str(charge)
         print "... charge set to", charge
         os.chdir(localDir)
@@ -357,12 +374,15 @@ Usage: antechamber -i   input file name
         delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
                     'frcmod', 'divcon.pdb', 'leap.log', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
-                    'fragment.mol2']
+                    'fragment.mol2', '../.acpypi.tmp']
         print "Removing temporary files..."
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
             if os.path.exists(file):
-                os.remove(file)
+                if os.path.isdir(file):
+                    rmtree(file)
+                else:
+                    os.remove(file)
 
     def checkXyzAndTopFiles(self):
         fileXyz = self.acXyzFileName
@@ -1132,14 +1152,14 @@ System %s, Residue %s
 ; i   j   k   l func  phase     kd      pn
 """
 
-        print "Writing Gromacs TOP file\n"
+        print "Writing GROMACS TOP file\n"
         topFile.write("; " + head % (top, date))
         topFile.write(headDefault)
         topFile.write(headItp % (itp, itp))
         topFile.write(headSystem % (self.baseName, self.residueLabel))
         topFile.write(headMols % self.baseName)
 
-        print "Writing Gromacs ITP file\n"
+        print "Writing GROMACS ITP file\n"
         itpFile.write("; " + head % (itp, date))
         itpFile.write(headAtomtypes)
         for aType in self.atomTypes:
@@ -1241,7 +1261,7 @@ System %s, Residue %s
                             (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
             itpFile.write(line)
 
-        print "Writing Gromacs GRO file\n"
+        print "Writing GROMACS GRO file\n"
         groFile.write(head % (gro, date))
         groFile.write(" %i\n" % len(self.atoms))
         for atom in self.atoms:
@@ -1253,10 +1273,57 @@ System %s, Residue %s
         X = [a.coords[0] * 0.1 for a in self.atoms]
         Y = [a.coords[1] * 0.1 for a in self.atoms]
         Z = [a.coords[2] * 0.1 for a in self.atoms]
-        boxX = max(X) - min(X)
-        boxY = max(Y) - min(Y)
-        boxZ = max(Z) - min(Z)
+        boxX = max(X) - min(X) #+ 2.0 # 2.0 is double of rlist
+        boxY = max(Y) - min(Y) #+ 2.0
+        boxZ = max(Z) - min(Z) #+ 2.0
         groFile.write("%11.5f%11.5f%11.5f\n" % (boxX, boxY, boxZ))
+
+        emMdp = \
+"""
+cpp                      = /usr/bin/cpp
+define                   = -DFLEXIBLE
+integrator               = steep
+nsteps                   = 500
+constraints              = none
+emtol                    = 1000.0
+emstep                   = 0.01
+nstcomm                  = 1
+ns_type                  = simple
+nstlist                  = 0
+rlist                    = 0
+rcoulomb                 = 0
+rvdw                     = 0
+Tcoupl                   = no
+Pcoupl                   = no
+gen_vel                  = no
+nstxout                  = 1
+pbc                      = no
+"""
+        mdMdp = \
+"""
+cpp                      = /usr/bin/cpp
+define                   = -DFLEXIBLE
+integrator               = md
+nsteps                   = 500
+constraints              = none
+emtol                    = 1000.0
+emstep                   = 0.01
+comm_mode                = angular
+ns_type                  = simple
+nstlist                  = 0
+rlist                    = 0
+rcoulomb                 = 0
+rvdw                     = 0
+Tcoupl                   = no
+Pcoupl                   = no
+gen_vel                  = no
+nstxout                  = 1
+pbc                      = no
+"""
+        emMdpFile = open('em.mdp', 'w')
+        mdMdpFile = open('md.mdp', 'w')
+        emMdpFile.write(emMdp)
+        mdMdpFile.write(mdMdp)
 
     def writeCnsTopolFiles(self):
         autoAngleFlag = True
