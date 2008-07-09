@@ -70,7 +70,7 @@ USAGE = \
     -f    force recalculate topologies
     -d    for debugging porposes, don't delete any temporary file created
     -o    output topologies: all (default), gmx, cns
-    -e    engine: sleap (default) or tleap
+    -e    engine: tleap (default) or sleap (not fully matured)
 """
 
 SLEAP_TEMPLATE = \
@@ -174,7 +174,7 @@ class ACTopol:
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
                  multiplicity = '1', atomType = 'gaff', force = False,
-                debug = False, outTopol = 'all', engine = 'sleap'):
+                debug = False, outTopol = 'all', engine = 'tleap'):
 
         self.inputFile = inputFile
         self.rootDir = os.path.abspath('.')
@@ -1665,7 +1665,7 @@ if __name__ == '__main__':
     mt = argsDict.get('-m', '1')
     at = argsDict.get('-a', 'gaff')
     ot = argsDict.get('-o', 'all')
-    en = argsDict.get('-e', 'sleap')
+    en = argsDict.get('-e', 'tleap')
     fs = False
     dg = False
     if '-f' in argsDict.keys(): fs = True
