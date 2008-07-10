@@ -1327,7 +1327,7 @@ pbc                      = no
 
     def writeCnsTopolFiles(self):
         autoAngleFlag = True
-        autoDihFlag   = False # better be always False because of MULT
+        autoDihFlag   = True
         cnsDir = os.path.abspath('.')
 
         pdb = self.baseName+'_NEW.pdb'
@@ -1410,12 +1410,12 @@ iod phase }\n")
                 ph = dih.phase * 180/Pi
                 if l > 1:
                     if id == 0:
-                        line = "DIHEdral %5s %5s %5s %5s  MULT %1i %5.1f %4i %8\
+                        line = "DIHEdral %5s %5s %5s %5s  MULT %1i %7.3f %4i %8\
 .2f\n" % (a1, a2, a3, a4, l, kp, p, ph)
                     else:
-                        line = "%s %5.1f %4i %8.2f\n" % (40*" ", kp, p, ph)
+                        line = "%s %7.3f %4i %8.2f\n" % (40*" ", kp, p, ph)
                 else:
-                    line = "DIHEdral %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1,
+                    line = "DIHEdral %5s %5s %5s %5s %15.3f %4i %8.2f\n" % (a1,
                                                           a2, a3, a4, kp, p, ph)
                 seq += line
             lineSet.add(seq)
@@ -1432,10 +1432,11 @@ eriod phase }\n")
             a4 = idh.atoms[3].atomType.atomTypeName
             kp = 750.0
             if amber:
-                kp = dih.kPhi
-            p = dih.period
-            ph = dih.phase * 180/Pi
-            line = "IMPRoper %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3, a4, kp, p, ph)
+                kp = idh.kPhi
+            p = idh.period
+            ph = idh.phase * 180/Pi
+            line = "IMPRoper %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3,
+                                                                 a4, kp, p, ph)
             lineSet.add(line)
         for item in lineSet:
             parFile.write(item)
@@ -1507,13 +1508,9 @@ eriod phase }\n")
                     a2Name = dih.atoms[1].atomName
                     a3Name = dih.atoms[2].atomName
                     a4Name = dih.atoms[3].atomName
-                    if l > 1:
-                        line = "DIHEdral %-5s %-5s %-5s %-5s MULT %1i\n" % (
-                                            a1Name, a2Name, a3Name, a4Name, l)
-                        break
-                    else:
-                        line = "DIHEdral %-5s %-5s %-5s %-5s\n" % (a1Name,
-                                                        a2Name, a3Name, a4Name)
+                    line = "DIHEdral %-5s %-5s %-5s %-5s\n" % (a1Name, a2Name,
+                                                               a3Name, a4Name)
+                    break
                 topFile.write(line)
 
         topFile.write("\n{ Improper Dihedrals: aName1 aName2 aName3 aName4 }\n")
