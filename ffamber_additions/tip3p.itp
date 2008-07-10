@@ -1,14 +1,6 @@
 [ moleculetype ]
 ; molname   nrexcl
-#ifdef _FF_AMBER94
-SOL     1
-#else
-#ifdef _FF_AMBER99
-SOL     1
-#else
 SOL     2
-#endif
-#endif
 
 [ atoms ]
 ; id    at type res nr  residu name at name     cg nr   charge
