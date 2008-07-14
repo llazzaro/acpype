@@ -63,7 +63,7 @@ USAGE = \
 """
     acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc.
     -i    input file name with either extension '.pdb' or '.mol2' (mandatory)
-    -c    charge method: gas, bcc (default)
+    -c    charge method: gas, bcc (default), mine (user's charges in mol2 file)
     -n    net molecular charge (int), for gas default is 0
     -m    multiplicity (2S+1), default is 1
     -a    atom type, can be gaff, amber, bcc and sybyl, default is gaff
@@ -105,7 +105,7 @@ def parseArgs(args):
 
     options = 'hi:c:n:m:o:a:e:fd'
 
-    ctList = ['gas', 'bcc']
+    ctList = ['gas', 'bcc', 'mine']
     atList = ['gaff', 'amber', 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
@@ -169,7 +169,7 @@ def parseArgs(args):
 
 class ACTopol:
     """
-        Class to build the AC topologies (Antechamber AmberTools 1.0)
+        Class to build the AC topologies (Antechamber AmberTools 1.1)
     """
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
@@ -208,10 +208,7 @@ class ACTopol:
         self.acXyzFileName = acBase + '.xyz'
         self.acTopFileName = acBase + '.top'
         self.debug = debug
-        if self.chargeVal == None:
-            print "WARNING: no charge value given, trying to guess one..."
-            if self.guessCharge():
-                print "ERROR: failed to guess charge"
+        self.guessCharge()
         acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
         self.acMol2File = acMol2File
         self.outTopols = [outTopol]
@@ -227,6 +224,7 @@ class ACTopol:
             Guess the charge of a system based on antechamber
             Returns None in case of error
         """
+        done = False
         charge = 0
         localDir = os.path.abspath('.')
         tmpDir = '.acpypi.tmp'
@@ -235,41 +233,72 @@ class ACTopol:
         if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
             copy2(self.absInputFile, tmpDir)
         os.chdir(tmpDir)
-        if self.ext == ".pdb":
-            cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
-                                                  self.baseName)
-            _out = getoutput(cmd)
-            print _out
 
-        cmd = '%s -i %s.mol2 -fi mol2 -o tmp -fo ac -c gas -pf y' % \
-                                                    (self.acExe, self.baseName)
+        if self.chargeType == 'mine':
+            if self.ext == '.mol2':
+                print "Reading user's charges from mol2 file..."
+                charge = self.readMol2TotalCharge(self.inputFile)
+                done = True
+            else:
+                print "WARNING: cannot read charges from a PDB file"
+                print "         using now 'bcc' method for charge"
 
-        if self.debug:
-            print "Debugging..."
-            cmd = cmd.replace('-pf y', '-pf n')
-        #print cmd
+        if not self.chargeVal and not done:
+            print "WARNING: no charge value given, trying to guess one..."
+            if self.ext == ".pdb":
+                cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
+                                                      self.baseName)
+                _out = getoutput(cmd)
+                print _out
 
-        log = getoutput(cmd)
-        #print log
-        m = log.split()
-        if len(m) >= 21:
-            charge = float(m[14].replace('(','').replace(')',''))
-        elif len(m) == 0:
-            print "An old version of Antechamber? Still trying to get charge..."
-            tmpFile = open('tmp', 'r')
-            tmpData = tmpFile.readlines()
-            for line in tmpData:
-                if 'ATOM' in line:
-                    charge += float(line[54:64])
-        else:
-            print "ERROR: guessCharge failed"
-            os.chdir(localDir)
-            print log
-            return True
+            cmd = '%s -i %s.mol2 -fi mol2 -o tmp -fo mol2 -c gas -pf y' % \
+                                                        (self.acExe, self.baseName)
+
+            if self.debug:
+                print "Debugging..."
+                cmd = cmd.replace('-pf y', '-pf n')
+            #print cmd
+
+            log = getoutput(cmd)
+            #print log
+            m = log.split()
+            if len(m) >= 21:
+                charge = float(m[14].replace('(','').replace(')',''))
+            elif len(m) == 0:
+                print "An old version of Antechamber? Still trying to get charge..."
+                charge = self.readMol2TotalCharge('tmp')
+            else:
+                print "ERROR: guessCharge failed"
+                os.chdir(localDir)
+                print log
+                return None
+
         charge = int(charge)
         self.chargeVal = str(charge)
         print "... charge set to", charge
         os.chdir(localDir)
+
+    def readMol2TotalCharge(self, mol2File):
+        """Reads the charges in given mol2 file and returns the total
+        """
+        charge = 0.0
+        ll = []
+        cmd = '%s -i %s -fi mol2 -o tmp -fo mol2 -c wc -cf tmp.crg -pf y' % \
+                                                        (self.acExe, mol2File)
+        if self.debug:
+            print "Debugging..."
+            cmd = cmd.replace('-pf y', '-pf n')
+
+        log = getoutput(cmd)
+
+        if log.isspace():
+            tmpFile = open('tmp.crg', 'r')
+            tmpData = tmpFile.readlines()
+            for line in tmpData:
+                ll += line.split()
+            charge = sum(map(float,ll))
+
+        return charge
 
     def execAntechamber(self, chargeType = None, atomType = None):
         """
@@ -510,8 +539,7 @@ Usage: antechamber -i   input file name
         if not os.path.exists(self.homeDir):
             os.mkdir(self.homeDir)
         os.chdir(self.homeDir)
-        if not os.path.exists(self.inputFile):
-            copy2(self.absInputFile, '.')
+        copy2(self.absInputFile, '.')
 
         return True
 
@@ -851,13 +879,13 @@ class MolTopol:
             file, say, for CNS or GMX, where floats are represented with 4 or 5
             maximum decimals.
         """
-        total = sum(chargeList)
+        total = sum(chargeList)/18.2223
         maxVal = max(chargeList)
         minVal = min(chargeList)
         if abs(maxVal) >= abs(minVal): lim = maxVal
         else: lim = minVal
         limId = chargeList.index(lim)
-        diff = total - int(total)
+        diff = (total - int(total)) * 18.2223
         fix = lim - diff
         chargeList[limId] = fix
         return chargeList
