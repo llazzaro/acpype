@@ -25,14 +25,17 @@
         Computational Chemistry, 25, 2004, 1157-1174.
 
     If you use this code, I am glad if you cite:
-        >>> COMING <<<<
+
+    BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
+    Dynamics Simulations Applied to the Study of Subtypes of HIV-1 Protease.
+    Cell Biochemistry and Biophysics, 44, 395Ð404, 2006.
 
     Alan Wilter S. da Silva, D.Sc. - CCPN Research Associate
     Department of Biochemistry, University of Cambridge.
     80 Tennis Court Road, Cambridge CB2 1GA, UK.
     >>http://www.bio.cam.ac.uk/~awd28<<
 
-    alanwilter _at_ gmail _dot com
+    alanwilter _at_ gmail _dot_ com
 """
 
 from commands import getoutput
