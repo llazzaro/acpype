@@ -44,8 +44,6 @@ import os
 import cPickle as pickle
 import sys
 
-amber = True
-
 # List of Topology Formats created by acpypi so far:
 outTopols = ['gmx', 'cns']
 
@@ -63,13 +61,14 @@ USAGE = \
 """
     acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc.
     -i    input file name with either extension '.pdb' or '.mol2' (mandatory)
-    -c    charge method: gas, bcc (default), mine (user's charges in mol2 file)
+    -c    charge method: gas, bcc (default), user (user's charges in mol2 file)
     -n    net molecular charge (int), for gas default is 0
     -m    multiplicity (2S+1), default is 1
     -a    atom type, can be gaff, amber, bcc and sybyl, default is gaff
-    -f    force recalculate topologies
-    -d    for debugging porposes, don't delete any temporary file created
+    -f    force topologies recalculation anew
+    -d    for debugging purposes, keep any temporary file created
     -o    output topologies: all (default), gmx, cns
+    -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
 """
 
@@ -103,9 +102,9 @@ def parseArgs(args):
 
     import getopt
 
-    options = 'hi:c:n:m:o:a:e:fd'
+    options = 'hi:c:n:m:o:a:e:ftd'
 
-    ctList = ['gas', 'bcc', 'mine']
+    ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber', 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
@@ -174,7 +173,7 @@ class ACTopol:
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
                  multiplicity = '1', atomType = 'gaff', force = False,
-                debug = False, outTopol = 'all', engine = 'tleap'):
+            debug = False, outTopol = 'all', engine = 'tleap', allhdg = False):
 
         self.inputFile = inputFile
         self.rootDir = os.path.abspath('.')
@@ -191,6 +190,7 @@ class ACTopol:
         self.atomType = atomType
         self.force = force
         self.engine = engine
+        self.allhdg = allhdg
         self.acExe = getoutput('which antechamber') or None # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not self.acExe:
             print "ERROR: no 'antechamber' executable!"
@@ -234,7 +234,7 @@ class ACTopol:
             copy2(self.absInputFile, tmpDir)
         os.chdir(tmpDir)
 
-        if self.chargeType == 'mine':
+        if self.chargeType == 'user':
             if self.ext == '.mol2':
                 print "Reading user's charges from mol2 file..."
                 charge = self.readMol2TotalCharge(self.inputFile)
@@ -602,10 +602,12 @@ class MolTopol:
     """
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None):
 
+        self.allhdg = False
         if acTopolObj:
             if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
             if not acFileTop: acFileTop = acTopolObj.acTopFileName
             self._parent = acTopolObj
+            self.allhdg = self._parent.allhdg
         if not os.path.exists(acFileXyz) and not os.path.exists(acFileTop):
             print "ERROR: Files '%s' and '%s' don't exist"
             print "       molTopol object won't be created"
@@ -1390,7 +1392,7 @@ pbc                      = no
             a1Type = bond.atoms[0].atomType.atomTypeName
             a2Type = bond.atoms[1].atomType.atomTypeName
             kb = 1000.0
-            if amber:
+            if not self.allhdg:
                 kb = bond.kBond
             r0 = bond.rEq
             line = "BOND %5s %5s %8.1f %8.4f\n" % (a1Type, a2Type, kb, r0)
@@ -1408,7 +1410,7 @@ pbc                      = no
             a2 = angle.atoms[1].atomType.atomTypeName
             a3 = angle.atoms[2].atomType.atomTypeName
             kt = 500.0
-            if amber:
+            if not self.allhdg:
                 kt = angle.kTheta
             t0 = angle.thetaEq * 180/Pi
             line = "ANGLe %5s %5s %5s %8.1f %8.2f\n" % (a1, a2, a3, kt, t0)
@@ -1432,7 +1434,7 @@ iod phase }\n")
                 a3 = dih.atoms[2].atomType.atomTypeName
                 a4 = dih.atoms[3].atomType.atomTypeName
                 kp = 750.0
-                if amber:
+                if not self.allhdg:
                     kp = dih.kPhi
                 p = dih.period
                 ph = dih.phase * 180/Pi
@@ -1459,7 +1461,7 @@ eriod phase }\n")
             a3 = idh.atoms[2].atomType.atomTypeName
             a4 = idh.atoms[3].atomType.atomTypeName
             kp = 750.0
-            if amber:
+            if not self.allhdg:
                 kp = idh.kPhi
             p = idh.period
             ph = idh.phase * 180/Pi
@@ -1695,12 +1697,14 @@ if __name__ == '__main__':
     en = argsDict.get('-e', 'tleap')
     fs = False
     dg = False
+    tt = False
     if '-f' in argsDict.keys(): fs = True
     if '-d' in argsDict.keys(): dg = True
+    if '-t' in argsDict.keys(): tt = True
 
     molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                        multiplicity = mt, atomType = at, force = fs,
-                       outTopol = ot, engine = en)
+                       outTopol = ot, engine = en, allhdg=tt)
 
     if not molecule.acExe:
         print "ERROR: no 'antechamber' executable... aborting!"
