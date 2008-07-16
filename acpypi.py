@@ -28,7 +28,7 @@
 
     BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
     Dynamics Simulations Applied to the Study of Subtypes of HIV-1 Protease.
-    Cell Biochemistry and Biophysics, 44, 395Ð404, 2006.
+    Cell Biochemistry and Biophysics, 44, 395-404, 2006.
 
     Alan Wilter S. da Silva, D.Sc. - CCPN Research Associate
     Department of Biochemistry, University of Cambridge.
