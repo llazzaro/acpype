@@ -48,7 +48,7 @@ import cPickle as pickle
 import sys
 
 # List of Topology Formats created by acpypi so far:
-outTopols = ['gmx', 'cns']
+outTopols = ['gmx', 'cns', 'charmm']
 
 leapGaffFile = 'leaprc.gaff'
 leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03' #'oldff/leaprc.ff99'
@@ -73,6 +73,22 @@ USAGE = \
     -o    output topologies: all (default), gmx, cns
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
+
+    output: be root the basename of the input file
+    root_bcc_gaff.mol2
+    root_AC.xyz
+    root_AC.top
+    root_GMX.gro
+    root_GMX.top
+    root_GMX.itp
+    em.mdp
+    root_NEW.pdb
+    root_CNS.top
+    root_CNS.par
+    root_CNS.inp
+    root_CHARMM.prm
+    root_CHARMM.rtf
+    root_CHARMM.inp
 """
 
 SLEAP_TEMPLATE = \
@@ -214,6 +230,7 @@ class ACTopol:
         self.guessCharge()
         acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
         self.acMol2File = acMol2File
+        self.charmmBase = '%s_CHARMM' % base
         self.outTopols = [outTopol]
         if outTopol == 'all':
             self.outTopols = outTopols
@@ -546,6 +563,23 @@ Usage: antechamber -i   input file name
 
         return True
 
+    def writeCharmmTopolFiles(self):
+
+        print "Writing CHARMM files\n"
+
+        #self.makeDir()
+
+        at = self.atomType
+        self.getResidueLabel()
+        res = self.residueLabel
+
+        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
+        -pf y -rn %s' % (self.acExe, self.acMol2File, self.charmmBase, at, res)
+
+        if self.debug:
+            cmd = cmd.replace('-pf y', '-pf n')
+        _log = getoutput(cmd)
+
     def createACTopol(self):
         """
             If successful, Amber Top and Xyz files will be generated
@@ -584,16 +618,63 @@ Usage: antechamber -i   input file name
         else:
             print "Pickle file %s already present... doing nothing" % pklFile
 
+    def getFlagData(self, flag):
+        """
+            For a given acFileTop flag, return a list of the data related
+        """
+        block = False
+        tFlag = '%FLAG ' + flag
+        data = ''
+
+        for rawLine in self.topFileData:
+            line = rawLine[:-1]
+            if tFlag in line:
+                block = True
+                continue
+            if block and '%FLAG ' in line: break
+            if block:
+                if '%FORMAT' in line:
+                    line = line.strip().strip('%FORMAT()').split('.')[0]
+                    for c in line:
+                        if c.isalpha():
+                            f = int(line.split(c)[1])
+                            break
+                    continue
+                data += line
+        # data need format
+        fdata = ''
+        for i in range(0,len(data),f):
+            fdata += (data[i:i+f])+' '
+        sdata = fdata.split()
+        if '+' and '.' in data: # it's a float
+            ndata = map(float, sdata)
+        else:
+            try: # try if it's integer
+                ndata = map(int, sdata)
+            except: # it's string
+                ndata = sdata
+        return ndata # a list
+
+    def getResidueLabel(self):
+        """
+            Get a 3 capital letters code from acFileTop
+        """
+        residueLabel = self.getFlagData('RESIDUE_LABEL')
+        self.residueLabel = residueLabel[0]
+
     def createMolTopol(self):
         """
             Create molTop obj
         """
+        self.topFileData = open(self.acTopFileName, 'r').readlines()
         self.molTopol = MolTopol(self)
         if self.outTopols:
             if 'cns' in self.outTopols:
                 self.molTopol.writeCnsTopolFiles()
             if 'gmx' in self.outTopols:
                 self.molTopol.writeGromacsTopolFiles()
+            if 'charmm' in self.outTopols:
+                self.writeCharmmTopolFiles()
         self.pickleSave()
 
 class MolTopol:
