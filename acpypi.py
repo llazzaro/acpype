@@ -43,7 +43,7 @@
 #        Howto Charmm and Amber with NAMD
 #        Howto build topology for a modified amino acid
 #        Check number of residues
-
+#        Intructions for GMX and NAMD with 2 core.
 
 from commands import getoutput
 from datetime import datetime
@@ -62,6 +62,7 @@ leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03' #'oldff/leaprc.ff99'
 
 cal = 4.184
 Pi = 3.141594
+qConv = 18.2223
 
 head = "%s created by acpypi on %s\n"
 
@@ -192,59 +193,31 @@ def parseArgs(args):
 
     return d
 
-class ACTopol:
+class AbstractTopol:
     """
-        Class to build the AC topologies (Antechamber AmberTools 1.2)
+        Super class to build topologies
     """
+    def __init__(self):
+        if self.__class__ is AbstractTopol:
+            raise TypeError("Attempt to create istance of abstract class AbstractTopol")
 
-    def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
-                 multiplicity = '1', atomType = 'gaff', force = False,
-            debug = False, outTopol = 'all', engine = 'tleap', allhdg = False):
+    def printDebug(self, text = ''):
+        if self.debug:
+            print 'DEBUG: %s' % text
 
-        self.inputFile = inputFile
-        self.rootDir = os.path.abspath('.')
-        self.absInputFile = os.path.abspath(inputFile)
-        if not os.path.exists(self.absInputFile):
-            print "WARNING: input file doesn't exist"
-        base, ext = os.path.splitext(inputFile)
-        self.baseName = base # name of the input file without ext.
-        self.ext = ext
-        self.homeDir = self.baseName + '.acpypi'
-        self.chargeType = chargeType
-        self.chargeVal = chargeVal
-        self.multiplicity = multiplicity
-        self.atomType = atomType
-        self.force = force
-        self.engine = engine
-        self.allhdg = allhdg
-        self.acExe = getoutput('which antechamber') or None # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
-        if not self.acExe:
-            print "ERROR: no 'antechamber' executable!"
-            return None
-        self.tleapExe = getoutput('which tleap') or None
-        self.sleapExe = getoutput('which sleap') or None
-        self.parmchkExe = getoutput('which parmchk') or None
-        self.babelExe = getoutput('which babel') or None
-        if not self.babelExe:
-            print "ERROR: no 'babel' executable!"
-            return None
-        #self.acXyz = None
-        #self.acTop = None
-        acBase = base + '_AC'
-        self.acXyzFileName = acBase + '.xyz'
-        self.acTopFileName = acBase + '.top'
-        self.debug = debug
-        self.guessCharge()
-        acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
-        self.acMol2File = acMol2File
-        self.charmmBase = '%s_CHARMM' % base
-        self.outTopols = [outTopol]
-        if outTopol == 'all':
-            self.outTopols = outTopols
-        self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
-                          'acMol2File' : acMol2File,
-                          'leapAmberFile':leapAmberFile,
-                          'leapGaffFile':leapGaffFile}
+    def printWarn(self, text = ''):
+        print 'WARNING: %s' % text
+
+    def printError(self, text = ''):
+        print 'ERROR: %s' % text
+
+    def printMess(self, text = ''):
+        print '==> %s' % text
+
+    def printQuoted(self, text = ''):
+        print 10 * '+' + 'start_quote' + 59 * '+'
+        print text
+        print 10 * '+' + 'end_quote' + 61 * '+'
 
     def guessCharge(self):
         """
@@ -264,26 +237,27 @@ class ACTopol:
 
         if self.chargeType == 'user':
             if self.ext == '.mol2':
-                print "Reading user's charges from mol2 file..."
+                self.printMess("Reading user's charges from mol2 file...")
                 charge = self.readMol2TotalCharge(self.inputFile)
                 done = True
             else:
-                print "WARNING: cannot read charges from a PDB file"
-                print "         using now 'bcc' method for charge"
+                self.printWarn("cannot read charges from a PDB file")
+                self.printWarn("using now 'bcc' method for charge")
 
         if not self.chargeVal and not done:
-            print "WARNING: no charge value given, trying to guess one..."
+            self.printWarn("no charge value given, trying to guess one...")
             if self.ext == ".pdb":
                 cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                       self.baseName)
-                _out = getoutput(cmd)
-                print _out
+                self.printDebug("guessCharge: " + cmd)
+                out = getoutput(cmd)
+                self.printDebug(out)
 
             cmd = '%s -i %s.mol2 -fi mol2 -o tmp -fo mol2 -c gas -pf y' % \
                                                         (self.acExe, self.baseName)
 
             if self.debug:
-                print "Debugging..."
+                self.printMess("Debugging...")
                 cmd = cmd.replace('-pf y', '-pf n')
             #print cmd
 
@@ -296,20 +270,20 @@ class ACTopol:
                 except:
                     error = True
             elif len(m) == 0:
-                print "An old version of Antechamber? Still trying to get charge..."
+                self.printMess("An old version of Antechamber? Still trying to get charge...")
                 charge = self.readMol2TotalCharge('tmp')
             else:
                 error = True
 
             if error:
-                print "ERROR: guessCharge failed"
+                self.printError("guessCharge failed")
                 os.chdir(localDir)
-                print log
+                self.printQuoted(log)
                 return None
 
         charge = int(charge)
         self.chargeVal = str(charge)
-        print "... charge set to", charge
+        self.printMess("... charge set to %i" % charge)
         os.chdir(localDir)
 
     def readMol2TotalCharge(self, mol2File):
@@ -320,8 +294,10 @@ class ACTopol:
         cmd = '%s -i %s -fi mol2 -o tmp -fo mol2 -c wc -cf tmp.crg -pf y' % \
                                                         (self.acExe, mol2File)
         if self.debug:
-            print "Debugging..."
+            self.printMess("Debugging...")
             cmd = cmd.replace('-pf y', '-pf n')
+
+        self.printDebug(cmd)
 
         log = getoutput(cmd)
 
@@ -331,6 +307,10 @@ class ACTopol:
             for line in tmpData:
                 ll += line.split()
             charge = sum(map(float,ll))
+        elif self.debug:
+            self.printQuoted(log)
+
+        self.printDebug("readMol2TotalCharge: " + charge)
 
         return charge
 
@@ -405,7 +385,7 @@ Usage: antechamber -i   input file name
                 ----------------------------------------------------------------
         """
 
-        print "Executing Antechamber..."
+        self.printMess("Executing Antechamber...")
 
         self.makeDir()
 
@@ -413,24 +393,26 @@ Usage: antechamber -i   input file name
         at = atomType or self.atomType
 
         cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df 0 -at\
-        %s -pf y' % (self.acExe, self.inputFile, self.ext[1:], self.acMol2File,
+ %s -pf y' % (self.acExe, self.inputFile, self.ext[1:], self.acMol2File,
                      ct, self.chargeVal, self.multiplicity, at)
 
         if self.debug:
-            print "Debugging..."
+            self.printMess("Debugging...")
             cmd = cmd.replace('-pf y', '-pf n')
 
+        self.printDebug(cmd)
+
         if os.path.exists(self.acMol2File) and not self.force:
-            print "AC output file present... doing nothing"
+            self.printMess("AC output file present... doing nothing")
         else:
             try: os.remove(self.acMol2File)
             except: pass
             self.acLog = getoutput(cmd)
 
         if os.path.exists(self.acMol2File):
-            print "==> Antechamber OK"
+            self.printMess("* Antechamber OK *")
         else:
-            print self.acLog
+            self.printQuoted(self.acLog)
             return True
 
     def delOutputFiles(self):
@@ -438,7 +420,7 @@ Usage: antechamber -i   input file name
                     'frcmod', 'divcon.pdb', 'leap.log', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
                     'fragment.mol2', '../.acpypi.tmp']
-        print "Removing temporary files..."
+        self.printMess("Removing temporary files...")
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
             if os.path.exists(file):
@@ -461,15 +443,15 @@ Usage: antechamber -i   input file name
         self.makeDir()
 
         if self.ext == '.mol2':
-            print "WARNING: Sleap doesn't work with mol2 files yet..."
+            self.printWarn("Sleap doesn't work with mol2 files yet...")
             return True
 
         if self.chargeType != 'bcc':
-            print "WARNING: Sleap works only with bcc charge method"
+            self.printWarn("Sleap works only with bcc charge method")
             return True
 
         if self.atomType != 'gaff':
-            print "WARNING: Sleap works only with gaff atom type"
+            self.printWarn("Sleap works only with gaff atom type")
             return True
 
         sleapScpt = SLEAP_TEMPLATE % self.acParDict
@@ -481,37 +463,45 @@ Usage: antechamber -i   input file name
         cmd = '%s -f sleap.in' % self.sleapExe
 
         if self.checkXyzAndTopFiles() and not self.force:
-            print "Topologies files already present... doing nothing"
+            self.printMess("Topologies files already present... doing nothing")
         else:
             try: os.remove(self.acTopFileName) ; os.remove(self.acXyzFileName)
             except: pass
-            print "Executing Sleap..."
+            self.printMess("Executing Sleap...")
+            self.printDebug(cmd)
             self.sleapLog = getoutput(cmd)
 
             if self.checkXyzAndTopFiles():
-                print "==> Sleap OK"
+                self.printMess(" * Sleap OK *")
             else:
-                print self.sleapLog
+                self.printQuoted(self.sleapLog)
                 return True
 
     def execTleap(self):
 
+        fail = False
+
         self.makeDir()
 
         if self.ext == ".pdb":
-            print '... converting pdb input file to mol2 input file'
+            self.printMess('... converting pdb input file to mol2 input file')
             if self.convertPdbToMol2():
-                print "ERROR: convertPdbToMol2 failed"
+                self.printError("convertPdbToMol2 failed")
 
         #print self.chargeVal
 
         if self.execAntechamber():
-            print "ERROR: Antechamber failed"
-            sys.exit(1)
+            self.printError("Antechamber failed")
+            fail = True
+            #sys.exit(1)
 
         if self.execParmchk():
-            print "ERROR: Parmchk failed"
-            sys.exit(1)
+            self.printError("Parmchk failed")
+            fail = True
+            #sys.exit(1)
+
+        if fail:
+            return True
 
         tleapScpt = TLEAP_TEMPLATE % self.acParDict
 
@@ -522,16 +512,18 @@ Usage: antechamber -i   input file name
         cmd = '%s -f tleap.in' % self.tleapExe
 
         if self.checkXyzAndTopFiles() and not self.force:
-            print "Topologies files already present... doing nothing"
+            self.printMess("Topologies files already present... doing nothing")
         else:
             try: os.remove(self.acTopFileName) ; os.remove(self.acXyzFileName)
             except: pass
+            self.printMess("Executing Tleap...")
+            self.printDebug(cmd)
             self.tleapLog = getoutput(cmd)
 
         if self.checkXyzAndTopFiles():
-            print "==> Tleap OK"
+            self.printMess("* Tleap OK *")
         else:
-            print self.tleapLog
+            self.printQuoted(self.tleapLog)
             return True
 
     def execParmchk(self):
@@ -540,16 +532,18 @@ Usage: antechamber -i   input file name
         cmd = '%s -i %s -f mol2 -o frcmod' % (self.parmchkExe, self.acMol2File)
         self.parmchkLog = getoutput(cmd)
 
+        self.printDebug(cmd)
+
         if os.path.exists('frcmod'):
-            print "==> Parmchk OK"
+            self.printMess("* Parmchk OK *")
         else:
-            print self.parmchkLog
+            self.printQuoted(self.parmchkLog)
             return True
 
     def convertPdbToMol2(self):
         if self.ext == '.pdb':
             if self.execBabel():
-                print "ERROR: convert pdb to mol2 via babel failed"
+                self.printError("convert pdb to mol2 via babel failed")
                 return True
 
     def execBabel(self):
@@ -558,14 +552,15 @@ Usage: antechamber -i   input file name
 
         cmd = '%s -ipdb %s.pdb -omol2 %s.mol2' % (self.babelExe, self.baseName,
                                                   self.baseName)
+        self.printDebug(cmd)
         self.babelLog = getoutput(cmd)
         self.ext = '.mol2'
         self.inputFile = self.baseName+self.ext
         self.acParDict['ext'] = 'mol2'
         if os.path.exists(self.inputFile):
-            print "==> Babel OK"
+            self.printMess("* Babel OK *")
         else:
-            print self.babelLog
+            self.printQuoted(self.babelLog)
             return True
 
     def makeDir(self):
@@ -579,42 +574,43 @@ Usage: antechamber -i   input file name
 
         return True
 
-    def writeCharmmTopolFiles(self):
-
-        print "Writing CHARMM files\n"
-
-        #self.makeDir()
-
-        at = self.atomType
-        self.getResidueLabel()
-        res = self.residueLabel
-
-        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
-        -pf y -rn %s' % (self.acExe, self.acMol2File, self.charmmBase, at, res)
-
-        if self.debug:
-            cmd = cmd.replace('-pf y', '-pf n')
-        _log = getoutput(cmd)
-
     def createACTopol(self):
         """
             If successful, Amber Top and Xyz files will be generated
         """
-        sleap = False
+        #sleap = False
         if self.engine == 'sleap':
-            sleap = self.execSleap()
-        if sleap:
-            print "ERROR: Sleap failed"
-            print "... trying Tleap"
-            if self.execTleap():
-                print "ERROR: Tleap failed"
+            if self.execSleap():
+                self.printError("Sleap failed")
+                self.printMess("... trying Tleap")
+                if self.execTleap():
+                    self.printError("Tleap failed")
         if self.engine == 'tleap':
             if self.execTleap():
-                print "ERROR: Tleap failed"
+                self.printError("Tleap failed")
+                if self.extOld == '.pdb':
+                    self.printMess("... trying Sleap")
+                    self.ext = self.extOld
+                    self.inputFile = self.baseName+self.ext
+                    if self.execSleap():
+                        self.printError("Sleap failed")
         if not self.debug:
             self.delOutputFiles()
 
-        #self.pickleSave()
+    def createMolTopol(self):
+        """
+            Create molTop obj
+        """
+        self.topFileData = open(self.acTopFileName, 'r').readlines()
+        self.molTopol = MolTopol(self)
+        if self.outTopols:
+            if 'cns' in self.outTopols:
+                self.molTopol.writeCnsTopolFiles()
+            if 'gmx' in self.outTopols:
+                self.molTopol.writeGromacsTopolFiles()
+            if 'charmm' in self.outTopols:
+                self.writeCharmmTopolFiles()
+        self.pickleSave()
 
     def pickleSave(self):
         """
@@ -626,13 +622,13 @@ Usage: antechamber -i   input file name
         """
         pklFile = self.baseName+".pkl"
         if not os.path.exists(pklFile):
-            print "Writing pickle file %s" % pklFile
+            self.printMess("Writing pickle file %s" % pklFile)
             pickle.dump(self, open(pklFile,"w"))
         elif self.force:
-            print "Overwriting pickle file %s" % pklFile
+            self.printMess("Overwriting pickle file %s" % pklFile)
             pickle.dump(self, open(pklFile,"w"))
         else:
-            print "Pickle file %s already present... doing nothing" % pklFile
+            self.printMess("Pickle file %s already present... doing nothing" % pklFile)
 
     def getFlagData(self, flag):
         """
@@ -677,72 +673,6 @@ Usage: antechamber -i   input file name
         """
         residueLabel = self.getFlagData('RESIDUE_LABEL')
         self.residueLabel = residueLabel[0]
-
-    def createMolTopol(self):
-        """
-            Create molTop obj
-        """
-        self.topFileData = open(self.acTopFileName, 'r').readlines()
-        self.molTopol = MolTopol(self)
-        if self.outTopols:
-            if 'cns' in self.outTopols:
-                self.molTopol.writeCnsTopolFiles()
-            if 'gmx' in self.outTopols:
-                self.molTopol.writeGromacsTopolFiles()
-            if 'charmm' in self.outTopols:
-                self.writeCharmmTopolFiles()
-        self.pickleSave()
-
-class MolTopol(ACTopol):
-    """"
-        http://amber.scripps.edu/formats.html (not updated to amber 10 yet)
-        Parser, take information in AC xyz and top files and convert to objects
-        INPUTS: acFileXyz and acFileTop
-        RETURN: molTopol obj or None
-    """
-    def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None):
-
-        self.allhdg = False
-        if acTopolObj:
-            if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
-            if not acFileTop: acFileTop = acTopolObj.acTopFileName
-            self._parent = acTopolObj
-            self.allhdg = self._parent.allhdg
-        if not os.path.exists(acFileXyz) and not os.path.exists(acFileTop):
-            print "ERROR: Files '%s' and '%s' don't exist"
-            print "       molTopol object won't be created"
-            return None
-
-        self.xyzFileData = open(acFileXyz, 'r').readlines()
-        self.topFileData = open(acFileTop, 'r').readlines()
-
-#        self.pointers = self.getFlagData('POINTERS')
-
-        self.getResidueLabel()
-        self.baseName = self.residueLabel # 3 caps letters
-        if acTopolObj:
-            self.baseName = acTopolObj.baseName
-
-        self.getAtoms()
-
-        self.getBonds()
-
-        self.getAngles()
-
-        self.getDihedrals()
-
-        self.setAtomPairs()
-
-        self.getExcludedAtoms()
-
-        # a list of FLAGS from acTopFile that matter
-#        self.flags = ( 'POINTERS', 'ATOM_NAME', 'CHARGE', 'MASS', 'ATOM_TYPE_INDEX',
-#                  'NUMBER_EXCLUDED_ATOMS', 'NONBONDED_PARM_INDEX',
-#                  'RESIDUE_LABEL', 'BOND_FORCE_CONSTANT', 'BOND_EQUIL_VALUE',
-#                  'ANGLE_FORCE_CONSTANT', 'ANGLE_EQUIL_VALUE',
-#                  'DIHEDRAL_FORCE_CONSTANT', 'DIHEDRAL_PERIODICITY',
-#                  'DIHEDRAL_PHASE', 'AMBER_ATOM_TYPE' )
-
 
     def getCoords(self):
         """
@@ -804,6 +734,7 @@ class MolTopol(ACTopol):
         else:
             self.atomTypeSystem = 'amber'
 
+        self.printDebug('Balanced TotalCharge %13.10f' % float(totalCharge / qConv))
         self.totalCharge = int(totalCharge)
 
         self.atoms = atoms
@@ -938,13 +869,15 @@ class MolTopol(ACTopol):
             file, say, for CNS or GMX, where floats are represented with 4 or 5
             maximum decimals.
         """
-        total = sum(chargeList)/18.2223
+        self.printDebug(chargeList)
+        total = sum(chargeList)/qConv
+        self.printDebug('charge to be balanced: total %13.10f' % total)
         maxVal = max(chargeList)
         minVal = min(chargeList)
         if abs(maxVal) >= abs(minVal): lim = maxVal
         else: lim = minVal
         limId = chargeList.index(lim)
-        diff = (total - int(total)) * 18.2223
+        diff = (total - int(total)) * qConv
         fix = lim - diff
         chargeList[limId] = fix
         return chargeList
@@ -1026,6 +959,23 @@ class MolTopol(ACTopol):
             properDihedralsCoefRB.append([item[0].atoms,C])
 
         self.properDihedralsCoefRB = properDihedralsCoefRB
+
+    def writeCharmmTopolFiles(self):
+
+        self.printMess("Writing CHARMM files\n")
+
+        #self.makeDir()
+
+        at = self.atomType
+        self.getResidueLabel()
+        res = self.residueLabel
+
+        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
+        -pf y -rn %s' % (self.acExe, self.acMol2File, self.charmmBase, at, res)
+
+        if self.debug:
+            cmd = cmd.replace('-pf y', '-pf n')
+        _log = getoutput(cmd)
 
     def writePdb(self, file):
         """
@@ -1239,7 +1189,7 @@ System %s, Residue %s
 ; i   j   k   l func  phase     kd      pn
 """
 
-        print "Writing GROMACS files\n"
+        self.printMess("Writing GROMACS files\n")
 
         #print "Writing GROMACS TOP file\n"
         topFile.write("; " + head % (top, date))
@@ -1438,10 +1388,10 @@ pbc                      = no
         topFile = open(topFileName, 'w')
         inpFile = open(inpFileName, 'w')
 
-        print "Writing NEW PDB file\n"
+        self.printMess("Writing NEW PDB file\n")
         self.writePdb(pdbFileName)
 
-        print "Writing CNS/XPLOR files\n"
+        self.printMess("Writing CNS/XPLOR files\n")
 
         #print "Writing CNS PAR file\n"
         parFile.write("Remarks " + head % (par, date))
@@ -1686,6 +1636,119 @@ stop
         line = inpData % dictInp
         inpFile.write(line)
 
+class ACTopol(AbstractTopol):
+    """
+        Class to build the AC topologies (Antechamber AmberTools 1.2)
+    """
+
+    def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
+                 multiplicity = '1', atomType = 'gaff', force = False,
+            debug = False, outTopol = 'all', engine = 'tleap', allhdg = False):
+
+        self.inputFile = inputFile
+        self.rootDir = os.path.abspath('.')
+        self.absInputFile = os.path.abspath(inputFile)
+        if not os.path.exists(self.absInputFile):
+            self.printWarn("input file doesn't exist")
+        base, ext = os.path.splitext(inputFile)
+        self.baseName = base # name of the input file without ext.
+        self.ext = ext
+        self.extOld = ext
+        self.homeDir = self.baseName + '.acpypi'
+        self.chargeType = chargeType
+        self.chargeVal = chargeVal
+        self.multiplicity = multiplicity
+        self.atomType = atomType
+        self.force = force
+        self.engine = engine
+        self.allhdg = allhdg
+        self.acExe = getoutput('which antechamber') or None # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+        if not self.acExe:
+            self.printError("no 'antechamber' executable!")
+            return None
+        self.tleapExe = getoutput('which tleap') or None
+        self.sleapExe = getoutput('which sleap') or None
+        self.parmchkExe = getoutput('which parmchk') or None
+        self.babelExe = getoutput('which babel') or None
+        if not self.babelExe:
+            if self.ext != '.mol2':
+                self.printError("no 'babel' executable... aborting!")
+                self.printError("use only MOL2 file as input")
+                sys.exit(1)
+            else:
+                self.printWarn("no 'babel' executable, no PDB file as input can be used!")
+        acBase = base + '_AC'
+        self.acXyzFileName = acBase + '.xyz'
+        self.acTopFileName = acBase + '.top'
+        self.debug = debug
+        self.guessCharge()
+        acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
+        self.acMol2File = acMol2File
+        self.charmmBase = '%s_CHARMM' % base
+        self.outTopols = [outTopol]
+        if outTopol == 'all':
+            self.outTopols = outTopols
+        self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
+                          'acMol2File' : acMol2File,
+                          'leapAmberFile':leapAmberFile,
+                          'leapGaffFile':leapGaffFile}
+
+class MolTopol(ACTopol):
+    """"
+        Class to write topologies and parameters files for several applications
+
+        http://amber.scripps.edu/formats.html (not updated to amber 10 yet)
+
+        Parser, take information in AC xyz and top files and convert to objects
+
+        INPUTS: acFileXyz and acFileTop
+        RETURN: molTopol obj or None
+    """
+    def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None):
+
+        self.allhdg = False
+        self.debug = False
+        if acTopolObj:
+            if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
+            if not acFileTop: acFileTop = acTopolObj.acTopFileName
+            self._parent = acTopolObj
+            self.allhdg = self._parent.allhdg
+            self.debug = self._parent.debug
+        if not os.path.exists(acFileXyz) and not os.path.exists(acFileTop):
+            self.printError("Files '%s' and '%s' don't exist")
+            self.printError("molTopol object won't be created")
+            return None
+
+        self.xyzFileData = open(acFileXyz, 'r').readlines()
+        self.topFileData = open(acFileTop, 'r').readlines()
+
+#        self.pointers = self.getFlagData('POINTERS')
+
+        self.getResidueLabel()
+        self.baseName = self.residueLabel # 3 caps letters
+        if acTopolObj:
+            self.baseName = acTopolObj.baseName
+
+        self.getAtoms()
+
+        self.getBonds()
+
+        self.getAngles()
+
+        self.getDihedrals()
+
+        self.setAtomPairs()
+
+        self.getExcludedAtoms()
+
+        # a list of FLAGS from acTopFile that matter
+#        self.flags = ( 'POINTERS', 'ATOM_NAME', 'CHARGE', 'MASS', 'ATOM_TYPE_INDEX',
+#                  'NUMBER_EXCLUDED_ATOMS', 'NONBONDED_PARM_INDEX',
+#                  'RESIDUE_LABEL', 'BOND_FORCE_CONSTANT', 'BOND_EQUIL_VALUE',
+#                  'ANGLE_FORCE_CONSTANT', 'ANGLE_EQUIL_VALUE',
+#                  'DIHEDRAL_FORCE_CONSTANT', 'DIHEDRAL_PERIODICITY',
+#                  'DIHEDRAL_PHASE', 'AMBER_ATOM_TYPE' )
+
 class Atom:
     """
         Charges in prmtop file has to be divide by 18.2223 to convert to charge
@@ -1705,7 +1768,7 @@ class Atom:
         self.atomName = atomName
         self.atomType = atomType
         self.mass = mass
-        self.charge = charge / 18.2223
+        self.charge = charge / qConv
         self.coords = coord
 
 class AtomType:
@@ -1768,24 +1831,8 @@ if __name__ == '__main__':
                        outTopol = ot, engine = en, allhdg=tt)
 
     if not molecule.acExe:
-        print "ERROR: no 'antechamber' executable... aborting!"
+        molecule.printError("no 'antechamber' executable... aborting!")
         sys.exit(1)
-
-    if not molecule.babelExe:
-        print "ERROR: no 'babel' executable... aborting!"
-        sys.exit(1)
-
-    #molecule.convertPdbToMol2()
-    #print molecule.babelLog
-
-    #molecule.execAntechamber()
-    #print molecule.acLog
-
-    #molecule.execSleap()
-    #print molecule.sleapLog
-
-    #molecule.execTleap()
-    #print molecule.tleapLog, molecule.parmchkLog
 
     molecule.createACTopol()
     molecule.createMolTopol()
