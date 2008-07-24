@@ -86,6 +86,8 @@ USAGE = \
     root_bcc_gaff.mol2:  final mol2 file with 'bcc' charges and 'gaff' atom type
     root_AC.xyz       :  coord file for AMBER
     root_AC.top       :  topology and parameter file for AMBER
+    root.lib          :  residue library file for AMBER
+    frcmod            :  modified force field parameters
     root_GMX.gro      :  coord file for GROMACS
     root_GMX.top      :  topology file for GROMACS
     root_GMX.itp      :  molecule unit topology and parameter file for GROMACS
@@ -104,8 +106,9 @@ SLEAP_TEMPLATE = \
 source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
-%(base)s = loadpdb %(base)s.pdb
-saveamberparm %(base)s %(acBase)s.top %(acBase)s.xyz
+%(res)s = loadpdb %(base)s.pdb
+saveamberparm %(res)s %(acBase)s.top %(acBase)s.xyz
+saveoff %(res)s %(base)s.lib
 quit
 """
 
@@ -115,8 +118,9 @@ verbosity 1
 source %(leapAmberFile)s
 source %(leapGaffFile)s
 mods = loadamberparams frcmod
-%(base)s = loadmol2 %(acMol2File)s
-saveamberparm %(base)s %(acBase)s.top %(acBase)s.xyz
+%(res)s = loadmol2 %(acMol2File)s
+saveamberparm %(res)s %(acBase)s.top %(acBase)s.xyz
+saveoff %(res)s %(base)s.lib
 quit
 """
 
@@ -286,6 +290,34 @@ class AbstractTopol:
         self.printMess("... charge set to %i" % charge)
         os.chdir(localDir)
 
+    def setResName(self):
+        """Set a 3 letter residue name"""
+
+        localDir = os.path.abspath('.')
+        tmpDir = '.acpypi.tmp'
+        if not os.path.exists(tmpDir):
+            os.mkdir(tmpDir)
+        if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
+            copy2(self.absInputFile, tmpDir)
+        os.chdir(tmpDir)
+
+        cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
+                                    (self.acExe, self.inputFile, self.ext[1:])
+        #self.printDebug(cmd)
+        _out = getoutput(cmd)
+
+        #self.printDebug(_out)
+
+        tmpFile = open('tmp', 'r')
+        tmpData = tmpFile .readlines()
+        for line in tmpData:
+            if 'ATOM  ' in line:
+                resname = line[17:20]
+
+        self.resName = resname
+
+        os.chdir(localDir)
+
     def readMol2TotalCharge(self, mol2File):
         """Reads the charges in given mol2 file and returns the total
         """
@@ -417,7 +449,7 @@ Usage: antechamber -i   input file name
 
     def delOutputFiles(self):
         delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
-                    'frcmod', 'divcon.pdb', 'leap.log', 'fixbo.log',
+                    'divcon.pdb', 'leap.log', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
                     'fragment.mol2', '../.acpypi.tmp']
         self.printMess("Removing temporary files...")
@@ -1681,6 +1713,7 @@ class ACTopol(AbstractTopol):
         self.acXyzFileName = acBase + '.xyz'
         self.acTopFileName = acBase + '.top'
         self.debug = debug
+        self.setResName()
         self.guessCharge()
         acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
         self.acMol2File = acMol2File
@@ -1689,7 +1722,7 @@ class ACTopol(AbstractTopol):
         if outTopol == 'all':
             self.outTopols = outTopols
         self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
-                          'acMol2File' : acMol2File,
+                          'acMol2File' : acMol2File, 'res' : self.resName,
                           'leapAmberFile':leapAmberFile,
                           'leapGaffFile':leapGaffFile}
 
