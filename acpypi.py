@@ -58,7 +58,7 @@ import sys
 outTopols = ['gmx', 'cns', 'charmm']
 
 leapGaffFile = 'leaprc.gaff'
-leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03' #'oldff/leaprc.ff99'
+leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
 
 cal = 4.184
 Pi = 3.141594
@@ -84,10 +84,10 @@ USAGE = \
 
     output: assuming 'root' is the basename of the input file
     root_bcc_gaff.mol2:  final mol2 file with 'bcc' charges and 'gaff' atom type
-    root_AC.xyz       :  coord file for AMBER
-    root_AC.top       :  topology and parameter file for AMBER
-    root.lib          :  residue library file for AMBER
-    frcmod            :  modified force field parameters
+    root_AC.inpcrd    :  coord file for AMBER
+    root_AC.prmtop    :  topology and parameter file for AMBER
+    root_AC.lib       :  residue library file for AMBER
+    root_AC.frcmod    :  modified force field parameters
     root_GMX.gro      :  coord file for GROMACS
     root_GMX.top      :  topology file for GROMACS
     root_GMX.itp      :  molecule unit topology and parameter file for GROMACS
@@ -107,8 +107,8 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
 %(res)s = loadpdb %(base)s.pdb
-saveamberparm %(res)s %(acBase)s.top %(acBase)s.xyz
-saveoff %(res)s %(base)s.lib
+saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
+saveoff %(res)s %(acBase)s.lib
 quit
 """
 
@@ -117,10 +117,10 @@ TLEAP_TEMPLATE = \
 verbosity 1
 source %(leapAmberFile)s
 source %(leapGaffFile)s
-mods = loadamberparams frcmod
-%(res)s = loadmol2 %(acMol2File)s
-saveamberparm %(res)s %(acBase)s.top %(acBase)s.xyz
-saveoff %(res)s %(base)s.lib
+mods = loadamberparams %(acBase)s.frcmod
+%(res)s = loadmol2 %(acMol2FileName)s
+saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
+saveoff %(res)s %(acBase)s.lib
 quit
 """
 
@@ -425,7 +425,7 @@ Usage: antechamber -i   input file name
         at = atomType or self.atomType
 
         cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df 0 -at\
- %s -pf y' % (self.acExe, self.inputFile, self.ext[1:], self.acMol2File,
+ %s -pf y' % (self.acExe, self.inputFile, self.ext[1:], self.acMol2FileName,
                      ct, self.chargeVal, self.multiplicity, at)
 
         if self.debug:
@@ -434,14 +434,14 @@ Usage: antechamber -i   input file name
 
         self.printDebug(cmd)
 
-        if os.path.exists(self.acMol2File) and not self.force:
+        if os.path.exists(self.acMol2FileName) and not self.force:
             self.printMess("AC output file present... doing nothing")
         else:
-            try: os.remove(self.acMol2File)
+            try: os.remove(self.acMol2FileName)
             except: pass
             self.acLog = getoutput(cmd)
 
-        if os.path.exists(self.acMol2File):
+        if os.path.exists(self.acMol2FileName):
             self.printMess("* Antechamber OK *")
         else:
             self.printQuoted(self.acLog)
@@ -561,12 +561,13 @@ Usage: antechamber -i   input file name
     def execParmchk(self):
 
         self.makeDir()
-        cmd = '%s -i %s -f mol2 -o frcmod' % (self.parmchkExe, self.acMol2File)
+        cmd = '%s -i %s -f mol2 -o %s' % (self.parmchkExe, self.acMol2FileName,
+                                          self.acFrcmodFileName)
         self.parmchkLog = getoutput(cmd)
 
         self.printDebug(cmd)
 
-        if os.path.exists('frcmod'):
+        if os.path.exists(self.acFrcmodFileName):
             self.printMess("* Parmchk OK *")
         else:
             self.printQuoted(self.parmchkLog)
@@ -1003,7 +1004,7 @@ Usage: antechamber -i   input file name
         res = self.residueLabel
 
         cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
-        -pf y -rn %s' % (self.acExe, self.acMol2File, self.charmmBase, at, res)
+        -pf y -rn %s' % (self.acExe, self.acMol2FileName, self.charmmBase, at, res)
 
         if self.debug:
             cmd = cmd.replace('-pf y', '-pf n')
@@ -1710,19 +1711,20 @@ class ACTopol(AbstractTopol):
             else:
                 self.printWarn("no 'babel' executable, no PDB file as input can be used!")
         acBase = base + '_AC'
-        self.acXyzFileName = acBase + '.xyz'
-        self.acTopFileName = acBase + '.top'
+        self.acXyzFileName = acBase + '.inpcrd'
+        self.acTopFileName = acBase + '.prmtop'
+        self.acFrcmodFileName = acBase +'.frcmod'
         self.debug = debug
         self.setResName()
         self.guessCharge()
-        acMol2File = '%s_%s_%s.mol2' % (base, chargeType, atomType)
-        self.acMol2File = acMol2File
+        acMol2FileName = '%s_%s_%s.mol2' % (base, chargeType, atomType)
+        self.acMol2FileName = acMol2FileName
         self.charmmBase = '%s_CHARMM' % base
         self.outTopols = [outTopol]
         if outTopol == 'all':
             self.outTopols = outTopols
         self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
-                          'acMol2File' : acMol2File, 'res' : self.resName,
+                          'acMol2FileName' : acMol2FileName, 'res' : self.resName,
                           'leapAmberFile':leapAmberFile,
                           'leapGaffFile':leapGaffFile}
 
