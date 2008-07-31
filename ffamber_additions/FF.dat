@@ -14,5 +14,5 @@ ffamberGS AMBER99GS Garcia & Sanbonmatsu (2002), PNAS 99, 2782-2787
 ffamberGSs AMBER99GSs Nymeyer & Garcia (2003) PNAS 100, 13934-13939
 ffamber99 AMBER99 Wang et al. (2000), J. Comp. Chem. 21, 1049-1074
 ffamber99p AMBER99p Sorin & Pande (2005). Biophys. J. 88(4), 2472-2493
-ffamber99SB AMBER99sb Hornak et. al (2006). Proteins 65, 712-725
+ffamber99sb AMBER99sb Hornak et. al (2006). Proteins 65, 712-725
 ffamber03 AMBER03 Duan et al. (2003), J. Comp. Chem. 24, 1999-2012
