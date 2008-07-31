@@ -58,7 +58,7 @@ import sys
 outTopols = ['gmx', 'cns', 'charmm']
 
 leapGaffFile = 'leaprc.gaff'
-leapAmberFile = 'oldff/leaprc.ff99' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
+leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
 
 cal = 4.184
 Pi = 3.141594
