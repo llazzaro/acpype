@@ -301,19 +301,28 @@ class AbstractTopol:
         copy2(self.absInputFile, tmpDir)
         os.chdir(tmpDir)
 
-        cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
+        if self.ext == '.pdb':
+            tmpFile = open(self.inputFile, 'r')
+        else:
+            cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
                                     (self.acExe, self.inputFile, self.ext[1:])
-        self.printDebug(cmd)
-        _out = getoutput(cmd)
+            self.printDebug(cmd)
+            _out = getoutput(cmd)
+            self.printDebug(_out)
+            tmpFile = open('tmp', 'r')
 
-        self.printDebug(_out)
-
-        tmpFile = open('tmp', 'r')
         tmpData = tmpFile .readlines()
         for line in tmpData:
             if 'ATOM  ' in line:
                 resname = line[17:20]
+                break
 
+        if resname.isdigit():
+            resname = 'R' + resname
+            self.printWarn("In %s.lib, residue name will be '%s' instead of '%s' elsewhere"
+                           % (self.acBaseName, resname, resname[1:]))
+
+        self.printDebug(resname)
         self.resName = resname
 
         os.chdir(localDir)
@@ -1711,6 +1720,7 @@ class ACTopol(AbstractTopol):
             else:
                 self.printWarn("no 'babel' executable, no PDB file as input can be used!")
         acBase = base + '_AC'
+        self.acBaseName = acBase
         self.acXyzFileName = acBase + '.inpcrd'
         self.acTopFileName = acBase + '.prmtop'
         self.acFrcmodFileName = acBase +'.frcmod'
