@@ -297,16 +297,16 @@ class AbstractTopol:
         tmpDir = '.acpypi.tmp'
         if not os.path.exists(tmpDir):
             os.mkdir(tmpDir)
-        if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
-            copy2(self.absInputFile, tmpDir)
+        #if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
+        copy2(self.absInputFile, tmpDir)
         os.chdir(tmpDir)
 
         cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
                                     (self.acExe, self.inputFile, self.ext[1:])
-        #self.printDebug(cmd)
+        self.printDebug(cmd)
         _out = getoutput(cmd)
 
-        #self.printDebug(_out)
+        self.printDebug(_out)
 
         tmpFile = open('tmp', 'r')
         tmpData = tmpFile .readlines()
