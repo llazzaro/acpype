@@ -39,11 +39,8 @@
 """
 
 #    TODO:
-#        FAQ
 #        Howto Charmm and Amber with NAMD
 #        Howto build topology for a modified amino acid
-#        Check number of residues
-#        Intructions for GMX and NAMD with 2 core.
 
 from commands import getoutput
 from datetime import datetime
@@ -61,8 +58,9 @@ leapGaffFile = 'leaprc.gaff'
 leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
 
 cal = 4.184
-Pi = 3.141594
+Pi = 3.141593
 qConv = 18.2223
+radPi = 57.295780 # 180/Pi
 
 head = "%s created by acpypi on %s\n"
 
@@ -70,8 +68,11 @@ date = datetime.now().ctime()
 
 USAGE = \
 """
-    acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc.
-    -i    input file name with either extension '.pdb' or '.mol2' (mandatory)
+    acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc. or
+    acpypi -p _prmtop_ -x _inpcrd_ [-d]
+    -i    input file name with either extension '.pdb' or '.mol2' (mandatory if -p and -x not set)
+    -p    amber prmtop file name (always used with -x)
+    -x    amber inpcrd file name (always used with -p)
     -c    charge method: gas, bcc (default), user (user's charges in mol2 file)
     -n    net molecular charge (int), for gas default is 0
     -m    multiplicity (2S+1), default is 1
@@ -124,16 +125,20 @@ saveoff %(res)s %(acBase)s.lib
 quit
 """
 
-def invalidArgs():
+def invalidArgs(text = None):
 
     print USAGE
+    if text:
+        print 'ERROR: ' + text
     sys.exit(1)
 
 def parseArgs(args):
 
     import getopt
 
-    options = 'hi:c:n:m:o:a:e:ftd'
+    amb2gmx = False
+
+    options = 'hi:c:n:m:o:a:e:x:p:ftd'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber', 'bcc', 'sybyl']
@@ -143,13 +148,13 @@ def parseArgs(args):
     try:
         opt_list, args = getopt.getopt(args, options) #, long_options)
     except:
-        invalidArgs()
+        invalidArgs("FAILED")
 
     d = {}
 
     for key, value in opt_list:
         if key in d:
-            invalidArgs()
+            invalidArgs("duplicated parameters")
 
         if value == '':
             value = None
@@ -157,43 +162,54 @@ def parseArgs(args):
         d[key] = value
 
     if not d and not args:
-        invalidArgs()
+        invalidArgs("missing parameters")
 
-    not_none = ('-i', '-c', '-n', '-m','-a', '-o', '-e')
+    not_none = ('-i', '-c', '-n', '-m','-a', '-o', '-e', '-p', '-x')
 
     for option in not_none:
         if option in d:
             if d[option] is None:
-                invalidArgs()
+                invalidArgs("option needs an argument")
 
     if '-c' in d.keys():
         if d['-c'] not in ctList:
-            invalidArgs()
+            invalidArgs("'%s' not valid, has to be one of %s" % (d['-c'], str(ctList)))
 
     if '-a' in d.keys():
         if d['-a'] not in atList:
-            invalidArgs()
+            invalidArgs("'%s' not valid, has to be one of %s" % (d['-a'], str(atList)))
 
     if '-o' in d.keys():
         if d['-o'] not in tpList:
-            invalidArgs()
+            invalidArgs("'%s' not valid, has to be one of %s" % (d['-o'], str(tpList)))
 
     if '-e' in d.keys():
         if d['-e'] not in enList:
-            invalidArgs()
+            invalidArgs("'%s' not valid, has to be one of %s" % (d['-e'], str(enList)))
 
     if '-h' in d.keys():
         invalidArgs()
 
     if not '-i' in d.keys():
-        invalidArgs()
+        amb2gmx = True
+        if not '-p' in d.keys() or not '-x' in d.keys():
+            invalidArgs("missing input files")
 
-    if not os.path.exists(d['-i']):
-        print "ERROR: input file '%s' doesn't exist" % d['-i']
-        invalidArgs()
+    if '-i' in d.keys() and '-p' in d.keys():
+        invalidArgs("either '-i' or ('-p', '-x'), but not both")
+    elif '-i' in d.keys() and '-x' in d.keys():
+        invalidArgs("either '-i' or ('-p', '-x'), but not both")
+
+    if amb2gmx:
+        if not os.path.exists(d['-p']) or not os.path.exists(d['-x']):
+            invalidArgs("input file prmtop and/or inpcrd don't exist")
+    elif not os.path.exists(d['-i']):
+        invalidArgs("input file '%s' doesn't exist" % d['-i'])
 
     if args:
-        invalidArgs()
+        invalidArgs(str(args))
+
+    d['amb2gmx'] = amb2gmx
 
     return d
 
@@ -312,17 +328,23 @@ class AbstractTopol:
             tmpFile = open('tmp', 'r')
 
         tmpData = tmpFile .readlines()
+        residues = set()
         for line in tmpData:
-            if 'ATOM  ' in line:
-                resname = line[17:20]
-                break
+            if 'ATOM  ' in line or 'HETATM' in line:
+                residues.add(line[17:20])
+
+        if len(residues) > 1:
+            self.printError("more than one residue detected '%s'" % str(residues))
+            self.printError("verify your input file '%s'. Aborting ..." % self.inputFile)
+            sys.exit(1)
+
+        resname = list(residues)[0]
 
         if resname.isdigit():
             resname = 'R' + resname
             self.printWarn("In %s.lib, residue name will be '%s' instead of '%s' elsewhere"
                            % (self.acBaseName, resname, resname[1:]))
 
-        self.printDebug(resname)
         self.resName = resname
 
         os.chdir(localDir)
@@ -712,9 +734,10 @@ Usage: antechamber -i   input file name
     def getResidueLabel(self):
         """
             Get a 3 capital letters code from acFileTop
+            Return a string if just one or a list.
         """
         residueLabel = self.getFlagData('RESIDUE_LABEL')
-        self.residueLabel = residueLabel[0]
+        self.residueLabel = residueLabel
 
     def getCoords(self):
         """
@@ -732,6 +755,8 @@ Usage: antechamber -i   input file name
         for i in range(0, len(ndata), 3):
             gdata.append([ndata[i], ndata[i+1], ndata[i+2]])
 
+        self.printDebug("getCoords done")
+
         return gdata
 
     def getAtoms(self):
@@ -739,6 +764,7 @@ Usage: antechamber -i   input file name
             Set a list with all atoms objects build from dat in acFileTop
             Set also if molTopol atom type system is gaff or amber
             Set also list atomTypes
+            Set also resid
             Set also molTopol total charge
         """
         atomNameList = self.getFlagData('ATOM_NAME')
@@ -746,6 +772,7 @@ Usage: antechamber -i   input file name
         self._atomTypeNameList = atomTypeNameList
         massList = self.getFlagData('MASS')
         chargeList = self.getFlagData('CHARGE')
+        resIds = self.getFlagData('RESIDUE_POINTER') + [0]
         #uniqAtomTypeId = self.getFlagData('ATOM_TYPE_INDEX') # for LJ
         balanceChargeList = self.balanceCharges(chargeList)
         coords = self.getCoords()
@@ -755,9 +782,13 @@ Usage: antechamber -i   input file name
         atomTypes = []
         tmpList = [] # a list with unique atom types
         totalCharge = 0.0
+        countRes = 0
+        id = 0
         for atomName in atomNameList:
-            id = atomNameList.index(atomName)
             atomTypeName = atomTypeNameList[id]
+            if id + 1 == resIds[countRes]:
+                resid = countRes #self.residueLabel[countRes]
+                countRes += 1
             mass = massList[id]
             charge = balanceChargeList[id]
             totalCharge += charge
@@ -768,8 +799,10 @@ Usage: antechamber -i   input file name
             if atomTypeName not in tmpList:
                 tmpList.append(atomTypeName)
                 atomTypes.append(atomType)
-            atom = Atom(atomName, atomType, mass, charge, coord, ACOEF, BCOEF)
+            atom = Atom(atomName, atomType, id + 1, resid, mass, charge, coord,
+                        ACOEF, BCOEF)
             atoms.append(atom)
+            id += 1
 
         if atomTypeName[0].islower:
             self.atomTypeSystem = 'gaff'
@@ -781,6 +814,12 @@ Usage: antechamber -i   input file name
 
         self.atoms = atoms
         self.atomTypes = atomTypes
+
+        self.pbc = None
+        if len(coords) == len(atoms) + 2:
+            self.pbc = [coords[-2], coords[-1]]
+        self.printDebug("PBC = '%s" % self.pbc)
+        self.printDebug("getAtoms done")
 
     def getBonds(self):
         uniqKbList = self.getFlagData('BOND_FORCE_CONSTANT')
@@ -801,6 +840,7 @@ Usage: antechamber -i   input file name
             bond = Bond(atoms, kb, req)
             bonds.append(bond)
         self.bonds = bonds
+        self.printDebug("getBonds done")
 
     def getAngles(self):
         uniqKtList = self.getFlagData('ANGLE_FORCE_CONSTANT')
@@ -824,8 +864,13 @@ Usage: antechamber -i   input file name
             angle = Angle(atoms, kt, teq)
             angles.append(angle)
         self.angles = angles
+        self.printDebug("getAngles done")
 
     def getDihedrals(self):
+        """
+            Get dihedrals (proper and imp), condensed list of prop dih and
+            atomPairs
+        """
         uniqKpList = self.getFlagData('DIHEDRAL_FORCE_CONSTANT')
         uniqPeriodList = self.getFlagData('DIHEDRAL_PERIODICITY')
         uniqPhaseList = self.getFlagData('DIHEDRAL_PHASE')
@@ -836,12 +881,13 @@ Usage: antechamber -i   input file name
         properDih = []
         improperDih = []
         condProperDih = [] # list of dihedrals condensed by the same quartet
+        atomPairs = []
         for i in range(0, len(dihCodeList), 5):
             idAtom1 = dihCodeList[i] / 3 # remember python starts with id 0
             idAtom2 = dihCodeList[i+1] / 3
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
             # in amber are to be ignored; if id4 < 0, dihedral is improper
-            idAtom3raw = dihCodeList[i+2] / 3 # can be negative
+            idAtom3raw = dihCodeList[i+2] / 3 # can be negative -> exclude from 1-4vdw
             idAtom4raw = dihCodeList[i+3] / 3 # can be negative -> Improper
             idAtom3 = abs(idAtom3raw)
             idAtom4 = abs(idAtom4raw)
@@ -863,12 +909,17 @@ Usage: antechamber -i   input file name
                     condProperDih[-1].append(dihedral)
                 else:
                     condProperDih.append([dihedral])
+                pair = [atom1, atom4]
+                if atomPairs.count(pair) == 0 and idAtom3raw > 0:
+                    atomPairs.append(pair)
             else:
                 improperDih.append(dihedral)
 
         self.properDihedrals = properDih
         self.improperDihedrals = improperDih
         self.condensedProperDihedrals = condProperDih # [[],[],...]
+        self.atomPairs = atomPairs # [[atom1, atom2], ...]
+        self.printDebug("getDihedrals done")
 
     def setAtomPairs(self):
         """
@@ -879,8 +930,11 @@ Usage: antechamber -i   input file name
             dih = item[0]
             atom1 = dih.atoms[0]
             atom2 = dih.atoms[3]
-            atomPairs.append([atom1, atom2])
+            pair = [atom1, atom2]
+            if atomPairs.count(pair) == 0:
+                atomPairs.append(pair)
         self.atomPairs = atomPairs # [[atom1, atom2], ...]
+        self.printDebug("atomPairs done")
 
     def getExcludedAtoms(self):
         """
@@ -902,6 +956,7 @@ Usage: antechamber -i   input file name
                 excludedAtomsList.append([atoms[a-1] for a in temp])
             interval += number
         self.excludedAtoms = excludedAtomsList
+        self.printDebug("getExcludedAtoms")
 
     def balanceCharges(self, chargeList):
         """
@@ -911,7 +966,7 @@ Usage: antechamber -i   input file name
             file, say, for CNS or GMX, where floats are represented with 4 or 5
             maximum decimals.
         """
-        self.printDebug(chargeList)
+        #self.printDebug(chargeList)
         total = sum(chargeList)/qConv
         self.printDebug('charge to be balanced: total %13.10f' % total)
         maxVal = max(chargeList)
@@ -922,6 +977,7 @@ Usage: antechamber -i   input file name
         diff = (total - int(total)) * qConv
         fix = lim - diff
         chargeList[limId] = fix
+        self.printDebug("balanceCharges done")
         return chargeList
 
     def getABCOEFs(self):
@@ -942,6 +998,7 @@ Usage: antechamber -i   input file name
             ACOEFs.append(rawACOEFs[nonBondId - 1])
             BCOEFs.append(rawBCOEFs[nonBondId - 1])
         #print ACOEFs
+        self.printDebug("getABCOEFs done")
         return ACOEFs, BCOEFs
 
     def setProperDihedralsCoefRB(self):
@@ -967,30 +1024,30 @@ Usage: antechamber -i   input file name
             for dih in item:
                 period = dih.period
                 kPhi = dih.kPhi # in rad
-                phase = dih.phase
+                phase = int(dih.phase * radPi)
                 if kPhi > 0: V[period] = 2 * kPhi * cal
                 if period == 1:
                     C[0] += 0.5 * V[period]
-                    if phase == 0.0:
+                    if phase == 0:
                         C[1] -= 0.5 * V[period]
                     else:
                         C[1] += 0.5 * V[period]
                 elif period == 2:
-                    if phase == Pi:
+                    if phase == 180:
                         C[0] += V[period]
                         C[2] -= V[period]
                     else:
                         C[2] += V[period]
                 elif period == 3:
                     C[0] += 0.5 * V[period]
-                    if phase == 0.0:
+                    if phase == 0:
                         C[1] += 1.5 * V[period]
                         C[3] -= 2 * V[period]
                     else:
                         C[1] -= 1.5 * V[period]
                         C[3] += 2 * V[period]
                 elif period == 4:
-                    if phase == Pi:
+                    if phase == 180:
                         C[2] += 4 * V[period]
                         C[4] -= 4 * V[period]
                     else:
@@ -999,6 +1056,8 @@ Usage: antechamber -i   input file name
                         C[4] += 4 * V[period]
                 #print kPhi, period, phase, V, C
             properDihedralsCoefRB.append([item[0].atoms,C])
+
+        self.printDebug("setProperDihedralsCoefRB done")
 
         self.properDihedralsCoefRB = properDihedralsCoefRB
 
@@ -1010,7 +1069,7 @@ Usage: antechamber -i   input file name
 
         at = self.atomType
         self.getResidueLabel()
-        res = self.residueLabel
+        res = self.residueLabel[0]
 
         cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
         -pf y -rn %s' % (self.acExe, self.acMol2FileName, self.charmmBase, at, res)
@@ -1037,7 +1096,7 @@ Usage: antechamber -i   input file name
             if len(aName) != 4:
                 aName = ' ' + aName
             s = aName[1]
-            rName = self.residueLabel
+            rName = self.residueLabel[0]
             x = atom.coords[0]
             y = atom.coords[1]
             z = atom.coords[2]
@@ -1046,7 +1105,7 @@ Usage: antechamber -i   input file name
             pdbFile.write(line)
         pdbFile.write('END\n')
 
-    def writeGromacsTopolFiles(self):
+    def writeGromacsTopolFiles(self, amb2gmx = False):
         """
             # from ~/Programmes/amber10/dat/leap/parm/gaff.dat
             #atom type        atomic mass        atomic polarizability        comments
@@ -1145,25 +1204,20 @@ Usage: antechamber -i   input file name
                 }
               }
         """
-        #gmxDir = os.path.join(os.path.abspath('.'),'GMX')
-        gmxDir = os.path.abspath('.')
-        #if not os.path.exists(gmxDir):
-        #    os.mkdir(gmxDir)
 
+        self.printMess("Writing GROMACS files\n")
+
+        self.writeGroFile()
+
+        self.writeGromacsTop(amb2gmx = amb2gmx)
+
+        self.writeMdpFiles()
+
+    def writeGromacsTop(self, amb2gmx = False):
+        topText = []
+        itpText = []
         top = self.baseName+'_GMX.top'
         itp = self.baseName+'_GMX.itp'
-        gro = self.baseName+'_GMX.gro'
-        topFileName = os.path.join(gmxDir, top)
-        groFileName = os.path.join(gmxDir, gro)
-        itpFileName = os.path.join(gmxDir, itp)
-
-        self.GmxTopFileName = topFileName
-        self.GmxItpFileName = itpFileName
-        self.GmxGroFileName = groFileName
-
-        topFile = open(topFileName, 'w')
-        groFile = open(groFileName, 'w')
-        itpFile = open(itpFileName, 'w')
 
         headDefault = \
 """
@@ -1179,13 +1233,12 @@ Usage: antechamber -i   input file name
         headSystem = \
 """
 [ system ]
-System %s, Residue %s
+ %s
 """
         headMols = \
 """
 [ molecules ]
 ; Compound        nmols
- %-16s 1
 """
         headAtomtypes = \
 """
@@ -1230,20 +1283,83 @@ System %s, Residue %s
 ; treated as propers in GROMACS to use correct AMBER analytical function
 ; i   j   k   l func  phase     kd      pn
 """
+        headTopWater = \
+"""
+[ bondtypes ]
+  ; i    j      func       b0          kb
+  OW    HW         1    0.09572   462750.4 ; TIP3P water
+  HW    HW         1    0.15136   462750.4 ; TIP3P water
 
-        self.printMess("Writing GROMACS files\n")
+[ angletypes ]
+  ;  i    j    k  func       th0       cth
+  HW  OW  HW           1   104.520    836.800 ; TIP3P water
+  HW  HW  OW           1   127.740      0.000 ; (found in crystallographic water with 3 bonds)
+"""
 
-        #print "Writing GROMACS TOP file\n"
-        topFile.write("; " + head % (top, date))
-        topFile.write(headDefault)
-        topFile.write(headItp % (itp, itp))
-        topFile.write(headSystem % (self.baseName, self.residueLabel))
-        topFile.write(headMols % self.baseName)
+        headCl = \
+"""
+[ moleculetype ]
+  ; molname       nrexcl
+  Na+             1
 
-        #print "Writing GROMACS ITP file\n"
-        itpFile.write("; " + head % (itp, date))
-        itpFile.write(headAtomtypes)
+[ atoms ]
+  ; id    at type res nr  residu name     at name  cg nr  charge   mass
+    1       IP      1          Na+         Na+       1      1     22.9898
+"""
+        headNa = \
+"""
+[ moleculetype ]
+  ; molname       nrexcl
+  Cl-             1
+
+[ atoms ]
+  ; id    at type res nr  residu name     at name  cg nr  charge   mass
+    1       IM      1         Cl-           Cl-      1     -1     35.45300
+"""
+
+        headWater = \
+"""
+[ moleculetype ]
+  ; molname       nrexcl
+  WAT             1
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge       mass
+     1     OW      1     WAT     O      1     -0.834   16.00000
+     2     HW      1     WAT    H1      1      0.417    1.00800
+     3     HW      1     WAT    H2      1      0.417    1.00800
+
+[ settles ]
+; OW    funct   doh     dhh
+  1       1   0.09572 0.15139
+
+[ exclusions ]
+  1       2       3
+  2       1       3
+  3       1       2
+"""
+        nWat = nCl = nNa = 0
+        #topFile.write("; " + head % (top, date))
+        topText.append("; " + head % (top, date))
+        #topFile.write(headDefault)
+        topText.append(headDefault)
+
+        nSolute = 0
+        if not amb2gmx:
+            #nSolute = 1
+            #topFile.write(headItp % (itp, itp))
+            topText.append(headItp % (itp, itp))
+            #itpFile.write("; " + head % (itp, date))
+            itpText.append("; " + head % (itp, date))
+            #tmpFile = itpFile
+
+        self.printDebug("atomTypes %i" % len(self.atomTypes))
+        #printed = False
+        temp = []
         for aType in self.atomTypes:
+            #if not printed:
+            #    tmpFile.write(headAtomtypes)
+            #    printed = True
             aTypeName = aType.atomTypeName
             A = aType.ACOEF
             B = aType.BCOEF
@@ -1258,44 +1374,114 @@ System %s, Residue %s
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
             (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
             " ; %4.2f  %1.4f\n" % (r0, epAmber)
-            itpFile.write(line)
+            #tmpFile.write(line)
+            temp.append(line)
+        if amb2gmx:
+            topText.append(headAtomtypes)
+            topText += temp
+            nWat = self.residueLabel.count('WAT')
+            nCl = self.residueLabel.count('Cl-')
+            nNa = self.residueLabel.count('Na+')
+        else:
+            itpText.append(headAtomtypes)
+            itpText += temp
+        self.printDebug("GMX atomtypes done")
 
-        itpFile.write(headMoleculetype % self.baseName)
+        if len(self.atoms) > 3 * nWat + nCl + nNa:
+            nSolute = 1
 
-        itpFile.write(headAtoms)
+        if nWat:
+            #tmpFile.write(headTopWater)
+            topText.append(headTopWater)
+
+        if nSolute:
+            if amb2gmx:
+                topText.append(headMoleculetype % self.baseName)
+            else:
+                itpText.append(headMoleculetype % self.baseName)
+
+        self.printDebug("atoms %i" % len(self.atoms))
         qtot = 0.0
+        count = 1
+        #printed = False
+        temp = []
         for atom in self.atoms:
-            id = self.atoms.index(atom) + 1
+            resid = atom.resid
+            resname = self.residueLabel[resid]
+            if resname in ['Cl-', 'Na+', 'WAT' ]:
+                break
+            #if not printed:
+            #    tmpFile.write(headAtoms)
+            #    printed = True
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
             charge = atom.charge
             mass = atom.mass
             qtot += charge
-            resnr = 1
+            resnr = resid + 1
             line = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
-            (id, aType,resnr, self.residueLabel, aName, id, charge, mass, qtot)
-            itpFile.write(line)
+            (count, aType, resnr, resname, aName, count, charge,
+             mass, qtot)
+            count += 1
+            temp.append(line)
+        if temp:
+            if amb2gmx:
+                topText.append(headAtoms)
+                topText += temp
+            else:
+                itpText.append(headAtoms)
+                itpText += temp
+        self.printDebug("GMX atoms done")
 
-        itpFile.write(headBonds)
+        # remove bond of water
+        self.printDebug("bonds %i" % len(self.bonds))
+        temp = []
         for bond in self.bonds:
+            res1 = self.residueLabel[bond.atoms[0].resid]
+            res2 = self.residueLabel[bond.atoms[0].resid]
+            if 'WAT' in [res1, res2] : continue
             a1Name = bond.atoms[0].atomName
             a2Name = bond.atoms[1].atomName
             id1 = self.atoms.index(bond.atoms[0]) + 1
             id2 = self.atoms.index(bond.atoms[1]) + 1
-            line = "%6i %6i %3i %13.4e %13.4e ; %6s-%6s\n" % (id1, id2, 1,
+            line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
-            itpFile.write(line)
+            temp.append(line)
+        if temp:
+            if amb2gmx:
+                topText.append(headBonds)
+                topText += temp
+            else:
+                itpText.append(headBonds)
+                itpText += temp
+        self.printDebug("GMX bonds done")
 
-        itpFile.write(headPairs)
+        self.printDebug("atomPairs %i" % len(self.atomPairs))
+        temp = []
         for pair in self.atomPairs:
+            #if not printed:
+            #    tmpFile.write(headPairs)
+            #    printed = True
             a1Name = pair[0].atomName
             a2Name = pair[1].atomName
-            id1 = self.atoms.index(pair[0]) + 1
-            id2 = self.atoms.index(pair[1]) + 1
-            line = "%6i %6i %6i ; %6s-%6s\n" % (id1, id2, 1, a1Name, a2Name)
-            itpFile.write(line)
+            id1 = pair[0].id
+            id2 = pair[1].id
+            #id1 = self.atoms.index(pair[0]) + 1
+            #id2 = self.atoms.index(pair[1]) + 1
+            line = "%6i %6i %6i ; %6s - %-6s\n" % (id1, id2, 1, a1Name,
+                                                        a2Name)
+            temp.append(line)
+        if temp:
+            if amb2gmx:
+                topText.append(headPairs)
+                topText += temp
+            else:
+                itpText.append(headPairs)
+                itpText += temp
+        self.printDebug("GMX pairs done")
 
-        itpFile.write(headAngles)
+        self.printDebug("angles %i" % len(self.angles))
+        temp = []
         for angle in self.angles:
             a1 = angle.atoms[0].atomName
             a2 = angle.atoms[1].atomName
@@ -1303,12 +1489,21 @@ System %s, Residue %s
             id1 = self.atoms.index(angle.atoms[0]) + 1
             id2 = self.atoms.index(angle.atoms[1]) + 1
             id3 = self.atoms.index(angle.atoms[2]) + 1
-            line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s-%6s-%6s\n" % (id1, id2,
-            id3, 1, angle.thetaEq * 180/Pi, 2 * cal * angle.kTheta, a1, a2, a3)
-            itpFile.write(line)
+            line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
+            id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
+            temp.append(line)
+        if temp:
+            if amb2gmx:
+                topText.append(headAngles)
+                topText += temp
+            else:
+                itpText.append(headAngles)
+                itpText += temp
+        self.printDebug("GMX angles done")
 
-        itpFile.write(headProDih)
         self.setProperDihedralsCoefRB()
+        self.printDebug("properDihedralsCoefRB %i" % len(self.properDihedralsCoefRB))
+        temp = []
         for dih in self.properDihedralsCoefRB:
             a1 = dih[0][0].atomName
             a2 = dih[0][1].atomName
@@ -1323,9 +1518,18 @@ System %s, Residue %s
             "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
             (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
             + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
-            itpFile.write(line)
+            temp.append(line)
+        if temp:
+            if amb2gmx:
+                topText.append(headProDih)
+                topText += temp
+            else:
+                itpText.append(headProDih)
+                itpText += temp
+        self.printDebug("GMX proper dihedrals done")
 
-        itpFile.write(headImpDih)
+        self.printDebug("improperDihedrals %i" % len(self.improperDihedrals))
+        temp = []
         for dih in self.improperDihedrals:
             a1 = dih.atoms[0].atomName
             a2 = dih.atoms[1].atomName
@@ -1337,28 +1541,101 @@ System %s, Residue %s
             id4 = self.atoms.index(dih.atoms[3]) + 1
             kd = dih.kPhi * cal
             pn = dih.period
-            ph = dih.phase * 180/Pi
+            ph = dih.phase * radPi
             line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
                             (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
-            itpFile.write(line)
+            temp.append(line)
+        if temp:
+            if amb2gmx:
+                topText.append(headImpDih)
+                topText += temp
+            else:
+                itpText.append(headImpDih)
+                itpText += temp
+        self.printDebug("GMX improper dihedrals done")
 
+        if nNa:
+            topText.append(headNa)
+        if nCl:
+            topText.append(headCl)
+        if nWat:
+            topText.append(headWater)
+
+        topText.append(headSystem % (self.baseName))
+        topText.append(headMols)
+
+        if nSolute > 0:
+            topText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
+
+        if nNa:
+            topText.append(" %-16s %-6i\n" % ('Na+', nNa))
+        if nCl:
+            topText.append(" %-16s %-6i\n" % ('Cl-', nCl))
+        if nWat:
+            topText.append(" %-16s %-6i\n" % ('WAT', nWat))
+
+        gmxDir = os.path.abspath('.')
+        topFileName = os.path.join(gmxDir, top)
+        topFile = open(topFileName, 'w')
+        topFile.writelines(topText)
+
+        if not amb2gmx:
+            itpFileName = os.path.join(gmxDir, itp)
+            itpFile = open(itpFileName, 'w')
+            itpFile.writelines(itpText)
+
+    def writeGroFile(self):
         #print "Writing GROMACS GRO file\n"
+        self.printDebug("writing GRO file")
+        gro = self.baseName+'_GMX.gro'
+        gmxDir = os.path.abspath('.')
+        groFileName = os.path.join(gmxDir, gro)
+        groFile = open(groFileName, 'w')
         groFile.write(head % (gro, date))
         groFile.write(" %i\n" % len(self.atoms))
+        count = 1
         for atom in self.atoms:
             coords = [c * 0.1 for c in atom.coords]
+            resid = atom.resid
             line = "%5d%-4s%6s%5d%8.3f%8.3f%8.3f\n" % \
-                   (1, self.residueLabel, atom.atomName,
-                    self.atoms.index(atom)+1, coords[0], coords[1], coords[2])
+                   (resid+1, self.residueLabel[resid], atom.atomName,
+                    count, coords[0], coords[1], coords[2])
+            count += 1
             groFile.write(line)
-        X = [a.coords[0] * 0.1 for a in self.atoms]
-        Y = [a.coords[1] * 0.1 for a in self.atoms]
-        Z = [a.coords[2] * 0.1 for a in self.atoms]
-        boxX = max(X) - min(X) #+ 2.0 # 2.0 is double of rlist
-        boxY = max(Y) - min(Y) #+ 2.0
-        boxZ = max(Z) - min(Z) #+ 2.0
-        groFile.write("%11.5f%11.5f%11.5f\n" % (boxX, boxY, boxZ))
+        if self.pbc:
+            boxX = self.pbc[0][0] * 0.1
+            boxY = self.pbc[0][1] * 0.1
+            boxZ = self.pbc[0][2] * 0.1
+            vX = self.pbc[1][0]
+            #vY = self.pbc[1][1]
+            #vZ = self.pbc[1][2]
+            if vX == 90.0:
+                self.printDebug("PBC triclinic")
+                text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
+            elif round(vX,2) == 109.47:
+                self.printDebug("PBC octahedron")
+                f1 = 0.471405 # 1/3 * sqrt(2)
+                f2 = 0.333333 * boxX
+                v22 = boxY * 2 * f1
+                v33 = boxZ * f1 * 1.73205 # f1 * sqrt(3)
+                v21 = v31 = v32 = 0.0
+                v12 = f2
+                v13 = - f2
+                v23 = f1 * boxX
+                text = "%11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f\n" % \
+                   (boxX, v22, v33, v21, v31, v12, v32, v13, v23)
+        else:
+            self.printDebug("Box size estimated")
+            X = [a.coords[0] * 0.1 for a in self.atoms]
+            Y = [a.coords[1] * 0.1 for a in self.atoms]
+            Z = [a.coords[2] * 0.1 for a in self.atoms]
+            boxX = max(X) - min(X) #+ 2.0 # 2.0 is double of rlist
+            boxY = max(Y) - min(Y) #+ 2.0
+            boxZ = max(Z) - min(Z) #+ 2.0
+            text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
+        groFile.write(text)
 
+    def writeMdpFiles(self):
         emMdp = \
 """
 cpp                      = /usr/bin/cpp
@@ -1465,7 +1742,7 @@ pbc                      = no
             kt = 500.0
             if not self.allhdg:
                 kt = angle.kTheta
-            t0 = angle.thetaEq * 180/Pi
+            t0 = angle.thetaEq * radPi
             line = "ANGLe %5s %5s %5s %8.1f %8.2f\n" % (a1, a2, a3, kt, t0)
             lineRev = "ANGLe %5s %5s %5s %8.1f %8.2f\n" % (a3, a2, a1, kt, t0)
             if line not in lineSet:
@@ -1490,7 +1767,7 @@ iod phase }\n")
                 if not self.allhdg:
                     kp = dih.kPhi
                 p = dih.period
-                ph = dih.phase * 180/Pi
+                ph = dih.phase * radPi
                 if l > 1:
                     if id == 0:
                         line = "DIHEdral %5s %5s %5s %5s  MULT %1i %7.3f %4i %8\
@@ -1517,7 +1794,7 @@ eriod phase }\n")
             if not self.allhdg:
                 kp = idh.kPhi
             p = idh.period
-            ph = idh.phase * 180/Pi
+            ph = idh.phase * radPi
             line = "IMPRoper %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3,
                                                                  a4, kp, p, ph)
             lineSet.add(line)
@@ -1554,7 +1831,7 @@ eriod phase }\n")
             line = "MASS %-5s %8.3f\n" % (atType, mass)
             topFile.write(line)
 
-        topFile.write("\nRESIdue %s\n" % self.residueLabel)
+        topFile.write("\nRESIdue %s\n" % self.residueLabel[0])
         topFile.write("\nGROUP\n")
 
         topFile.write("\n{ atomName  atomType  Charge }\n")
@@ -1606,7 +1883,7 @@ eriod phase }\n")
                                                        a4Name)
             topFile.write(line)
 
-        topFile.write("\nEND {RESIdue %s}\n" % self.residueLabel)
+        topFile.write("\nEND {RESIdue %s}\n" % self.residueLabel[0])
 
         topFile.write("\nset echo=true end\n")
 
@@ -1749,10 +2026,11 @@ class MolTopol(ACTopol):
         INPUTS: acFileXyz and acFileTop
         RETURN: molTopol obj or None
     """
-    def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None):
+    def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
+                 debug = False):
 
         self.allhdg = False
-        self.debug = False
+        self.debug = debug
         if acTopolObj:
             if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
             if not acFileTop: acFileTop = acTopolObj.acTopFileName
@@ -1766,13 +2044,18 @@ class MolTopol(ACTopol):
 
         self.xyzFileData = open(acFileXyz, 'r').readlines()
         self.topFileData = open(acFileTop, 'r').readlines()
+        self.printDebug("prmtop and inpcrd files loaded")
 
 #        self.pointers = self.getFlagData('POINTERS')
 
         self.getResidueLabel()
-        self.baseName = self.residueLabel # 3 caps letters
+        if len(self.residueLabel) > 1:
+            self.baseName = os.path.splitext(os.path.basename(acFileTop))[0] # 'solute'
+        else:
+            self.baseName = self.residueLabel[0] # 3 caps letters
         if acTopolObj:
             self.baseName = acTopolObj.baseName
+        self.printDebug("basename defined = '%s'" % self.baseName)
 
         self.getAtoms()
 
@@ -1782,9 +2065,9 @@ class MolTopol(ACTopol):
 
         self.getDihedrals()
 
-        self.setAtomPairs()
+        #self.setAtomPairs()
 
-        self.getExcludedAtoms()
+        #self.getExcludedAtoms()
 
         # a list of FLAGS from acTopFile that matter
 #        self.flags = ( 'POINTERS', 'ATOM_NAME', 'CHARGE', 'MASS', 'ATOM_TYPE_INDEX',
@@ -1809,9 +2092,12 @@ class Atom:
         where index i and j for atom types.
         Coord is given in Ang. and mass in Atomic Mass Unit.
     """
-    def __init__(self, atomName, atomType, mass, charge, coord, ACOEF, BCOEF):
+    def __init__(self, atomName, atomType, id, resid, mass, charge, coord,
+                 ACOEF, BCOEF):
         self.atomName = atomName
         self.atomType = atomType
+        self.id = id
+        self.resid = resid
         self.mass = mass
         self.charge = charge / qConv
         self.coords = coord
@@ -1857,13 +2143,16 @@ class Dihedral:
 
 if __name__ == '__main__':
     argsDict = parseArgs(sys.argv[1:])
-    iF = argsDict.get('-i')
+    iF = argsDict.get('-i', None)
     cT = argsDict.get('-c', 'bcc')
     cV = argsDict.get('-n', None)
     mt = argsDict.get('-m', '1')
     at = argsDict.get('-a', 'gaff')
     ot = argsDict.get('-o', 'all')
     en = argsDict.get('-e', 'tleap')
+    amb2gmx = argsDict.get('amb2gmx')
+    prmtop = argsDict.get('-p', None)
+    inpcrd = argsDict.get('-x', None)
     fs = False
     dg = False
     tt = False
@@ -1871,13 +2160,19 @@ if __name__ == '__main__':
     if '-d' in argsDict.keys(): dg = True
     if '-t' in argsDict.keys(): tt = True
 
-    molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
-                       multiplicity = mt, atomType = at, force = fs,
-                       outTopol = ot, engine = en, allhdg=tt)
+    if amb2gmx:
+        print "Converting Amber input files to Gromacs ..."
+        system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg)
+        system.printDebug("prmtop and inpcrd files parsed")
+        system.writeGromacsTopolFiles(amb2gmx = True)
+    else:
+        molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
+                           multiplicity = mt, atomType = at, force = fs,
+                           outTopol = ot, engine = en, allhdg=tt)
 
-    if not molecule.acExe:
-        molecule.printError("no 'antechamber' executable... aborting!")
-        sys.exit(1)
+        if not molecule.acExe:
+            molecule.printError("no 'antechamber' executable... aborting!")
+            sys.exit(1)
 
-    molecule.createACTopol()
-    molecule.createMolTopol()
+        molecule.createACTopol()
+        molecule.createMolTopol()
