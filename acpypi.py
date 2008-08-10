@@ -975,10 +975,12 @@ Usage: antechamber -i   input file name
         self.printDebug('charge to be balanced: total %13.10f' % total)
         maxVal = max(chargeList)
         minVal = min(chargeList)
+        #print maxVal, minVal
         if abs(maxVal) >= abs(minVal): lim = maxVal
         else: lim = minVal
         limId = chargeList.index(lim)
-        diff = (total - int(total)) * qConv
+        diff = (total - round(total)) * qConv
+        #print diff
         fix = lim - diff
         chargeList[limId] = fix
         self.printDebug("balanceCharges done")
