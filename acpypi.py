@@ -719,7 +719,7 @@ Usage: antechamber -i   input file name
                 data += line
         # data need format
         fdata = ''
-        for i in range(0,len(data),f):
+        for i in xrange(0,len(data),f):
             fdata += (data[i:i+f])+' '
         sdata = fdata.split()
         if '+' and '.' in data: # it's a float
@@ -752,7 +752,7 @@ Usage: antechamber -i   input file name
         ndata = map(float, sdata)
 
         gdata = []
-        for i in range(0, len(ndata), 3):
+        for i in xrange(0, len(ndata), 3):
             gdata.append([ndata[i], ndata[i+1], ndata[i+2]])
 
         self.printDebug("getCoords done")
@@ -828,7 +828,7 @@ Usage: antechamber -i   input file name
         bondCodeNonHList = self.getFlagData('BONDS_WITHOUT_HYDROGEN')
         bondCodeList = bondCodeHList + bondCodeNonHList
         bonds = []
-        for i in range(0, len(bondCodeList), 3):
+        for i in xrange(0, len(bondCodeList), 3):
             idAtom1 = bondCodeList[i] / 3 # remember python starts with id 0
             idAtom2 = bondCodeList[i+1] / 3
             bondTypeId = bondCodeList[i+2] - 1
@@ -850,7 +850,7 @@ Usage: antechamber -i   input file name
         angleCodeNonHList = self.getFlagData('ANGLES_WITHOUT_HYDROGEN')
         angleCodeList = angleCodeHList + angleCodeNonHList
         angles = []
-        for i in range(0, len(angleCodeList), 4):
+        for i in xrange(0, len(angleCodeList), 4):
             idAtom1 = angleCodeList[i] / 3 # remember python starts with id 0
             idAtom2 = angleCodeList[i+1] / 3
             idAtom3 = angleCodeList[i+2] / 3
@@ -881,8 +881,9 @@ Usage: antechamber -i   input file name
         properDih = []
         improperDih = []
         condProperDih = [] # list of dihedrals condensed by the same quartet
-        atomPairs = []
-        for i in range(0, len(dihCodeList), 5):
+        #atomPairs = []
+        atomPairs = set()
+        for i in xrange(0, len(dihCodeList), 5):
             idAtom1 = dihCodeList[i] / 3 # remember python starts with id 0
             idAtom2 = dihCodeList[i+1] / 3
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
@@ -909,21 +910,23 @@ Usage: antechamber -i   input file name
                     condProperDih[-1].append(dihedral)
                 else:
                     condProperDih.append([dihedral])
-                pair = [atom1, atom4]
-                if atomPairs.count(pair) == 0 and idAtom3raw > 0:
-                    atomPairs.append(pair)
+                pair = (atom1, atom4)
+                #if atomPairs.count(pair) == 0 and idAtom3raw > 0:
+                if idAtom3raw > 0:
+                    atomPairs.add(pair)
             else:
                 improperDih.append(dihedral)
 
         self.properDihedrals = properDih
         self.improperDihedrals = improperDih
         self.condensedProperDihedrals = condProperDih # [[],[],...]
-        self.atomPairs = atomPairs # [[atom1, atom2], ...]
+        self.atomPairs = sorted(atomPairs) # set((atom1, atom2), ...)
         self.printDebug("getDihedrals done")
 
     def setAtomPairs(self):
         """
             Set a list of pair of atoms pertinent to interaction 1-4 for vdw.
+            WRONG: Deprecated
         """
         atomPairs = []
         for item in self.condensedProperDihedrals:
@@ -942,6 +945,7 @@ Usage: antechamber -i   input file name
             neighbour.
             It's implicitly indexed, i.e., a sequence of atoms in position n in
             the excludedAtomsList corresponds to atom n (self.atoms) and so on.
+            NOT USED
         """
         excludedAtomsIdList = self.getFlagData('EXCLUDED_ATOMS_LIST')
         numberExcludedAtoms = self.getFlagData('NUMBER_EXCLUDED_ATOMS')
@@ -989,14 +993,17 @@ Usage: antechamber -i   input file name
         ACOEFs = []
         BCOEFs = []
         ntypes = max(uniqAtomTypeIdList)
-        for atName in self._atomTypeNameList:
-            id = self._atomTypeNameList.index(atName)
+        #id = 0
+        #for atName in self._atomTypeNameList:
+        for id in xrange(len(self._atomTypeNameList)):
+            #id = self._atomTypeNameList.index(atName)
             atomTypeId = uniqAtomTypeIdList[id]
             index = ntypes * (atomTypeId - 1) + atomTypeId
             nonBondId = nonBonIdList[index - 1]
             #print "*****", index, ntypes, atName, id, atomTypeId, nonBondId
             ACOEFs.append(rawACOEFs[nonBondId - 1])
             BCOEFs.append(rawBCOEFs[nonBondId - 1])
+            #id += 1
         #print ACOEFs
         self.printDebug("getABCOEFs done")
         return ACOEFs, BCOEFs
@@ -1090,8 +1097,9 @@ Usage: antechamber -i   input file name
         pdbFile = open(file, 'w')
         fbase = os.path.basename(file)
         pdbFile.write("REMARK "+ head % (fbase, date))
+        id = 1
         for atom in self.atoms:
-            id = self.atoms.index(atom) + 1
+            #id = self.atoms.index(atom) + 1
             aName = atom.atomName
             if len(aName) != 4:
                 aName = ' ' + aName
@@ -1103,6 +1111,7 @@ Usage: antechamber -i   input file name
             line = "%-6s%5d %-5s%3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
             ('ATOM', id, aName, rName, 1, 4*' ', x, y, z, 1.0, 0.0, 10*' ', s)
             pdbFile.write(line)
+            id += 1
         pdbFile.write('END\n')
 
     def writeGromacsTopolFiles(self, amb2gmx = False):
@@ -1442,8 +1451,10 @@ Usage: antechamber -i   input file name
             if 'WAT' in [res1, res2] : continue
             a1Name = bond.atoms[0].atomName
             a2Name = bond.atoms[1].atomName
-            id1 = self.atoms.index(bond.atoms[0]) + 1
-            id2 = self.atoms.index(bond.atoms[1]) + 1
+            #id1 = self.atoms.index(bond.atoms[0]) + 1
+            id1 = bond.atoms[0].id
+            #id2 = self.atoms.index(bond.atoms[1]) + 1
+            id2 = bond.atoms[1].id
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
             temp.append(line)
@@ -1486,9 +1497,12 @@ Usage: antechamber -i   input file name
             a1 = angle.atoms[0].atomName
             a2 = angle.atoms[1].atomName
             a3 = angle.atoms[2].atomName
-            id1 = self.atoms.index(angle.atoms[0]) + 1
-            id2 = self.atoms.index(angle.atoms[1]) + 1
-            id3 = self.atoms.index(angle.atoms[2]) + 1
+            #id1 = self.atoms.index(angle.atoms[0]) + 1
+            id1 = angle.atoms[0].id
+            #id2 = self.atoms.index(angle.atoms[1]) + 1
+            id2 = angle.atoms[1].id
+            #id3 = self.atoms.index(angle.atoms[2]) + 1
+            id3 = angle.atoms[2].id
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
             id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
             temp.append(line)
@@ -1509,10 +1523,14 @@ Usage: antechamber -i   input file name
             a2 = dih[0][1].atomName
             a3 = dih[0][2].atomName
             a4 = dih[0][3].atomName
-            id1 = self.atoms.index(dih[0][0]) + 1
-            id2 = self.atoms.index(dih[0][1]) + 1
-            id3 = self.atoms.index(dih[0][2]) + 1
-            id4 = self.atoms.index(dih[0][3]) + 1
+            #id1 = self.atoms.index(dih[0][0]) + 1
+            id1 = dih[0][0].id
+            #id2 = self.atoms.index(dih[0][1]) + 1
+            id2 = dih[0][1].id
+            #id3 = self.atoms.index(dih[0][2]) + 1
+            id3 = dih[0][2].id
+            #id4 = self.atoms.index(dih[0][3]) + 1
+            id4 = dih[0][3].id
             c0, c1, c2, c3, c4, c5 = dih[1]
             line = \
             "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
@@ -1535,10 +1553,14 @@ Usage: antechamber -i   input file name
             a2 = dih.atoms[1].atomName
             a3 = dih.atoms[2].atomName
             a4 = dih.atoms[3].atomName
-            id1 = self.atoms.index(dih.atoms[0]) + 1
-            id2 = self.atoms.index(dih.atoms[1]) + 1
-            id3 = self.atoms.index(dih.atoms[2]) + 1
-            id4 = self.atoms.index(dih.atoms[3]) + 1
+            #id1 = self.atoms.index(dih.atoms[0]) + 1
+            id1 = dih.atoms[0].id
+            #id2 = self.atoms.index(dih.atoms[1]) + 1
+            id2 = dih.atoms[1].id
+            #id3 = self.atoms.index(dih.atoms[2]) + 1
+            id3 = dih.atoms[2].id
+            #id4 = self.atoms.index(dih.atoms[3]) + 1
+            id4 = dih.atoms[3].id
             kd = dih.kPhi * cal
             pn = dih.period
             ph = dih.phase * radPi
@@ -1756,8 +1778,9 @@ iod phase }\n")
         lineSet = set()
         for item in self.condensedProperDihedrals:
             seq = ''
+            id = 0
             for dih in item:
-                id = item.index(dih)
+                #id = item.index(dih)
                 l = len(item)
                 a1 = dih.atoms[0].atomType.atomTypeName
                 a2 = dih.atoms[1].atomType.atomTypeName
@@ -1778,6 +1801,7 @@ iod phase }\n")
                     line = "DIHEdral %5s %5s %5s %5s %15.3f %4i %8.2f\n" % (a1,
                                                           a2, a3, a4, kp, p, ph)
                 seq += line
+                id += 1
             lineSet.add(seq)
         for item in lineSet:
             parFile.write(item)
