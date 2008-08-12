@@ -1294,17 +1294,30 @@ Usage: antechamber -i   input file name
 ; treated as propers in GROMACS to use correct AMBER analytical function
 ; i   j   k   l func  phase     kd      pn
 """
-        headTopWater = \
+        headTopWaterTip3p = \
 """
 [ bondtypes ]
   ; i    j      func       b0          kb
   OW    HW         1    0.09572   462750.4 ; TIP3P water
-  HW    HW         1    0.15136   462750.4 ; TIP3P water
+  HW    HW         1    0.15139   462750.4 ; TIP3P water
 
 [ angletypes ]
   ;  i    j    k  func       th0       cth
   HW  OW  HW           1   104.520    836.800 ; TIP3P water
   HW  HW  OW           1   127.740      0.000 ; (found in crystallographic water with 3 bonds)
+"""
+
+        headTopWaterSpce = \
+"""
+[ bondtypes ]
+  ; i    j      func       b0          kb
+  OW    HW         1    0.1       462750.4 ; SPCE water
+  HW    HW         1    0.1633    462750.4 ; SPCE water
+
+[ angletypes ]
+  ;  i    j    k  func       th0       cth
+  HW  OW  HW           1   109.47      836.800 ; SPCE water
+  HW  HW  OW           1   125.265     0.000 ; SPCE water
 """
 
         headCl = \
@@ -1328,7 +1341,7 @@ Usage: antechamber -i   input file name
     1       IM      1         Cl-           Cl-      1     -1     35.45300
 """
 
-        headWater = \
+        headWaterTip3p = \
 """
 [ moleculetype ]
   ; molname       nrexcl
@@ -1340,15 +1353,63 @@ Usage: antechamber -i   input file name
      2     HW      1     WAT    H1      1      0.417    1.00800
      3     HW      1     WAT    H2      1      0.417    1.00800
 
+#ifdef FLEXIBLE
+[ bonds ]
+; i j   funct   length  force.c.
+1   2   1   0.09572   462750.4 0.09572   462750.4
+1   3   1   0.09572   462750.4 0.09572   462750.4
+
+[ angles ]
+; i j   k   funct   angle   force.c.
+2   1   3   1   104.520    836.800  104.520    836.800
+#else
 [ settles ]
-; OW    funct   doh     dhh
-  1       1   0.09572 0.15139
+; i j   funct   length
+1   1   0.09572 0.15139
 
 [ exclusions ]
-  1       2       3
-  2       1       3
-  3       1       2
+1   2   3
+2   1   3
+3   1   2
+#endif
 """
+
+        headWaterSpce = \
+"""
+[ moleculetype ]
+  ; molname       nrexcl
+  WAT             1
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge       mass
+     1     OW      1     WAT     O      1     -0.8476  15.99940
+     2     HW      1     WAT    H1      1      0.4238   1.00800
+     3     HW      1     WAT    H2      1      0.4238   1.00800
+
+#ifdef FLEXIBLE
+[ bonds ]
+; i j   funct   length  force.c.
+1   2   1   0.1 462750.4  0.1     462750.4
+1   3   1   0.1 462750.4  0.1     462750.4
+
+[ angles ]
+; i j   k   funct   angle   force.c.
+2   1   3   1   109.47  836.800 109.47  383
+#else
+[ settles ]
+; OW    funct   doh dhh
+1   1   0.1 0.16330
+
+[ exclusions ]
+1   2   3
+2   1   3
+3   1   2
+#endif
+"""
+
+        headTopWater = headTopWaterTip3p
+        headWater = headWaterTip3p
+
         nWat = nCl = nNa = 0
         #topFile.write("; " + head % (top, date))
         topText.append("; " + head % (top, date))
@@ -1365,12 +1426,8 @@ Usage: antechamber -i   input file name
             #tmpFile = itpFile
 
         self.printDebug("atomTypes %i" % len(self.atomTypes))
-        #printed = False
         temp = []
         for aType in self.atomTypes:
-            #if not printed:
-            #    tmpFile.write(headAtomtypes)
-            #    printed = True
             aTypeName = aType.atomTypeName
             A = aType.ACOEF
             B = aType.BCOEF
@@ -1382,6 +1439,13 @@ Usage: antechamber -i   input file name
                 epAmber = 0.25 * B*B/A
                 sigma = 0.1 * math.pow((A/B), (1.0/6))
                 epsilon = cal * epAmber
+            if aTypeName == 'OW':
+                if A == 629362.166 and B == 625.267765:
+                    headTopWater = headTopWaterSpce
+                    headWater = headWaterSpce
+            # OW 629362.166 625.267765 spce
+            # OW 581935.564 594.825035 tip3p
+            #       print aTypeName, A, B
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
             (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
             " ; %4.2f  %1.4f\n" % (r0, epAmber)
@@ -1402,8 +1466,8 @@ Usage: antechamber -i   input file name
             nSolute = 1
 
         if nWat:
-            #tmpFile.write(headTopWater)
             topText.append(headTopWater)
+            self.printDebug("type of water '%s'" % headTopWater[102:106])
 
         if nSolute:
             if amb2gmx:
@@ -1414,16 +1478,12 @@ Usage: antechamber -i   input file name
         self.printDebug("atoms %i" % len(self.atoms))
         qtot = 0.0
         count = 1
-        #printed = False
         temp = []
         for atom in self.atoms:
             resid = atom.resid
             resname = self.residueLabel[resid]
             if resname in ['Cl-', 'Na+', 'WAT' ]:
                 break
-            #if not printed:
-            #    tmpFile.write(headAtoms)
-            #    printed = True
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
             charge = atom.charge
@@ -1453,9 +1513,7 @@ Usage: antechamber -i   input file name
             if 'WAT' in [res1, res2] : continue
             a1Name = bond.atoms[0].atomName
             a2Name = bond.atoms[1].atomName
-            #id1 = self.atoms.index(bond.atoms[0]) + 1
             id1 = bond.atoms[0].id
-            #id2 = self.atoms.index(bond.atoms[1]) + 1
             id2 = bond.atoms[1].id
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
@@ -1499,11 +1557,8 @@ Usage: antechamber -i   input file name
             a1 = angle.atoms[0].atomName
             a2 = angle.atoms[1].atomName
             a3 = angle.atoms[2].atomName
-            #id1 = self.atoms.index(angle.atoms[0]) + 1
             id1 = angle.atoms[0].id
-            #id2 = self.atoms.index(angle.atoms[1]) + 1
             id2 = angle.atoms[1].id
-            #id3 = self.atoms.index(angle.atoms[2]) + 1
             id3 = angle.atoms[2].id
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
             id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
@@ -1684,7 +1739,7 @@ pbc                      = no
         mdMdp = \
 """
 cpp                      = /usr/bin/cpp
-define                   = -DFLEXIBLE
+define                   = ;-DFLEXIBLE
 integrator               = md
 nsteps                   = 500
 constraints              = none
