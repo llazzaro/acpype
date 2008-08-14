@@ -599,10 +599,23 @@ Usage: antechamber -i   input file name
         self.printDebug(cmd)
 
         if os.path.exists(self.acFrcmodFileName):
-            self.printMess("* Parmchk OK *")
+            check = self.checkFrcmod()
+            if check:
+                self.printWarn("Couldn't determine all parameters:")
+                self.printMess("From file '%s'\n" % self.acFrcmodFileName+check)
+            else:
+                self.printMess("* Parmchk OK *")
         else:
             self.printQuoted(self.parmchkLog)
             return True
+
+    def checkFrcmod(self):
+        check = ""
+        frcmodContent = open(self.acFrcmodFileName, 'r').readlines()
+        for line in frcmodContent:
+            if "ATTN, need revision" in line:
+                check += line
+        return check
 
     def convertPdbToMol2(self):
         if self.ext == '.pdb':
