@@ -1394,7 +1394,7 @@ Usage: antechamber -i   input file name
 
 [ angles ]
 ; i j   k   funct   angle   force.c.
-2   1   3   1   109.47  836.800 109.47  383
+2   1   3   1   109.47  836.800 109.47  836.800
 #else
 [ settles ]
 ; OW    funct   doh dhh
