@@ -1307,7 +1307,7 @@ Usage: antechamber -i   input file name
 ; treated as propers in GROMACS to use correct AMBER analytical function
 ; i   j   k   l func  phase     kd      pn
 """
-        headTopWaterTip3p = \
+        _headTopWaterTip3p = \
 """
 [ bondtypes ]
   ; i    j      func       b0          kb
@@ -1320,7 +1320,7 @@ Usage: antechamber -i   input file name
   HW  HW  OW           1   127.740      0.000 ; (found in crystallographic water with 3 bonds)
 """
 
-        headTopWaterSpce = \
+        _headTopWaterSpce = \
 """
 [ bondtypes ]
   ; i    j      func       b0          kb
@@ -1332,7 +1332,7 @@ Usage: antechamber -i   input file name
   HW  OW  HW           1   109.47      836.800 ; SPCE water
   HW  HW  OW           1   125.265     0.000 ; SPCE water
 """
-
+#NOTE: headTopWaterTip3p and headTopWaterSpce actually do NOTHING
         headCl = \
 """
 [ moleculetype ]
@@ -1357,8 +1357,8 @@ Usage: antechamber -i   input file name
         headWaterTip3p = \
 """
 [ moleculetype ]
-  ; molname       nrexcl
-  WAT             1
+; molname       nrexcl ; TIP3P model
+  WAT             2
 
 [ atoms ]
 ;   nr   type  resnr residue  atom   cgnr     charge       mass
@@ -1390,8 +1390,8 @@ Usage: antechamber -i   input file name
         headWaterSpce = \
 """
 [ moleculetype ]
-  ; molname       nrexcl
-  WAT             1
+; molname       nrexcl ; SPCE model
+  WAT             2
 
 [ atoms ]
 ;   nr   type  resnr residue  atom   cgnr     charge       mass
@@ -1419,8 +1419,9 @@ Usage: antechamber -i   input file name
 3   1   2
 #endif
 """
-
-        headTopWater = headTopWaterTip3p
+#NOTE: headWaterTip3p and headWaterSpce actually do the real thing
+#      so, skipping headTopWaterTip3p and headWaterTip3p
+        #headTopWater = headTopWaterTip3p
         headWater = headWaterTip3p
 
         nWat = nCl = nNa = 0
@@ -1454,7 +1455,7 @@ Usage: antechamber -i   input file name
                 epsilon = cal * epAmber
             if aTypeName == 'OW':
                 if A == 629362.166 and B == 625.267765:
-                    headTopWater = headTopWaterSpce
+                    #headTopWater = headTopWaterSpce
                     headWater = headWaterSpce
             # OW 629362.166 625.267765 spce
             # OW 581935.564 594.825035 tip3p
@@ -1479,8 +1480,8 @@ Usage: antechamber -i   input file name
             nSolute = 1
 
         if nWat:
-            topText.append(headTopWater)
-            self.printDebug("type of water '%s'" % headTopWater[102:106])
+            #topText.append(headTopWater)
+            self.printDebug("type of water '%s'" % headWater[43:48].strip())
 
         if nSolute:
             if amb2gmx:
