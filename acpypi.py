@@ -747,9 +747,13 @@ Usage: antechamber -i   input file name
     def getResidueLabel(self):
         """
             Get a 3 capital letters code from acFileTop
-            Return a string if just one or a list.
+            Returns a list.
         """
         residueLabel = self.getFlagData('RESIDUE_LABEL')
+        if residueLabel[0] != residueLabel[0].upper():
+            self.printWarn("residue label '%s' in '%s' in not all UPPERCASE" %
+                           (residueLabel[0], self.inputFile))
+            self.printWarn("this may raise problem with some applications like CNS")
         self.residueLabel = residueLabel
 
     def getCoords(self):
@@ -2126,12 +2130,14 @@ class MolTopol(ACTopol):
 
         self.allhdg = False
         self.debug = debug
+        self.inputFile = acFileTop
         if acTopolObj:
             if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
             if not acFileTop: acFileTop = acTopolObj.acTopFileName
             self._parent = acTopolObj
             self.allhdg = self._parent.allhdg
             self.debug = self._parent.debug
+            self.inputFile = self._parent.inputFile
         if not os.path.exists(acFileXyz) and not os.path.exists(acFileTop):
             self.printError("Files '%s' and '%s' don't exist")
             self.printError("molTopol object won't be created")
