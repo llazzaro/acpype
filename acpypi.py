@@ -61,6 +61,10 @@ cal = 4.184
 Pi = 3.141593
 qConv = 18.2223
 radPi = 57.295780 # 180/Pi
+maxDist = 3.0
+minDist = 0.5
+maxDist2 = maxDist**2 #squared Ang.
+minDist2 = minDist**2 #squared Ang.
 
 head = "%s created by acpypi on %s\n"
 
@@ -310,7 +314,7 @@ class AbstractTopol:
         """Set a 3 letter residue name
            and check coords duplication
         """
-
+        exit = False
         localDir = os.path.abspath('.')
         tmpDir = '.acpypi.tmp'
         if not os.path.exists(tmpDir):
@@ -332,7 +336,6 @@ class AbstractTopol:
         tmpData = tmpFile .readlines()
         residues = set()
         coords = {}
-        dups = ""
         for line in tmpData:
             if 'ATOM  ' in line or 'HETATM' in line:
                 residues.add(line[17:20])
@@ -349,14 +352,48 @@ class AbstractTopol:
             self.printError("verify your input file '%s'. Aborting ..." % self.inputFile)
             sys.exit(1)
 
-        for item in coords.items():
+        dups = ""
+        short = ""
+        long = ""
+        longSet = set()
+        id = 0
+        items = coords.items()
+        l = len(items)
+        for item in items:
+            id += 1
             if len(item[1]) > 1:
                 for i in item[1]:
                     dups += "%s %s\n" % (i, item[0])
+            for id2 in xrange(id,l):
+                item2 = items[id2]
+                c1 = map(float, item[0].split())
+                c2 = map(float, item2[0].split())
+                dist2 = self.distance(c1,c2)
+                if dist2 < minDist2:
+                    dist = math.sqrt(dist2)
+                    short += "%8.5f       %s %s\n" % (dist, item[1], item2[1])
+                if dist2 < maxDist2: # and not longOK:
+                    longSet.add(str(item[1]))
+                    longSet.add(str(item2[1]))
+            if str(item[1]) not in longSet:
+                long += "%s\n" % item[1]
 
         if dups:
             self.printError("Atoms with same coordinates in '%s'!" % self.inputFile)
             self.printQuoted(dups[:-1])
+            exit = True
+
+        if short:
+            self.printError("Atoms TOO close (< %s Ang.)" % minDist)
+            self.printQuoted("Dist (Ang.)    Atoms\n" + short[:-1])
+            exit = True
+
+        if long:
+            self.printError("Atoms TOO alone (> %s Ang.)" % maxDist)
+            self.printQuoted(long[:-1])
+            exit = True
+
+        if exit:
             if self.force:
                 self.printWarn("You chose to proceed anyway with '-f' option. GOOD LUCK!")
             else:
@@ -374,6 +411,13 @@ class AbstractTopol:
 
         os.chdir(localDir)
         self.printDebug("setResNameCheckCoords done")
+
+    def distance(self, c1, c2):
+        #print c1, c2
+        dist2 = (c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[0] - c2[0])**2 + \
+                (c1[2] - c2[2])**2
+        #dist2 = math.sqrt(dist2)
+        return dist2
 
     def readMol2TotalCharge(self, mol2File):
         """Reads the charges in given mol2 file and returns the total
