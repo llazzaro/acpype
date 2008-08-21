@@ -306,8 +306,10 @@ class AbstractTopol:
         self.printMess("... charge set to %i" % charge)
         os.chdir(localDir)
 
-    def setResName(self):
-        """Set a 3 letter residue name"""
+    def setResNameCheckCoords(self):
+        """Set a 3 letter residue name
+           and check coords duplication
+        """
 
         localDir = os.path.abspath('.')
         tmpDir = '.acpypi.tmp'
@@ -324,19 +326,42 @@ class AbstractTopol:
                                     (self.acExe, self.inputFile, self.ext[1:])
             self.printDebug(cmd)
             _out = getoutput(cmd)
-            self.printDebug(_out)
+            #self.printDebug(_out)
             tmpFile = open('tmp', 'r')
 
         tmpData = tmpFile .readlines()
         residues = set()
+        coords = {}
+        dups = ""
         for line in tmpData:
             if 'ATOM  ' in line or 'HETATM' in line:
                 residues.add(line[17:20])
+                at = line[0:17]
+                cs = line[30:54]
+                if coords.has_key(cs):
+                    coords[cs].append(at)
+                else:
+                    coords[cs] = [at]
+        #self.printDebug(coords)
 
         if len(residues) > 1:
             self.printError("more than one residue detected '%s'" % str(residues))
             self.printError("verify your input file '%s'. Aborting ..." % self.inputFile)
             sys.exit(1)
+
+        for item in coords.items():
+            if len(item[1]) > 1:
+                for i in item[1]:
+                    dups += "%s %s\n" % (i, item[0])
+
+        if dups:
+            self.printError("Atoms with same coordinates in '%s'!" % self.inputFile)
+            self.printQuoted(dups[:-1])
+            if self.force:
+                self.printWarn("You chose to proceed anyway with '-f' option. GOOD LUCK!")
+            else:
+                self.printError("Use '-f' option if you want to proceed anyway. Aborting ...")
+                sys.exit(1)
 
         resname = list(residues)[0]
 
@@ -348,6 +373,7 @@ class AbstractTopol:
         self.resName = resname
 
         os.chdir(localDir)
+        self.printDebug("setResNameCheckCoords done")
 
     def readMol2TotalCharge(self, mol2File):
         """Reads the charges in given mol2 file and returns the total
@@ -816,8 +842,7 @@ Usage: antechamber -i   input file name
             if atomTypeName not in tmpList:
                 tmpList.append(atomTypeName)
                 atomTypes.append(atomType)
-            atom = Atom(atomName, atomType, id + 1, resid, mass, charge, coord,
-                        ACOEF, BCOEF)
+            atom = Atom(atomName, atomType, id + 1, resid, mass, charge, coord)
             atoms.append(atom)
             id += 1
 
@@ -1235,11 +1260,63 @@ Usage: antechamber -i   input file name
 
         self.printMess("Writing GROMACS files\n")
 
+        self.setAtomType4Gromacs()
+
         self.writeGroFile()
 
         self.writeGromacsTop(amb2gmx = amb2gmx)
 
         self.writeMdpFiles()
+
+    def setAtomType4Gromacs(self):
+        """Atom types names in Gromacs TOP file are not case sensitive;
+           this routine will append a '_' to lower case atom type.
+           E.g.: CA and ca -> CA and ca_
+        """
+        atNames = [at.atomTypeName for at in self.atomTypes]
+        #print atNames
+        delAtomTypes = []
+        modAtomTypes = []
+        atomTypesGromacs = []
+        dictAtomTypes = {}
+        for at in self.atomTypes:
+            atName = at.atomTypeName
+            dictAtomTypes[atName] = at
+            if atName.islower() and atName.upper() in atNames:
+                #print atName, atName.upper()
+                atUpper = self.atomTypes[atNames.index(atName.upper())]
+                #print at.atomTypeName,at.mass, at.ACOEF, at.BCOEF
+                #print atUpper.atomTypeName, atUpper.mass, atUpper.ACOEF, atUpper.BCOEF
+                if at.ACOEF is atUpper.ACOEF and at.BCOEF is at.BCOEF:
+                    delAtomTypes.append(atName)
+                else:
+                    newAtName = atName+'_'
+                    modAtomTypes.append(atName)
+                    atomType = AtomType(newAtName, at.mass, at.ACOEF, at.BCOEF)
+                    atomTypesGromacs.append(atomType)
+                    dictAtomTypes[newAtName] = atomType
+            else:
+                atomTypesGromacs.append(at)
+
+        atomsGromacs = []
+        for a in self.atoms:
+            atName = a.atomType.atomTypeName
+            if atName in delAtomTypes:
+                atom = Atom(a.atomName, dictAtomTypes[atName.upper()], a.id, \
+                            a.resid, a.mass, a.charge, a.coords)
+                atomsGromacs.append(atom)
+            elif atName in modAtomTypes:
+                atom = Atom(a.atomName, dictAtomTypes[atName + '_'], a.id, \
+                            a.resid, a.mass, a.charge, a.coords)
+                atomsGromacs.append(atom)
+            else:
+                atomsGromacs.append(a)
+
+        self.atomTypesGromacs = atomTypesGromacs
+        self.atomsGromacs = atomsGromacs
+        #print [i.atomTypeName for i in atomTypesGromacs]
+        #print modAtomTypes
+        #print delAtomTypes
 
     def writeGromacsTop(self, amb2gmx = False):
         topText = []
@@ -1443,9 +1520,9 @@ Usage: antechamber -i   input file name
             itpText.append("; " + head % (itp, date))
             #tmpFile = itpFile
 
-        self.printDebug("atomTypes %i" % len(self.atomTypes))
+        self.printDebug("atomTypes %i" % len(self.atomTypesGromacs))
         temp = []
-        for aType in self.atomTypes:
+        for aType in self.atomTypesGromacs:
             aTypeName = aType.atomTypeName
             A = aType.ACOEF
             B = aType.BCOEF
@@ -1497,7 +1574,7 @@ Usage: antechamber -i   input file name
         qtot = 0.0
         count = 1
         temp = []
-        for atom in self.atoms:
+        for atom in self.atomsGromacs:
             resid = atom.resid
             resname = self.residueLabel[resid]
             if resname in ['Cl-', 'Na+', 'WAT' ]:
@@ -2101,7 +2178,7 @@ class ACTopol(AbstractTopol):
         self.acTopFileName = acBase + '.prmtop'
         self.acFrcmodFileName = acBase +'.frcmod'
         self.debug = debug
-        self.setResName()
+        self.setResNameCheckCoords()
         self.guessCharge()
         acMol2FileName = '%s_%s_%s.mol2' % (base, chargeType, atomType)
         self.acMol2FileName = acMol2FileName
@@ -2193,8 +2270,7 @@ class Atom:
         where index i and j for atom types.
         Coord is given in Ang. and mass in Atomic Mass Unit.
     """
-    def __init__(self, atomName, atomType, id, resid, mass, charge, coord,
-                 ACOEF, BCOEF):
+    def __init__(self, atomName, atomType, id, resid, mass, charge, coord):
         self.atomName = atomName
         self.atomType = atomType
         self.id = id
