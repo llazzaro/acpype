@@ -49,6 +49,7 @@ from shutil import rmtree
 import math
 import os
 import cPickle as pickle
+import string
 import sys
 
 # List of Topology Formats created by acpypi so far:
@@ -129,12 +130,22 @@ saveoff %(res)s %(acBase)s.lib
 quit
 """
 
-def invalidArgs(text = None):
+def invalidArgs(text = None, usage = True):
 
-    print USAGE
+    if usage: print USAGE
     if text:
         print 'ERROR: ' + text
     sys.exit(1)
+
+verNum = string.split(sys.version)[0]
+version = string.split(verNum, ".")
+if map(int, version) < [2, 3, 0]:
+    invalidArgs(text = "Python version %s\n       Sorry, you need python 2.3 or higher" % verNum, usage = False)
+
+try:
+    set()
+except NameError:
+    from sets import Set as set
 
 def parseArgs(args):
 
