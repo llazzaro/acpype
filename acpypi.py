@@ -1013,11 +1013,12 @@ Usage: antechamber -i   input file name
                     atomPairs.add(pair)
             else:
                 improperDih.append(dihedral)
-
+        try: atomPairs = sorted(atomPairs)
+        except: pass
         self.properDihedrals = properDih
         self.improperDihedrals = improperDih
         self.condensedProperDihedrals = condProperDih # [[],[],...]
-        self.atomPairs = sorted(atomPairs) # set((atom1, atom2), ...)
+        self.atomPairs = atomPairs # set((atom1, atom2), ...)
         self.printDebug("getDihedrals done")
 
     def setAtomPairs(self):
@@ -2212,15 +2213,15 @@ class ACTopol(AbstractTopol):
         self.force = force
         self.engine = engine
         self.allhdg = allhdg
-        self.acExe = getoutput('which antechamber') or None # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
-        if not self.acExe:
+        self.acExe = getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+        if not os.path.exists(self.acExe):
             self.printError("no 'antechamber' executable!")
             return None
-        self.tleapExe = getoutput('which tleap') or None
-        self.sleapExe = getoutput('which sleap') or None
-        self.parmchkExe = getoutput('which parmchk') or None
-        self.babelExe = getoutput('which babel') or None
-        if not self.babelExe:
+        self.tleapExe = getoutput('which tleap') or ''
+        self.sleapExe = getoutput('which sleap') or ''
+        self.parmchkExe = getoutput('which parmchk') or ''
+        self.babelExe = getoutput('which babel') or ''
+        if not os.path.exists(self.babelExe):
             if self.ext != '.mol2':
                 self.printError("no 'babel' executable... aborting!")
                 self.printError("use only MOL2 file as input")
