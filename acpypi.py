@@ -113,6 +113,7 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
 %(res)s = loadpdb %(base)s.pdb
+check %(res)s
 saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
 saveoff %(res)s %(acBase)s.lib
 quit
@@ -125,6 +126,7 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 mods = loadamberparams %(acBase)s.frcmod
 %(res)s = loadmol2 %(acMol2FileName)s
+check %(res)s
 saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
 saveoff %(res)s %(acBase)s.lib
 quit
@@ -561,9 +563,9 @@ Usage: antechamber -i   input file name
 
     def delOutputFiles(self):
         delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
-                    'divcon.pdb', 'leap.log', 'fixbo.log',
+                    'divcon.pdb', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
-                    'fragment.mol2', '../.acpypi.tmp']
+                    'fragment.mol2', '../.acpypi.tmp'] #leap.log
         self.printMess("Removing temporary files...")
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
@@ -614,6 +616,7 @@ Usage: antechamber -i   input file name
             self.printMess("Executing Sleap...")
             self.printDebug(cmd)
             self.sleapLog = getoutput(cmd)
+            self.checkLeapLog(self.sleapLog)
 
             if self.checkXyzAndTopFiles():
                 self.printMess(" * Sleap OK *")
@@ -663,12 +666,28 @@ Usage: antechamber -i   input file name
             self.printMess("Executing Tleap...")
             self.printDebug(cmd)
             self.tleapLog = getoutput(cmd)
+            self.checkLeapLog(self.tleapLog)
 
         if self.checkXyzAndTopFiles():
             self.printMess("* Tleap OK *")
         else:
             self.printQuoted(self.tleapLog)
             return True
+
+    def checkLeapLog(self, log):
+        log = log.splitlines(True)
+        check = ''
+        block = False
+        for line in log:
+            #print "*"+line+"*"
+            if "Checking '" in line:
+                #check += line
+                block = True
+            if "Checking Unit." in line:
+                block = False
+            if block:
+                check += line
+        self.printQuoted(check[:-1])
 
     def execParmchk(self):
 
