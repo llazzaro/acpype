@@ -849,7 +849,7 @@ Usage: antechamber -i   input file name
             Get a 3 capital letters code from acFileTop
             Returns a list.
         """
-        residueLabel = self.getFlagData('RESIDUE_LABEL')
+        residueLabel = str(self.getFlagData('RESIDUE_LABEL'))
         if residueLabel[0] != residueLabel[0].upper():
             self.printWarn("residue label '%s' in '%s' in not all UPPERCASE" %
                            (residueLabel[0], self.inputFile))
