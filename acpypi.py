@@ -837,11 +837,13 @@ Usage: antechamber -i   input file name
         sdata = fdata.split()
         if '+' and '.' in data: # it's a float
             ndata = map(float, sdata)
-        else:
+        elif flag != 'RESIDUE_LABEL':
             try: # try if it's integer
                 ndata = map(int, sdata)
             except: # it's string
                 ndata = sdata
+        else:
+            ndata = sdata
         return ndata # a list
 
     def getResidueLabel(self):
@@ -849,7 +851,8 @@ Usage: antechamber -i   input file name
             Get a 3 capital letters code from acFileTop
             Returns a list.
         """
-        residueLabel = str(self.getFlagData('RESIDUE_LABEL'))
+        residueLabel = self.getFlagData('RESIDUE_LABEL')
+        residueLabel = map(str, residueLabel)
         if residueLabel[0] != residueLabel[0].upper():
             self.printWarn("residue label '%s' in '%s' in not all UPPERCASE" %
                            (residueLabel[0], self.inputFile))
@@ -1196,6 +1199,7 @@ Usage: antechamber -i   input file name
         at = self.atomType
         self.getResidueLabel()
         res = self.residueLabel[0]
+        #print res, self.residueLabel, type(self.residueLabel)
 
         cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
         -pf y -rn %s' % (self.acExe, self.acMol2FileName, self.charmmBase, at, res)
