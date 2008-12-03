@@ -456,7 +456,7 @@ class AbstractTopol:
         elif self.debug:
             self.printQuoted(log)
 
-        self.printDebug("readMol2TotalCharge: " + charge)
+        self.printDebug("readMol2TotalCharge: " + str(charge))
 
         return charge
 
