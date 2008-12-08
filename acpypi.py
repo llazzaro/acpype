@@ -415,7 +415,7 @@ class AbstractTopol:
 
         resname = list(residues)[0]
 
-        if resname.isdigit():
+        if resname.isdigit() or 'E' in resname[1:3].upper():
             resname = 'R' + resname
             self.printWarn("In %s.lib, residue name will be '%s' instead of '%s' elsewhere"
                            % (self.acBaseName, resname, resname[1:]))
