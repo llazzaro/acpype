@@ -854,7 +854,7 @@ Usage: antechamber -i   input file name
         residueLabel = self.getFlagData('RESIDUE_LABEL')
         residueLabel = map(str, residueLabel)
         if residueLabel[0] != residueLabel[0].upper():
-            self.printWarn("residue label '%s' in '%s' in not all UPPERCASE" %
+            self.printWarn("residue label '%s' in '%s' is not all UPPERCASE" %
                            (residueLabel[0], self.inputFile))
             self.printWarn("this may raise problem with some applications like CNS")
         self.residueLabel = residueLabel
