@@ -6,6 +6,13 @@ results = {}
 
 molDirs = os.listdir('.')
 
+DirsPassed = []
+DirsFailed = []
+
+goodResults = ['2 W, 0 E, WT _1_3, ET ', '3 W, 0 E, WT _1_2_3, ET ',
+               '6 W, 0 E, WT _1_3_4_5_4_5, ET ', '4 W, 0 E, WT _1_2_3_7, ET ',
+               '7 W, 0 E, WT _1_3_7_4_5_4_5, ET ']
+
 totalPdbOkCount = 0
 totalIdealOkCount = 0
 totalIdealMol2Count = 0
@@ -31,9 +38,11 @@ ET9 = set()
 
 WT6 = []
 WT7 = set()
+WT8 = set()
 
 def analyseFile(mol, structure, file):
     '''
+        warnType 0
         warnType 1 = 'no 'babel' executable, no PDB file as input can be used!'
         warnType 2 = "In ..., residue name will be 'R instead of ... elsewhere"
         warnType 3 = 'no charge value given, trying to guess one...'
@@ -41,7 +50,9 @@ def analyseFile(mol, structure, file):
         warnType 5 = 'this may raise problem with some applications like CNS'
         warnType 6 = "Couldn't determine all parameters"
         warnType 7 = "The unperturbed charge of the unit ..."
+        warnType 8 = 'There is a bond of ... angstroms between'
 
+        errorType 0
         errorType 1 = 'guessCharge failed'
         errorType 2 = 'Atoms with same coordinates in'
         errorType 3 = 'Atoms TOO close'
@@ -78,9 +89,15 @@ def analyseFile(mol, structure, file):
             elif "The unperturbed charge of the" in line:
                 warnTypes += '_7'
                 charge = round(float(line[44:54]))
-                WT7.add('%s: %s'% (mol, charge))
+                WT7.add('%s: %s' % (mol, charge))
+            elif "There is a bond of" in line:
+                warnTypes += '_8'
+                _dist = round(float(line[27:37]))
+                #WT8.add('%s_%s: %s' % (mol, structure, _dist))
+                WT8.add('%s_%s' % (mol, structure))
             else:
                 print file, line
+                warnTypes += '_0'
         if 'ERROR: ' in line:
             countError += 1
             if 'guessCharge failed' in line:
@@ -111,7 +128,11 @@ def analyseFile(mol, structure, file):
                 ET9.add('%s_%s'% (mol, structure))
             else:
                 print file, line
-    return "%i W, %i E, WT %s, ET %s" % (countWarn, countError, warnTypes, errorTypes)
+                errorTypes += '_0'
+    out = "%i W, %i E, WT %s, ET %s" % (countWarn, countError, warnTypes, errorTypes)
+    print "%s *%s*" % (mol, out)
+
+    return out
 
 #for molDir in molDirs:
 #    count = 0
@@ -132,6 +153,10 @@ for molDir in molDirs[:]:
     idealMol2 = False
     countPdbMol2 = 1
     countIdealMol2 = 1
+    out1 = ''
+    out2 = ''
+    pass1 = False
+    pass2 = False
     if not files:
         emptyDir.append(molDir)
     for file in files:
@@ -144,11 +169,11 @@ for molDir in molDirs[:]:
             results[molDir].append('ideal_OK')
             totalIdealOkCount += 1
         elif 'ideal.out' in file:
-            out = analyseFile(molDir, 'ideal', os.path.join(molDir, file))
-            results[molDir].append('ideal: '+out)
+            out1 = analyseFile(molDir, 'ideal', os.path.join(molDir, file))
+            results[molDir].append('ideal: '+out1)
         elif 'pdb.out' in file:
-            out = analyseFile(molDir, 'pdb', os.path.join(molDir, file))
-            results[molDir].append('pdb: '+out)
+            out2 = analyseFile(molDir, 'pdb', os.path.join(molDir, file))
+            results[molDir].append('pdb: '+out2)
         elif '.ideal.mol2' in file:
             if idealMol2:
                 countIdealMol2 +=1
@@ -169,51 +194,207 @@ for molDir in molDirs[:]:
     if not ideal: failedIdeal.append(molDir)
     if not pdb and not ideal: failedBoth.append(molDir)
 
+    if out1 in goodResults and out2 in goodResults:
+        DirsPassed.append(molDir)
+
+
 numDirs = len(molDirs)
 #invPerNumDirs = 1.0/numDirs * 100.0
 perPdb = totalPdbOkCount / (totalPdbMol2Count * 0.01)
 perIdeal= totalIdealOkCount / (totalIdealMol2Count * 0.01)
 
-print "Total molecules: %i" % numDirs
+print "\n--------------------------------\nTotal molecules (Dirs): %i" % numDirs
 print "\nPDB OK: %i of %i (%3.2f%%)" % (totalPdbOkCount,totalPdbMol2Count, perPdb)
 print "\nIdeal OK: %i of %i (%3.2f%%)" % (totalIdealOkCount, totalIdealMol2Count, perIdeal)
-print '\nEmpty Dirs: %i\t %s' % (len(emptyDir), str(emptyDir))
+emptyDir.sort()
+print '\nComplete Empty Dirs (NO mol2 input files for either PDB or IDEAL):\n%i\t %s' % (len(emptyDir), str(emptyDir))
+
 a, b, c = set(emptyDir), set(missPdbMol2), set(missIdealMol2)
+
 diff1 = list(b.difference(a))
-print '\nMissing pdb.mol2 (- EmpytDirs): %i\t %s' % (len(diff1), str(diff1))
-#diff2 = list(b.difference(a))
-#print '\nMissing ideal.mol2 (- EmpytDirs): %i\t %s' % (len(diff2), str(diff2))
-diff3 = list(c.difference(b))
-print '\nMissing ideal.mol2 (- pdb.mol2): %i\t %s' % (len(diff3), str(diff3))
+diff1.sort()
+print '\nDirs missing pdb.mol2 input files (besides Empty Dirs above):\n%i\t %s' % (len(diff1), str(diff1))
 
-print '\nMulti pdb.mol2: %i\t %s' % (len(multPdbMol2), str(multPdbMol2))
-print '\nMulti ideal.mol2: %i\t %s' % (len(multIdealMol2), str(multIdealMol2))
+diff3 = list(c.difference(a))
+diff3.sort()
+print '\nDirs missing ideal.mol2 input files (besides Empty Dirs above):\n%i\t %s' % (len(diff3), str(diff3))
 
-print "\nFailed Both: %i\t %s" % (len(failedBoth), str(failedBoth))
+intersec1 = list(set(diff3).intersection(set(diff1)))
+intersec1.sort()
+print '\nIntersection between Dirs (missing pdb.mol2 x missing ideal.mol2): %i\t %s' % (len(intersec1), str(intersec1))
+
+multPdbMol2.sort()
+print '\nMore than one entry pdb.mol2 per Dir: %i\t %s' % (len(multPdbMol2), str(multPdbMol2))
+multIdealMol2.sort()
+print '\nMore than one entry ideal.mol2 per Dir: %i\t %s' % (len(multIdealMol2), str(multIdealMol2))
+
 d, e, f = set(failedBoth), set(failedPdb), set(failedIdeal)
+
+diff2 = list(d.difference(a))
+diff2.sort()
+print "\nDirs failed for Both pdb.mol2 and ideal.mol2 input files (besides Empty Dirs above):\n%i\t %s" % (len(diff2), str(diff2))
+
 diff4 = list(e.difference(d))
-print "\nFailed PDB (- Both): %i\t %s" % (len(diff4), str(diff4))
+diff4.sort()
+print "\nDirs failed for pdb.mol2 besides Both above:\n%i\t %s" % (len(diff4), str(diff4))
+
 diff5 = list(f.difference(d))
-print "\nFailed Ideal (- Both): %i\t %s" % (len(diff5), str(diff5))
+diff5.sort()
+print "\nDirs failed for ideal.mol2 besides Both above:\n%i\t %s" % (len(diff5), str(diff5))
 
-print "\nguessCharge failed: %i\t %s" % (len(ET1), str(ET1))
+intersec2 = list(set(diff5).intersection(set(diff4)))
+intersec2.sort()
+print '\nIntersection between Dirs (failed pdb.mol2 x failed ideal.mol2): %i\t %s' % (len(intersec2), str(intersec2))
 
-print '\nSERIOUS ERRORS'
-print "\nAtoms same coords: %i\t %s" % (len(ET2), str(ET2))
-print "\nAtoms TOO close: %i\t %s" % (len(ET3), str(ET3))
-print "\nAtoms TOO alone: %i\t %s" % (len(ET4), str(ET4))
-print '\nAntechamber failed: %i\t %s' % (len(ET6), str(ET6))
-diff6 = set(ET8).difference(set(ET6))
-print '\nTleap failed (- AC): %i\t %s' % (len(diff6), str(diff6))
-print '\nSintax error: %i\t %s' % (len(ET9), str(list(ET9)))
+ET1_pdb = []
+ET1_ideal = []
+for i in ET1:
+    if 'ideal' in i:
+        ET1_ideal.append(i.replace('_ideal', ''))
+    else:
+        ET1_pdb.append(i.replace('_pdb', ''))
+Both_ET1 = list(set(ET1_pdb).intersection(set(ET1_ideal)))
+Both_ET1.sort()
+print "\nguessCharge failed (but ACPYPI may have fineshed) for Both PDB and Ideal:\n%i\t %s" % (len(Both_ET1), str(Both_ET1))
+
+diff7 = list(set(ET1_pdb).difference(set(Both_ET1)))
+diff7.sort()
+print "\nguessCharge failed (but ACPYPI may have fineshed) for PDB (besides Both above):\n%i\t %s" % (len(diff7), str(diff7))
+
+diff8 = list(set(ET1_ideal).difference(set(Both_ET1)))
+diff8.sort()
+print "\nguessCharge failed (but ACPYPI may have fineshed) for Ideal (besides Both above):\n%i\t %s" % (len(diff8), str(diff8))
+
+ET2_pdb = []
+ET2_ideal = []
+for i in ET2:
+    if 'ideal' in i:
+        ET2_ideal.append(i.replace('_ideal', ''))
+    else:
+        ET2_pdb.append(i.replace('_pdb', ''))
+Both_ET2 = list(set(ET2_pdb).intersection(set(ET2_ideal)))
+Both_ET2.sort()
+
+print "\nSERIOUS ERRORS: Atoms same coords for Both PDB and Ideal:\n%i\t %s" % (len(Both_ET2), str(Both_ET2))
+
+diff11 = list(set(ET2_pdb).difference(set(Both_ET2)))
+diff11.sort()
+print "\nSERIOUS ERRORS: Atoms same coords for PDB (besides Both above):\n%i\t %s" % (len(diff11), str(diff11))
+
+diff12 = list(set(ET2_ideal).difference(set(Both_ET2)))
+diff12.sort()
+print "\nSERIOUS ERRORS: Atoms same coords for Ideal (besides Both above):\n%i\t %s" % (len(diff12), str(diff12))
+
+ET3_pdb = []
+ET3_ideal = []
+for i in ET3:
+    if 'ideal' in i:
+        ET3_ideal.append(i.replace('_ideal', ''))
+    else:
+        ET3_pdb.append(i.replace('_pdb', ''))
+Both_ET3 = list(set(ET3_pdb).intersection(set(ET3_ideal)))
+Both_ET3.sort()
+
+print "\nSERIOUS ERRORS: Atoms TOO close:\n%i\t %s" % (len(Both_ET3), str(Both_ET3))
+
+diff13 = list(set(ET3_pdb).difference(set(Both_ET3)))
+diff13.sort()
+print "\nSERIOUS ERRORS: Atoms TOO close for PDB (besides Both above):\n%i\t %s" % (len(diff13), str(diff13))
+
+diff14 = list(set(ET3_ideal).difference(set(Both_ET3)))
+diff14.sort()
+print "\nSERIOUS ERRORS: Atoms TOO close for Ideal (besides Both above):\n%i\t %s" % (len(diff14), str(diff14))
+
+ET4_pdb = []
+ET4_ideal = []
+for i in ET4:
+    if 'ideal' in i:
+        ET4_ideal.append(i.replace('_ideal', ''))
+    else:
+        ET4_pdb.append(i.replace('_pdb', ''))
+Both_ET4 = list(set(ET4_pdb).intersection(set(ET4_ideal)))
+Both_ET4.sort()
+
+print "\nSERIOUS ERRORS: Atoms TOO alone:\n%i\t %s" % (len(Both_ET4), str(Both_ET4))
+
+diff15 = list(set(ET4_pdb).difference(set(Both_ET4)))
+diff15.sort()
+print "\nSERIOUS ERRORS: Atoms TOO alone for PDB (besides Both above):\n%i\t %s" % (len(diff15), str(diff15))
+
+diff16 = list(set(ET4_ideal).difference(set(Both_ET4)))
+diff16.sort()
+print "\nSERIOUS ERRORS: Atoms TOO alone for Ideal (besides Both above):\n%i\t %s" % (len(diff16), str(diff16))
+
+WT8_pdb = []
+WT8_ideal = []
+for i in WT8:
+    if 'ideal' in i:
+        WT8_ideal.append(i.replace('_ideal', ''))
+    else:
+        WT8_pdb.append(i.replace('_pdb', ''))
+Both_WT8 = list(set(WT8_pdb).intersection(set(WT8_ideal)))
+Both_WT8.sort()
+
+print "\nSERIOUS ERRORS: ACPYPI ran but bond TOO long for Both PDB and Ideal:\n%i\t %s" % (len(Both_WT8), str(Both_WT8))
+
+diff20 = list(set(WT8_pdb).difference(set(Both_WT8)))
+diff20.sort()
+print "\nSERIOUS ERRORS: ACPYPI ran but bond TOO long for PDB:\n%i\t %s" % (len(diff20), str(diff20))
+
+diff21 = list(set(WT8_ideal).difference(set(Both_WT8)))
+diff21.sort()
+print "\nSERIOUS ERRORS: ACPYPI ran but bond TOO long for Ideal:\n%i\t %s" % (len(diff21), str(diff21))
+
+ET6_pdb = []
+ET6_ideal = []
+for i in ET6:
+    if 'ideal' in i:
+        ET6_ideal.append(i.replace('_ideal', ''))
+    else:
+        ET6_pdb.append(i.replace('_pdb', ''))
+Both_ET6 = list(set(ET6_pdb).intersection(set(ET6_ideal)))
+Both_ET6.sort()
+
+print "\nSERIOUS ERRORS: Antechamber failed:\n%i\t %s" % (len(Both_ET6), str(Both_ET6))
+
+diff17 = list(set(ET6_pdb).difference(set(Both_ET6)))
+diff17.sort()
+print "\nSERIOUS ERRORS: Antechamber failed for PDB (besides Both above):\n%i\t %s" % (len(diff17), str(diff17))
+
+diff18 = list(set(ET6_ideal).difference(set(Both_ET6)))
+diff18.sort()
+print "\nSERIOUS ERRORS: Antechamber failed for Ideal (besides Both above):\n%i\t %s" % (len(diff18), str(diff18))
+
+diff6 = list(set(ET8).difference(set(ET6)))
+diff6.sort()
+print '\nSERIOUS ERRORS: Tleap failed: %i\t %s' % (len(diff6), str(diff6))
+lET9 = list(ET9)
+lET9.sort()
+print '\nSERIOUS ERRORS: Sintax error: %i\t %s' % (len(lET9), str(lET9))
+
+WT6_pdb = set()
+WT6_ideal = set()
+for i in WT6:
+    if '_ideal' in i:
+        WT6_ideal.add(i.replace('_ideal',''))
+    else:
+        WT6_pdb.add(i.replace('_pdb', ''))
+Both_WT6 = list(WT6_ideal.intersection(WT6_pdb))
+diff9 = list(WT6_pdb.difference(Both_WT6))
+diff10 = list(WT6_ideal.difference(Both_WT6))
+Both_WT6 = list(Both_WT6)
+Both_WT6.sort()
+diff9.sort()
+diff10.sort()
+print '\nSERIOUS WARNINGS (acpypi fineshed but results are likely unreliable)'
+print '\nNot all parameters calculated for Both PDB and Ideal:\n%i\t %s' % (len(Both_WT6), str(Both_WT6))
+print '\nNot all parameters calculated for PDB (besides Both above):\n%i\t %s' % (len(diff9), str(diff9))
+print '\nNot all parameters calculated for Ideal (besides Both above):\n%i\t %s' % (len(diff10), str(diff10))
 
 print '\nIT SHOULD BE OK, BUT ONE MAY WANT TO DOUBLE CHECK THE CHARGES'
-print '\nCharge not Zero: %i\t %s' % (len(WT7), str(list(WT7)))
+lWT7 = list(WT7)
+lWT7.sort()
+print '\nCharge not Zero: %i\t %s' % (len(lWT7), str(lWT7))
 
-print '\nSERIOUS WARNINGS (acpypi fineshed but results are likely unreliable)'
-print '\nNot all parameters: %i\t %s' % (len(WT6), str(WT6))
-
-#print '\nMissing pdb.mol2: %i\t %s' % (len(missPdbMol2), str(missPdbMol2))
-#print '\nMissing ideal.mol2: %i\t %s' % (len(missIdealMol2), str(missIdealMol2))
-
-#print results
+DirsPassed.sort()
+print '\nMol (Dirs) OK:\n%i\t %s' % (len(DirsPassed), str(DirsPassed))

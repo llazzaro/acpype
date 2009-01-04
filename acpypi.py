@@ -41,11 +41,13 @@
 #    TODO:
 #        Howto Charmm and Amber with NAMD
 #        Howto build topology for a modified amino acid
+#        CYANA topology files
 
 from commands import getoutput
 from datetime import datetime
 from shutil import copy2
 from shutil import rmtree
+import getopt
 import math
 import os
 import cPickle as pickle
@@ -151,7 +153,8 @@ except NameError:
 
 def parseArgs(args):
 
-    import getopt
+    for _i in range(args.count('')):
+        args.remove('')
 
     amb2gmx = False
 
@@ -224,7 +227,7 @@ def parseArgs(args):
         invalidArgs("input file '%s' doesn't exist" % d['-i'])
 
     if args:
-        invalidArgs(str(args))
+        invalidArgs("argument not recognised: %s" %str(args))
 
     d['amb2gmx'] = amb2gmx
 
