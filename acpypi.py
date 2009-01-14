@@ -266,7 +266,7 @@ class AbstractTopol:
         """
         done = False
         error = False
-        charge = 0
+        charge = self.chargeVal
         localDir = os.path.abspath('.')
         tmpDir = '.acpypi.tmp'
         if not os.path.exists(tmpDir):
