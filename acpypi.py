@@ -89,8 +89,10 @@ USAGE = \
     -o    output topologies: all (default), gmx, cns
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
+    -b    a basename for the project (folder and output files)
 
-    output: assuming 'root' is the basename of the input file
+    output: assuming 'root' is the basename of either the top input file,
+            the 3-letter residue name or user defined (-b option)
     root_bcc_gaff.mol2:  final mol2 file with 'bcc' charges and 'gaff' atom type
     root_AC.inpcrd    :  coord file for AMBER
     root_AC.prmtop    :  topology and parameter file for AMBER
@@ -158,7 +160,7 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hi:c:n:m:o:a:e:x:p:ftd'
+    options = 'hi:c:n:m:o:a:e:x:p:b:ftd'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber', 'bcc', 'sybyl']
@@ -184,7 +186,7 @@ def parseArgs(args):
     if not d and not args:
         invalidArgs("missing parameters")
 
-    not_none = ('-i', '-c', '-n', '-m','-a', '-o', '-e', '-p', '-x')
+    not_none = ('-i', '-c', '-n', '-m','-a', '-o', '-e', '-p', '-x','-b')
 
     for option in not_none:
         if option in d:
@@ -293,8 +295,8 @@ class AbstractTopol:
                 out = getoutput(cmd)
                 self.printDebug(out)
 
-            cmd = '%s -i %s.mol2 -fi mol2 -o tmp -fo mol2 -c gas -pf y' % \
-                                                        (self.acExe, self.baseName)
+            cmd = '%s -i %s -fi mol2 -o tmp -fo mol2 -c gas -pf y' % \
+                                                        (self.acExe, self.inputFile)
 
             if self.debug:
                 self.printMess("Debugging...")
@@ -349,7 +351,7 @@ class AbstractTopol:
             #self.printDebug(_out)
             tmpFile = open('tmp', 'r')
 
-        tmpData = tmpFile .readlines()
+        tmpData = tmpFile.readlines()
         residues = set()
         coords = {}
         for line in tmpData:
@@ -730,7 +732,7 @@ Usage: antechamber -i   input file name
 
         self.makeDir()
 
-        cmd = '%s -ipdb %s.pdb -omol2 %s.mol2' % (self.babelExe, self.baseName,
+        cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                   self.baseName)
         self.printDebug(cmd)
         self.babelLog = getoutput(cmd)
@@ -2219,7 +2221,7 @@ class ACTopol(AbstractTopol):
     """
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
-                 multiplicity = '1', atomType = 'gaff', force = False,
+            multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False):
 
         self.inputFile = inputFile
@@ -2228,6 +2230,7 @@ class ACTopol(AbstractTopol):
         if not os.path.exists(self.absInputFile):
             self.printWarn("input file doesn't exist")
         base, ext = os.path.splitext(inputFile)
+        base = basename or base
         self.baseName = base # name of the input file without ext.
         self.ext = ext
         self.extOld = ext
@@ -2285,7 +2288,7 @@ class MolTopol(ACTopol):
         RETURN: molTopol obj or None
     """
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
-                 debug = False):
+                 debug = False, basename = None):
 
         self.allhdg = False
         self.debug = debug
@@ -2310,11 +2313,11 @@ class MolTopol(ACTopol):
 
         self.getResidueLabel()
         if len(self.residueLabel) > 1:
-            self.baseName = os.path.splitext(os.path.basename(acFileTop))[0] # 'solute'
+            self.baseName = basename or os.path.splitext(os.path.basename(acFileTop))[0] # 'solute'
         else:
-            self.baseName = self.residueLabel[0] # 3 caps letters
+            self.baseName = basename or self.residueLabel[0] # 3 caps letters
         if acTopolObj:
-            self.baseName = acTopolObj.baseName
+            self.baseName = basename or acTopolObj.baseName
         self.printDebug("basename defined = '%s'" % self.baseName)
 
         self.getAtoms()
@@ -2403,6 +2406,7 @@ class Dihedral:
 if __name__ == '__main__':
     argsDict = parseArgs(sys.argv[1:])
     iF = argsDict.get('-i', None)
+    bn = argsDict.get('-b', None)
     cT = argsDict.get('-c', 'bcc')
     cV = argsDict.get('-n', None)
     mt = argsDict.get('-m', '1')
@@ -2421,13 +2425,13 @@ if __name__ == '__main__':
 
     if amb2gmx:
         print "Converting Amber input files to Gromacs ..."
-        system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg)
+        system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg, basename = bn)
         system.printDebug("prmtop and inpcrd files parsed")
         system.writeGromacsTopolFiles(amb2gmx = True)
     else:
         molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                            multiplicity = mt, atomType = at, force = fs,
-                           outTopol = ot, engine = en, allhdg=tt)
+                           outTopol = ot, engine = en, allhdg=tt, basename = bn)
 
         if not molecule.acExe:
             molecule.printError("no 'antechamber' executable... aborting!")

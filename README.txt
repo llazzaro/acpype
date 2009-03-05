@@ -43,7 +43,7 @@ If you use this code, I am glad if you cite:
 
 BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
 Dynamics Simulations Applied to the Study of Subtypes of HIV-1 Protease.
-Cell Biochemistry and Biophysics, 44, 395Ð404, 2006.
+Cell Biochemistry and Biophysics, 44, 395ï¿½404, 2006.
 
 Alan Wilter S. da Silva, D.Sc. - CCPN Research Associate
 Department of Biochemistry, University of Cambridge.
@@ -103,9 +103,9 @@ mdrun -v -deffnm md
 vmd md.gro md.trr
 
 # with openmpi, for a dual core
-grompp -c FFF_GMX.gro -p FFF_GMX.top -f em.mdp -o em.tpr -np 2
+grompp -c FFF_GMX.gro -p FFF_GMX.top -f em.mdp -o em.tpr
 om-mpirun -n 2 mdrun_mpi -v -deffnm em
-grompp -c em.gro -p FFF_GMX.top -f md.mdp -o md.tpr -np 2
+grompp -c em.gro -p FFF_GMX.top -f md.mdp -o md.tpr
 om-mpirun -n 2 mdrun_mpi -v -deffnm md
 vmd md.gro md.trr
 }}}
