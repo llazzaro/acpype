@@ -96,7 +96,7 @@ def analyseFile(mol, structure, file):
                 #WT8.add('%s_%s: %s' % (mol, structure, _dist))
                 WT8.add('%s_%s' % (mol, structure))
             else:
-                print file, line
+                print "UNKNOWN WARN:", file, line
                 warnTypes += '_0'
         if 'ERROR: ' in line:
             countError += 1
@@ -127,10 +127,11 @@ def analyseFile(mol, structure, file):
                 errorTypes += '_9'
                 ET9.add('%s_%s'% (mol, structure))
             else:
-                print file, line
+                print "UNKNOWN ERROR:", file, line
                 errorTypes += '_0'
     out = "%i W, %i E, WT %s, ET %s" % (countWarn, countError, warnTypes, errorTypes)
-    print "%s *%s*" % (mol, out)
+    if out not in goodResults:
+        print "%s *%s*" % (mol, out)
 
     return out
 

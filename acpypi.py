@@ -270,12 +270,12 @@ class AbstractTopol:
         error = False
         charge = self.chargeVal
         localDir = os.path.abspath('.')
-        tmpDir = '.acpypi.tmp'
-        if not os.path.exists(tmpDir):
-            os.mkdir(tmpDir)
-        if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
-            copy2(self.absInputFile, tmpDir)
-        os.chdir(tmpDir)
+#        tmpDir = '.acpypi.tmp'
+        if not os.path.exists(self.tmpDir):
+            os.mkdir(self.tmpDir)
+        if not os.path.exists(os.path.join(self.tmpDir, self.inputFile)):
+            copy2(self.absInputFile, self.tmpDir)
+        os.chdir(self.tmpDir)
 
         if self.chargeType == 'user':
             if self.ext == '.mol2':
@@ -334,12 +334,12 @@ class AbstractTopol:
         """
         exit = False
         localDir = os.path.abspath('.')
-        tmpDir = '.acpypi.tmp'
-        if not os.path.exists(tmpDir):
-            os.mkdir(tmpDir)
+#        tmpDir = '.acpypi.tmp'
+        if not os.path.exists(self.tmpDir):
+            os.mkdir(self.tmpDir)
         #if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
-        copy2(self.absInputFile, tmpDir)
-        os.chdir(tmpDir)
+        copy2(self.absInputFile, self.tmpDir)
+        os.chdir(self.tmpDir)
 
         if self.ext == '.pdb':
             tmpFile = open(self.inputFile, 'r')
@@ -570,7 +570,7 @@ Usage: antechamber -i   input file name
         delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
                     'divcon.pdb', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
-                    'fragment.mol2', '../.acpypi.tmp'] #leap.log
+                    'fragment.mol2', self.tmpDir] #leap.log
         self.printMess("Removing temporary files...")
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
@@ -2263,6 +2263,7 @@ class ACTopol(AbstractTopol):
         self.acTopFileName = acBase + '.prmtop'
         self.acFrcmodFileName = acBase +'.frcmod'
         self.debug = debug
+        self.tmpDir = os.path.join(self.rootDir,'.acpypi_tmp_%s' % base)
         self.setResNameCheckCoords()
         self.guessCharge()
         acMol2FileName = '%s_%s_%s.mol2' % (base, chargeType, atomType)
