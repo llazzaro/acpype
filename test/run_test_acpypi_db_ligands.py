@@ -39,7 +39,9 @@ def runConversionJobs(chemCompVarFiles,scriptName):
                     currentOutFile = chemCompVarFile.replace('.mol2','.out')
                     jobOut = open(currentOutFile,'w')
 
-                    process = Popen(['nice', '-19', scriptName, '-i', chemCompVarFile, '-d'], stdout = jobOut, stderr = jobOut)
+                    varDir, varFile = os.path.split(chemCompVarFile)
+                    os.chdir(varDir)
+                    process = Popen(['nice', '-19', scriptName, '-i', varFile, '-d'], stdout = jobOut, stderr = jobOut)
 
                     currentJobOut[chemCompVarFile] = jobOut
                     currentProcesses[chemCompVarFile] = process
@@ -80,10 +82,10 @@ if __name__ == '__main__':
 
     curDir = os.getcwd()
 
-    ccpCodes = os.listdir('other')[:5]
+    ccpCodes = os.listdir('other')
     ccpCodes.sort()
 
-    for ccpCode in ccpCodes:
+    for ccpCode in ccpCodes[:5]:
         # HACK to restart after powercut
         #if ccpCode < 'NA':
         #  continue

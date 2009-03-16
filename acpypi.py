@@ -346,7 +346,7 @@ class AbstractTopol:
                                     (self.acExe, self.inputFile, self.ext[1:])
             self.printDebug(cmd)
             _out = getoutput(cmd)
-            self.printDebug(_out)
+            #self.printDebug(_out)
             tmpFile = open('tmp', 'r')
 
         tmpData = tmpFile.readlines()
