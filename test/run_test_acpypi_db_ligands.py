@@ -85,7 +85,11 @@ if __name__ == '__main__':
     ccpCodes = os.listdir('other')
     ccpCodes.sort()
 
-    for ccpCode in ccpCodes[:5]:
+    if len(sys.argv) > 1:
+        num = int(sys.argv[1])
+        ccpCodes = ccpCodes[:num]
+
+    for ccpCode in ccpCodes:
         # HACK to restart after powercut
         #if ccpCode < 'NA':
         #  continue
