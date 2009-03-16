@@ -2,7 +2,6 @@ import sys, os, time
 
 from subprocess import Popen
 
-pythonCommand = 'python2.5'
 numCpu = 20
 
 def runConversionJobs(chemCompVarFiles,scriptName):
@@ -40,7 +39,7 @@ def runConversionJobs(chemCompVarFiles,scriptName):
                     currentOutFile = chemCompVarFile.replace('.mol2','.out')
                     jobOut = open(currentOutFile,'w')
 
-                    process = Popen(['nice', '-19', pythonCommand, scriptName, '-i', chemCompVarFile, '-d'], stdout = jobOut, stderr = jobOut)
+                    process = Popen(['nice', '-19', scriptName, '-i', chemCompVarFile, '-d'], stdout = jobOut, stderr = jobOut)
 
                     currentJobOut[chemCompVarFile] = jobOut
                     currentProcesses[chemCompVarFile] = process
@@ -95,5 +94,4 @@ if __name__ == '__main__':
             if ccvName[-5:] == '.mol2' and not ccvName.count("bcc_gaff"):
                 chemCompVarFiles.append(os.path.join(curDir,'other',ccpCode,ccvName))
 
-    print chemCompVarFiles
-#    runConversionJobs(chemCompVarFiles,'../acpypi.py')
+    runConversionJobs(chemCompVarFiles,'acpypi')
