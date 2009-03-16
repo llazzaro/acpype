@@ -270,7 +270,6 @@ class AbstractTopol:
         error = False
         charge = self.chargeVal
         localDir = os.path.abspath('.')
-#        tmpDir = '.acpypi.tmp'
         if not os.path.exists(self.tmpDir):
             os.mkdir(self.tmpDir)
         if not os.path.exists(os.path.join(self.tmpDir, self.inputFile)):
@@ -334,7 +333,6 @@ class AbstractTopol:
         """
         exit = False
         localDir = os.path.abspath('.')
-#        tmpDir = '.acpypi.tmp'
         if not os.path.exists(self.tmpDir):
             os.mkdir(self.tmpDir)
         #if not os.path.exists(os.path.join(tmpDir, self.inputFile)):
@@ -348,7 +346,7 @@ class AbstractTopol:
                                     (self.acExe, self.inputFile, self.ext[1:])
             self.printDebug(cmd)
             _out = getoutput(cmd)
-            #self.printDebug(_out)
+            self.printDebug(_out)
             tmpFile = open('tmp', 'r')
 
         tmpData = tmpFile.readlines()
@@ -2224,12 +2222,12 @@ class ACTopol(AbstractTopol):
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False):
 
-        self.inputFile = inputFile
+        self.inputFile = os.path.basename(inputFile)
         self.rootDir = os.path.abspath('.')
         self.absInputFile = os.path.abspath(inputFile)
         if not os.path.exists(self.absInputFile):
             self.printWarn("input file doesn't exist")
-        base, ext = os.path.splitext(inputFile)
+        base, ext = os.path.splitext(self.inputFile)
         base = basename or base
         self.baseName = base # name of the input file without ext.
         self.ext = ext
@@ -2263,7 +2261,7 @@ class ACTopol(AbstractTopol):
         self.acTopFileName = acBase + '.prmtop'
         self.acFrcmodFileName = acBase +'.frcmod'
         self.debug = debug
-        self.tmpDir = os.path.join(self.rootDir,'.acpypi_tmp_%s' % base)
+        self.tmpDir = os.path.join(self.rootDir,'.acpypi_tmp_%s' % os.path.basename(base))
         self.setResNameCheckCoords()
         self.guessCharge()
         acMol2FileName = '%s_%s_%s.mol2' % (base, chargeType, atomType)
