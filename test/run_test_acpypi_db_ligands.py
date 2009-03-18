@@ -81,17 +81,17 @@ if __name__ == '__main__':
 
     chemCompVarFiles = []
     curDir = os.getcwd()
+    ccpCodes = os.listdir('other')
+
     # Only run this on 'other'!
-    if len(sys.argv) > 1:
-        ccpCodes = sys.argv[1:]
-    else:
-        ccpCodes = os.listdir('other')
+#    if len(sys.argv) > 1:
+#        ccpCodes = sys.argv[1:]
 
     ccpCodes.sort()
 
-#    if len(sys.argv) > 1:
-#        num = int(sys.argv[1])
-#        ccpCodes = ccpCodes[:num]
+    if len(sys.argv) > 1:
+        num = int(sys.argv[1])
+        ccpCodes = ccpCodes[:num]
 
     for ccpCode in ccpCodes:
         # HACK to restart after powercut
