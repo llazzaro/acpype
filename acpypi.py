@@ -849,6 +849,8 @@ Usage: antechamber -i   input file name
                         self.printError("Sleap failed")
         if not self.debug:
             self.delOutputFiles()
+        else:
+            rmtree(self.tmpDir)
 
     def createMolTopol(self):
         """
