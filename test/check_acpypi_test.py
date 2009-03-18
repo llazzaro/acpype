@@ -4,7 +4,8 @@ import os#, sys
 
 results = {}
 
-molDirs = os.listdir('.')
+molDirs = os.listdir('other')
+molDirs.sort()
 
 DirsPassed = []
 DirsFailed = []
@@ -144,7 +145,7 @@ def analyseFile(mol, structure, file):
 #        if count > 1: print file
 #
 #sys.exit()
-
+os.chdir('other')
 for molDir in molDirs[:]:
     files = os.listdir(molDir)
     results[molDir] = []

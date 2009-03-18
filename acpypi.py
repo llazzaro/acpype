@@ -47,12 +47,16 @@ from commands import getoutput
 from datetime import datetime
 from shutil import copy2
 from shutil import rmtree
+import traceback
+import signal
+import time
 import getopt
 import math
 import os
 import cPickle as pickle
 import string
 import sys
+import subprocess as sub
 
 # List of Topology Formats created by acpypi so far:
 outTopols = ['gmx', 'cns', 'charmm']
@@ -68,6 +72,9 @@ maxDist = 3.0
 minDist = 0.5
 maxDist2 = maxDist**2 #squared Ang.
 minDist2 = minDist**2 #squared Ang.
+
+global pid
+pid = 0
 
 head = "%s created by acpypi on %s\n"
 
@@ -90,6 +97,7 @@ USAGE = \
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
     -b    a basename for the project (folder and output files)
+    -s    max time (in sec) tolerance for mopac, default is 3600s, min is 60s
 
     output: assuming 'root' is the basename of either the top input file,
             the 3-letter residue name or user defined (-b option)
@@ -117,7 +125,7 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
 %(res)s = loadpdb %(base)s.pdb
-check %(res)s
+#check %(res)s
 saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
 saveoff %(res)s %(acBase)s.lib
 quit
@@ -145,8 +153,8 @@ def invalidArgs(text = None, usage = True):
 
 verNum = string.split(sys.version)[0]
 version = string.split(verNum, ".")
-if map(int, version) < [2, 3, 0]:
-    invalidArgs(text = "Python version %s\n       Sorry, you need python 2.3 or higher" % verNum, usage = False)
+if map(int, version) < [2, 4, 0]:
+    invalidArgs(text = "Python version %s\n       Sorry, you need python 2.4 or higher" % verNum, usage = False)
 
 try:
     set()
@@ -160,23 +168,25 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hi:c:n:m:o:a:e:x:p:b:ftd'
+    options = 'hftdi:c:n:m:o:a:e:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber', 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
 
+    if '-h' in args:
+        invalidArgs()
     try:
         opt_list, args = getopt.getopt(args, options) #, long_options)
-    except:
-        invalidArgs("FAILED")
+    except Exception, msg:
+        invalidArgs("FAILED: %s" % msg)
 
     d = {}
 
     for key, value in opt_list:
         if key in d:
-            invalidArgs("duplicated parameters")
+            invalidArgs("duplicated parameters: %s" % key)
 
         if value == '':
             value = None
@@ -185,13 +195,6 @@ def parseArgs(args):
 
     if not d and not args:
         invalidArgs("missing parameters")
-
-    not_none = ('-i', '-c', '-n', '-m','-a', '-o', '-e', '-p', '-x','-b')
-
-    for option in not_none:
-        if option in d:
-            if d[option] is None:
-                invalidArgs("option needs an argument")
 
     if '-c' in d.keys():
         if d['-c'] not in ctList:
@@ -208,9 +211,6 @@ def parseArgs(args):
     if '-e' in d.keys():
         if d['-e'] not in enList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-e'], str(enList)))
-
-    if '-h' in d.keys():
-        invalidArgs()
 
     if not '-i' in d.keys():
         amb2gmx = True
@@ -234,6 +234,36 @@ def parseArgs(args):
     d['amb2gmx'] = amb2gmx
 
     return d
+
+def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separator=' '):
+    """
+    Takes an amount of seconds and turns it into a human-readable amount of time.
+    """
+    # the formatted time string to be returned
+    time = []
+
+    # the pieces of time to iterate over (days, hours, minutes, etc)
+    # - the first piece in each tuple is the suffix (d, h, w)
+    # - the second piece is the length in seconds (a day is 60s * 60m * 24h)
+    parts = [(suffixes[0], 60 * 60 * 24 * 7 * 52),
+          (suffixes[1], 60 * 60 * 24 * 7),
+          (suffixes[2], 60 * 60 * 24),
+          (suffixes[3], 60 * 60),
+          (suffixes[4], 60),
+          (suffixes[5], 1)]
+
+    # for each time piece, grab the value and remaining seconds, and add it to
+    # the time string
+    for suffix, length in parts:
+        value = seconds / length
+        if value > 0:
+            seconds = seconds % length
+            time.append('%s%s' % (str(value),
+                           (suffix, (suffix, suffix + 's')[value > 1])[add_s]))
+        if seconds < 1:
+            break
+
+    return separator.join(time)
 
 class AbstractTopol:
     """
@@ -320,6 +350,8 @@ class AbstractTopol:
                 self.printError("guessCharge failed")
                 os.chdir(localDir)
                 self.printQuoted(log)
+                self.printMess("Trying with net charge = 0 ...")
+#                self.chargeVal = 0
                 return None
 
         charge = int(charge)
@@ -533,6 +565,7 @@ Usage: antechamber -i   input file name
                 Write out charge   wc       9  |  Delete Charge      dc     10
                 ----------------------------------------------------------------
         """
+        global pid
 
         self.printMess("Executing Antechamber...")
 
@@ -556,13 +589,45 @@ Usage: antechamber -i   input file name
         else:
             try: os.remove(self.acMol2FileName)
             except: pass
-            self.acLog = getoutput(cmd)
+            p = sub.Popen(cmd, shell=True, stderr = sub.STDOUT, stdout = sub.PIPE)
+            pid = p.pid
+            signal.signal(signal.SIGALRM, self.signal_handler)
+            signal.alarm(self.timeTol)
+
+            out = p.stdout.read()
+            self.acLog = out
 
         if os.path.exists(self.acMol2FileName):
             self.printMess("* Antechamber OK *")
         else:
             self.printQuoted(self.acLog)
             return True
+
+    def signal_handler(self, signum, frame):#, pid = 0):
+        global pid
+        pids = self.job_pids_family(pid)
+        print pid, pids
+        self.printMess("Timed out! Process %s killed, max exec time (%ss) exceeded" \
+                        % (pids, self.timeTol))
+        os.system('kill -15 %s' % pids)
+        raise Exception("MOPAC taking too long to finish... aborting!")
+
+    def job_pids_family(self,jpid):
+        '''INTERNAL: Return all job processes (PIDs)'''
+        pid = repr(jpid)
+        dict_pids = {}
+        pids = [pid]
+        out = getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
+        for item in out:
+            vec = item.split()
+            dict_pids[vec[2]] = vec[1]
+        while 1:
+            try:
+                pid = dict_pids[pid]
+                pids.append(pid)
+            except KeyError:
+                break
+        return string.join(pids)
 
     def delOutputFiles(self):
         delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
@@ -588,7 +653,7 @@ Usage: antechamber -i   input file name
         return False
 
     def execSleap(self):
-
+        global pid
         self.makeDir()
 
         if self.ext == '.mol2':
@@ -618,7 +683,15 @@ Usage: antechamber -i   input file name
             except: pass
             self.printMess("Executing Sleap...")
             self.printDebug(cmd)
-            self.sleapLog = getoutput(cmd)
+
+            p = sub.Popen(cmd, shell=True, stderr = sub.STDOUT, stdout = sub.PIPE)
+            pid = p.pid
+            signal.signal(signal.SIGALRM, self.signal_handler)
+            signal.alarm(self.timeTol)
+
+            out = p.stdout.read()
+
+            self.sleapLog = out
             self.checkLeapLog(self.sleapLog)
 
             if self.checkXyzAndTopFiles():
@@ -2220,8 +2293,10 @@ class ACTopol(AbstractTopol):
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
-            debug = False, outTopol = 'all', engine = 'tleap', allhdg = False):
+            debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
+            timeTol = 3600):
 
+        self.debug = debug
         self.inputFile = os.path.basename(inputFile)
         self.rootDir = os.path.abspath('.')
         self.absInputFile = os.path.abspath(inputFile)
@@ -2230,6 +2305,8 @@ class ACTopol(AbstractTopol):
         base, ext = os.path.splitext(self.inputFile)
         base = basename or base
         self.baseName = base # name of the input file without ext.
+        self.timeTol = timeTol
+        self.printDebug("Max execution time tolerance is %s" % elapsedTime(self.timeTol))
         self.ext = ext
         self.extOld = ext
         self.homeDir = self.baseName + '.acpypi'
@@ -2260,7 +2337,6 @@ class ACTopol(AbstractTopol):
         self.acXyzFileName = acBase + '.inpcrd'
         self.acTopFileName = acBase + '.prmtop'
         self.acFrcmodFileName = acBase +'.frcmod'
-        self.debug = debug
         self.tmpDir = os.path.join(self.rootDir,'.acpypi_tmp_%s' % os.path.basename(base))
         self.setResNameCheckCoords()
         self.guessCharge()
@@ -2403,9 +2479,11 @@ class Dihedral:
         self.phase = phase # rad, to convert to degree: kPhi * 180/Pi
 
 if __name__ == '__main__':
+    t0 = time.time()
     argsDict = parseArgs(sys.argv[1:])
     iF = argsDict.get('-i', None)
     bn = argsDict.get('-b', None)
+    to = int(argsDict.get('-s', 3600))
     cT = argsDict.get('-c', 'bcc')
     cV = argsDict.get('-n', None)
     mt = argsDict.get('-m', '1')
@@ -2422,19 +2500,34 @@ if __name__ == '__main__':
     if '-d' in argsDict.keys(): dg = True
     if '-t' in argsDict.keys(): tt = True
 
-    if amb2gmx:
-        print "Converting Amber input files to Gromacs ..."
-        system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg, basename = bn)
-        system.printDebug("prmtop and inpcrd files parsed")
-        system.writeGromacsTopolFiles(amb2gmx = True)
+    try:
+        if amb2gmx:
+            print "Converting Amber input files to Gromacs ..."
+            system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg, basename = bn)
+            system.printDebug("prmtop and inpcrd files parsed")
+            system.writeGromacsTopolFiles(amb2gmx = True)
+        else:
+            molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
+                               multiplicity = mt, atomType = at, force = fs,
+                               outTopol = ot, engine = en, allhdg=tt, basename = bn,
+                               timeTol = to)
+
+            if not molecule.acExe:
+                molecule.printError("no 'antechamber' executable... aborting!")
+                sys.exit(1)
+
+            molecule.createACTopol()
+            molecule.createMolTopol()
+    except:
+        exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+        print "ACPYPI FAILED: %s" % exceptionValue
+        if dg:
+            traceback.print_tb(exceptionTraceback, file=sys.stdout)
+
+    execTime = int(round(time.time() - t0))
+    if execTime == 0:
+        msg = "less than a second"
     else:
-        molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
-                           multiplicity = mt, atomType = at, force = fs,
-                           outTopol = ot, engine = en, allhdg=tt, basename = bn)
+        msg = elapsedTime(execTime)
+    print "Total time of execution: %s" % msg
 
-        if not molecule.acExe:
-            molecule.printError("no 'antechamber' executable... aborting!")
-            sys.exit(1)
-
-        molecule.createACTopol()
-        molecule.createMolTopol()

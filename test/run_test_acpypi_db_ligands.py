@@ -101,3 +101,5 @@ if __name__ == '__main__':
                 chemCompVarFiles.append(os.path.join(curDir,'other',ccpCode,ccvName))
 
     runConversionJobs(chemCompVarFiles,'acpypi')
+    print "ALL DONE"
+
