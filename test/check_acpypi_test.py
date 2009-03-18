@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os#, sys
+import os, sys
 
 results = {}
 
@@ -12,7 +12,9 @@ DirsFailed = []
 
 goodResults = ['2 W, 0 E, WT _1_3, ET ', '3 W, 0 E, WT _1_2_3, ET ',
                '6 W, 0 E, WT _1_3_4_5_4_5, ET ', '4 W, 0 E, WT _1_2_3_7, ET ',
-               '7 W, 0 E, WT _1_3_7_4_5_4_5, ET ']
+               '7 W, 0 E, WT _1_3_7_4_5_4_5, ET ', '5 W, 0 E, WT _3_4_5_4_5, ET ',
+               '6 W, 0 E, WT _2_3_4_5_4_5, ET ', '1 W, 0 E, WT _3, ET ',
+               '2 W, 0 E, WT _2_3, ET ']
 
 totalPdbOkCount = 0
 totalIdealOkCount = 0
@@ -146,8 +148,11 @@ def analyseFile(mol, structure, file):
 #
 #sys.exit()
 os.chdir('other')
-for molDir in molDirs[:]:
-    files = os.listdir(molDir)
+for molDir in molDirs[:5]:
+#    files = os.listdir(molDir)
+    files = []
+    for dirpath, dirnames, filenames in os.walk(molDir):
+        files += filenames
     results[molDir] = []
     pdb = False
     ideal = False
@@ -188,8 +193,8 @@ for molDir in molDirs[:]:
             else:
                 pdbMol2 = True
                 totalPdbMol2Count += 1
-    if countIdealMol2 > 1: multIdealMol2.append(molDir)
-    if countPdbMol2 > 1: multPdbMol2.append(molDir)
+    if countIdealMol2 > 2: multIdealMol2.append(molDir)
+    if countPdbMol2 > 2: multPdbMol2.append(molDir)
     if not pdbMol2: missPdbMol2.append(molDir)
     if not idealMol2: missIdealMol2.append(molDir)
     if not pdb: failedPdb.append(molDir)

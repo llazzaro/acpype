@@ -377,8 +377,10 @@ class AbstractTopol:
             cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
                                     (self.acExe, self.inputFile, self.ext[1:])
             self.printDebug(cmd)
-            _out = getoutput(cmd)
-            #self.printDebug(_out)
+            out = getoutput(cmd)
+            print len(out)
+            if not out.isspace():
+                self.printDebug(out)
             tmpFile = open('tmp', 'r')
 
         tmpData = tmpFile.readlines()

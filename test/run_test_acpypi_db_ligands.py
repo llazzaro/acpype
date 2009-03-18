@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys, os, time
 
 from subprocess import Popen
@@ -77,17 +79,19 @@ def runConversionJobs(chemCompVarFiles,scriptName):
 
 if __name__ == '__main__':
 
-    # Only run this on 'other'!
     chemCompVarFiles = []
-
     curDir = os.getcwd()
+    # Only run this on 'other'!
+    if len(sys.argv) > 1:
+        ccpCodes = sys.argv[1:]
+    else:
+        ccpCodes = os.listdir('other')
 
-    ccpCodes = os.listdir('other')
     ccpCodes.sort()
 
-    if len(sys.argv) > 1:
-        num = int(sys.argv[1])
-        ccpCodes = ccpCodes[:num]
+#    if len(sys.argv) > 1:
+#        num = int(sys.argv[1])
+#        ccpCodes = ccpCodes[:num]
 
     for ccpCode in ccpCodes:
         # HACK to restart after powercut
