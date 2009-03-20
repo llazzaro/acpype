@@ -97,7 +97,7 @@ USAGE = \
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
     -b    a basename for the project (folder and output files)
-    -s    max time (in sec) tolerance for mopac, default is 3600s, min is 60s
+    -s    max time (in sec) tolerance for mopac, default is 10 hours
 
     output: assuming 'root' is the basename of either the top input file,
             the 3-letter residue name or user defined (-b option)
@@ -378,10 +378,13 @@ class AbstractTopol:
                                     (self.acExe, self.inputFile, self.ext[1:])
             self.printDebug(cmd)
             out = getoutput(cmd)
-            print len(out)
             if not out.isspace():
                 self.printDebug(out)
-            tmpFile = open('tmp', 'r')
+            try:
+                tmpFile = open('tmp', 'r')
+            except:
+                rmtree(self.tmpDir)
+                raise
 
         tmpData = tmpFile.readlines()
         residues = set()
@@ -411,13 +414,17 @@ class AbstractTopol:
         l = len(items)
         for item in items:
             id += 1
-            if len(item[1]) > 1:
+            if len(item[1]) > 1: # if True means atoms with same coordinates
                 for i in item[1]:
                     dups += "%s %s\n" % (i, item[0])
+
+#        for i in xrange(0,len(data),f):
+#            fdata += (data[i:i+f])+' '
+
             for id2 in xrange(id,l):
                 item2 = items[id2]
-                c1 = map(float, item[0].split())
-                c2 = map(float, item2[0].split())
+                c1 = map(float,[item[0][i:i+8] for i in xrange(0,24,8)])
+                c2 = map(float,[item2[0][i:i+8] for i in xrange(0,24,8)])
                 dist2 = self.distance(c1,c2)
                 if dist2 < minDist2:
                     dist = math.sqrt(dist2)
@@ -911,10 +918,7 @@ Usage: antechamber -i   input file name
                     continue
                 data += line
         # data need format
-        fdata = ''
-        for i in xrange(0,len(data),f):
-            fdata += (data[i:i+f])+' '
-        sdata = fdata.split()
+        sdata = [data[i:i+f].strip() for i in xrange(0,len(data),f)]
         if '+' and '.' in data: # it's a float
             ndata = map(float, sdata)
         elif flag != 'RESIDUE_LABEL':
@@ -948,8 +952,8 @@ Usage: antechamber -i   input file name
         for rawLine in self.xyzFileData[2:]:
             line = rawLine[:-1]
             data += line
-        sdata = data.split()
-        ndata = map(float, sdata)
+        l = len(data)
+        ndata = map(float,[data[i:i+12] for i in xrange(0,l,12)])
 
         gdata = []
         for i in xrange(0, len(ndata), 3):
@@ -2298,7 +2302,7 @@ class ACTopol(AbstractTopol):
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-            timeTol = 3600):
+            timeTol = 36000):
 
         self.debug = debug
         self.inputFile = os.path.basename(inputFile)
@@ -2487,7 +2491,7 @@ if __name__ == '__main__':
     argsDict = parseArgs(sys.argv[1:])
     iF = argsDict.get('-i', None)
     bn = argsDict.get('-b', None)
-    to = int(argsDict.get('-s', 3600))
+    to = int(argsDict.get('-s', 36000))
     cT = argsDict.get('-c', 'bcc')
     cV = argsDict.get('-n', None)
     mt = argsDict.get('-m', '1')

@@ -6,6 +6,36 @@ from subprocess import Popen
 
 numCpu = 20
 
+def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separator=' '):
+    """
+    Takes an amount of seconds and turns it into a human-readable amount of time.
+    """
+    # the formatted time string to be returned
+    time = []
+
+    # the pieces of time to iterate over (days, hours, minutes, etc)
+    # - the first piece in each tuple is the suffix (d, h, w)
+    # - the second piece is the length in seconds (a day is 60s * 60m * 24h)
+    parts = [(suffixes[0], 60 * 60 * 24 * 7 * 52),
+          (suffixes[1], 60 * 60 * 24 * 7),
+          (suffixes[2], 60 * 60 * 24),
+          (suffixes[3], 60 * 60),
+          (suffixes[4], 60),
+          (suffixes[5], 1)]
+
+    # for each time piece, grab the value and remaining seconds, and add it to
+    # the time string
+    for suffix, length in parts:
+        value = seconds / length
+        if value > 0:
+            seconds = seconds % length
+            time.append('%s%s' % (str(value),
+                           (suffix, (suffix, suffix + 's')[value > 1])[add_s]))
+        if seconds < 1:
+            break
+
+    return separator.join(time)
+
 def runConversionJobs(chemCompVarFiles,scriptName):
 
     _timeStamp = time.strftime("%Y_%m_%d_%H_%M_%S")
@@ -79,19 +109,22 @@ def runConversionJobs(chemCompVarFiles,scriptName):
 
 if __name__ == '__main__':
 
+    t0 = time.time()
+
     chemCompVarFiles = []
     curDir = os.getcwd()
     ccpCodes = os.listdir('other')
-
-    # Only run this on 'other'!
-#    if len(sys.argv) > 1:
-#        ccpCodes = sys.argv[1:]
-
     ccpCodes.sort()
 
+    # Only run this on 'other'!
     if len(sys.argv) > 1:
-        num = int(sys.argv[1])
-        ccpCodes = ccpCodes[:num]
+        args = sys.argv[1:]
+        if args[0].startswith('n='):
+            num = int(args[0][2:])
+            ccpCodes = ccpCodes[:num]
+        else:
+            args.sort()
+            ccpCodes = args
 
     for ccpCode in ccpCodes:
         # HACK to restart after powercut
@@ -105,5 +138,12 @@ if __name__ == '__main__':
                 chemCompVarFiles.append(os.path.join(curDir,'other',ccpCode,ccvName))
 
     runConversionJobs(chemCompVarFiles,'acpypi')
+    execTime = int(round(time.time() - t0))
+    msg = elapsedTime(execTime)
+    print "Total time of execution: %s" % msg
     print "ALL DONE"
 
+# nohup ./run_test_acpypi_db_ligands.py &
+# grep started nohup.out | wc -l ; grep finished nohup.out | wc -l # 17405 17405
+# grep -r "FAILED: MOPAC taking" other/*
+# grep -r "invalid" other/*
