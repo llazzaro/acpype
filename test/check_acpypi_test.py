@@ -4,8 +4,8 @@ import os, sys
 
 results = {}
 
-molDirs = os.listdir('other')
-molDirs.sort()
+ccpCodes = os.listdir('other')
+ccpCodes.sort()
 
 DirsPassed = []
 DirsFailed = []
@@ -148,7 +148,19 @@ def analyseFile(mol, structure, file):
 #
 #sys.exit()
 os.chdir('other')
-for molDir in molDirs[:5]:
+
+# Only run this on 'other'!
+if len(sys.argv) > 1:
+    args = sys.argv[1:]
+    if args[0].startswith('n='):
+        num = int(args[0][2:])
+        ccpCodes = ccpCodes[:num]
+    else:
+        args.sort()
+        ccpCodes = args
+
+
+for molDir in ccpCodes:
 #    files = os.listdir(molDir)
     files = []
     for dirpath, dirnames, filenames in os.walk(molDir):
@@ -205,7 +217,7 @@ for molDir in molDirs[:5]:
         DirsPassed.append(molDir)
 
 
-numDirs = len(molDirs)
+numDirs = len(ccpCodes)
 #invPerNumDirs = 1.0/numDirs * 100.0
 perPdb = totalPdbOkCount / (totalPdbMol2Count * 0.01)
 perIdeal= totalIdealOkCount / (totalIdealMol2Count * 0.01)
