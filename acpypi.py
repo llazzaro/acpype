@@ -858,8 +858,6 @@ Usage: antechamber -i   input file name
                         self.printError("Sleap failed")
         if not self.debug:
             self.delOutputFiles()
-        else:
-            rmtree(self.tmpDir)
 
     def createMolTopol(self):
         """
@@ -2537,5 +2535,7 @@ if __name__ == '__main__':
         msg = "less than a second"
     else:
         msg = elapsedTime(execTime)
+    try: rmtree(molecule.tmpDir)
+    except: pass
     print "Total time of execution: %s" % msg
 
