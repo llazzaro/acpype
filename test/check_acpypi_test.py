@@ -10,11 +10,13 @@ ccpCodes.sort()
 DirsPassed = []
 DirsFailed = []
 
-goodResults = ['2 W, 0 E, WT _1_3, ET ', '3 W, 0 E, WT _1_2_3, ET ',
-               '6 W, 0 E, WT _1_3_4_5_4_5, ET ', '4 W, 0 E, WT _1_2_3_7, ET ',
-               '7 W, 0 E, WT _1_3_7_4_5_4_5, ET ', '5 W, 0 E, WT _3_4_5_4_5, ET ',
-               '6 W, 0 E, WT _2_3_4_5_4_5, ET ', '1 W, 0 E, WT _3, ET ',
-               '2 W, 0 E, WT _2_3, ET ']
+goodResults = ['3 W, 0 E, WT _3_4_5, ET ', '2 W, 0 E, WT _2_3, ET ']
+
+#              ['2 W, 0 E, WT _1_3, ET ', '3 W, 0 E, WT _1_2_3, ET ',
+#               '6 W, 0 E, WT _1_3_4_5_4_5, ET ', '4 W, 0 E, WT _1_2_3_7, ET ',
+#               '7 W, 0 E, WT _1_3_7_4_5_4_5, ET ', '5 W, 0 E, WT _3_4_5_4_5, ET ',
+#               '6 W, 0 E, WT _2_3_4_5_4_5, ET ', '1 W, 0 E, WT _3, ET ',
+#               '2 W, 0 E, WT _2_3, ET ']
 
 totalPdbOkCount = 0
 totalIdealOkCount = 0
@@ -38,10 +40,12 @@ ET6 = []
 ET7 = []
 ET8 = []
 ET9 = set()
+ET10 = set()
 
 WT6 = []
 WT7 = set()
 WT8 = set()
+WT9 = set()
 
 def analyseFile(mol, structure, file):
     '''
@@ -54,6 +58,7 @@ def analyseFile(mol, structure, file):
         warnType 6 = "Couldn't determine all parameters"
         warnType 7 = "The unperturbed charge of the unit ..."
         warnType 8 = 'There is a bond of ... angstroms between'
+        warnType 9 = 'atom type may be wrong'
 
         errorType 0
         errorType 1 = 'guessCharge failed'
@@ -65,6 +70,7 @@ def analyseFile(mol, structure, file):
         errorType 7 = 'Parmchk failed'
         errorType 8 = 'Tleap failed'
         errorType 9 = 'syntax error'
+        errorType 10 = "No such file or directory: 'tmp'"
     '''
 
     countWarn = 0
@@ -98,6 +104,9 @@ def analyseFile(mol, structure, file):
                 _dist = round(float(line[27:37]))
                 #WT8.add('%s_%s: %s' % (mol, structure, _dist))
                 WT8.add('%s_%s' % (mol, structure))
+            elif ' atom type of ' in line:
+                warnTypes += '_9'
+                WT9.add('%s_%s'% (mol, structure))
             else:
                 print "UNKNOWN WARN:", file, line
                 warnTypes += '_0'
@@ -132,21 +141,29 @@ def analyseFile(mol, structure, file):
             else:
                 print "UNKNOWN ERROR:", file, line
                 errorTypes += '_0'
-    out = "%i W, %i E, WT %s, ET %s" % (countWarn, countError, warnTypes, errorTypes)
+        elif "No such file or directory: 'tmp'" in line:
+            errorTypes += '_10'
+            ET10.add('%s_%s'% (mol, structure))
+    out = parseSummurisedLine(warnTypes, errorTypes)
     if out not in goodResults:
         print "%s *%s*" % (mol, out)
-
     return out
 
-#for molDir in molDirs:
-#    count = 0
-#    files = os.listdir(molDir)
-#    for file in files:
-#        if '.pdb.mol2' in file:
-#            count += 1
-#        if count > 1: print file
-#
-#sys.exit()
+def parseSummurisedLine(warnTypes, errorTypes):
+    wt = list(set(warnTypes.split('_')))
+    wt.sort()
+    warnTypes = ''
+    for i in wt:
+        if i: warnTypes += '_'+i
+    countWarn = warnTypes.count('_')
+    et = list(set(errorTypes.split('_')))
+    et.sort()
+    errorTypes = ''
+    for j in et:
+        if j: errorTypes += '_'+j
+    countError = errorTypes.count('_')
+    return "%i W, %i E, WT %s, ET %s" % (countWarn, countError, warnTypes, errorTypes)
+
 os.chdir('other')
 
 # Only run this on 'other'!
@@ -364,6 +381,7 @@ diff21 = list(set(WT8_ideal).difference(set(Both_WT8)))
 diff21.sort()
 print "\nSERIOUS ERRORS: ACPYPI ran but bond TOO long for Ideal:\n%i\t %s" % (len(diff21), str(diff21))
 
+
 ET6_pdb = []
 ET6_ideal = []
 for i in ET6:
@@ -387,9 +405,28 @@ print "\nSERIOUS ERRORS: Antechamber failed for Ideal (besides Both above):\n%i\
 diff6 = list(set(ET8).difference(set(ET6)))
 diff6.sort()
 print '\nSERIOUS ERRORS: Tleap failed: %i\t %s' % (len(diff6), str(diff6))
+
 lET9 = list(ET9)
 lET9.sort()
 print '\nSERIOUS ERRORS: Sintax error: %i\t %s' % (len(lET9), str(lET9))
+
+ET10_pdb = []
+ET10_ideal = []
+for i in ET10:
+    if 'ideal' in i:
+        ET10_ideal.append(i.replace('_ideal', ''))
+    else:
+        ET10_pdb.append(i.replace('_pdb', ''))
+Both_ET10 = list(set(ET10_pdb).intersection(set(ET10_ideal)))
+Both_ET10.sort()
+print "\nSERIOUS ERRORS: bondtype failed (no 'tmp'): %i\t %s" % (len(Both_ET10), str(Both_ET10))
+diff27 = list(set(ET10_pdb).difference(set(Both_ET10)))
+diff27.sort()
+print "\nSERIOUS ERRORS: bondtype failed for PDB (besides Both above):\n%i\t %s" % (len(diff27), str(diff27))
+
+diff28 = list(set(ET10_ideal).difference(set(Both_ET10)))
+diff28.sort()
+print "\nSERIOUS ERRORS: bondtype failed for Ideal (besides Both above):\n%i\t %s" % (len(diff28), str(diff28))
 
 WT6_pdb = set()
 WT6_ideal = set()
@@ -410,10 +447,29 @@ print '\nNot all parameters calculated for Both PDB and Ideal:\n%i\t %s' % (len(
 print '\nNot all parameters calculated for PDB (besides Both above):\n%i\t %s' % (len(diff9), str(diff9))
 print '\nNot all parameters calculated for Ideal (besides Both above):\n%i\t %s' % (len(diff10), str(diff10))
 
+WT9_pdb = set()
+WT9_ideal = set()
+for i in WT9:
+    if '_ideal' in i:
+        WT9_ideal.add(i.replace('_ideal',''))
+    else:
+        WT9_pdb.add(i.replace('_pdb', ''))
+Both_WT9 = list(WT9_ideal.intersection(WT9_pdb))
+diff39 = list(WT9_pdb.difference(Both_WT9))
+diff40 = list(WT9_ideal.difference(Both_WT9))
+Both_WT9 = list(Both_WT9)
+Both_WT9.sort()
+diff39.sort()
+diff40.sort()
+
+print '\nAtom types may be wrong for Both PDB and Ideal:\n%i\t %s' % (len(Both_WT9), str(Both_WT9))
+print '\nAtom types may be wrong for PDB (besides Both above):\n%i\t %s' % (len(diff39), str(diff39))
+print '\nAtom types may be wrong for Ideal (besides Both above):\n%i\t %s' % (len(diff40), str(diff40))
+
 print '\nIT SHOULD BE OK, BUT ONE MAY WANT TO DOUBLE CHECK THE CHARGES'
 lWT7 = list(WT7)
 lWT7.sort()
 print '\nCharge not Zero: %i\t %s' % (len(lWT7), str(lWT7))
 
 DirsPassed.sort()
-print '\nMol (Dirs) OK:\n%i\t %s' % (len(DirsPassed), str(DirsPassed))
+print '\nMols (with charge 0 and no erros or warnings for both PDB and Ideal) OK:\n%i\t %s' % (len(DirsPassed), str(DirsPassed))
