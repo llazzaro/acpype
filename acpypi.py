@@ -455,6 +455,7 @@ class AbstractTopol:
                 self.printWarn("You chose to proceed anyway with '-f' option. GOOD LUCK!")
             else:
                 self.printError("Use '-f' option if you want to proceed anyway. Aborting ...")
+                rmtree(self.tmpDir)
                 sys.exit(1)
 
         resname = list(residues)[0]
