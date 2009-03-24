@@ -37,7 +37,7 @@
 
     alanwilter _at_ gmail _dot_ com
 """
-repositoryId = '$Id $' + '$Revision$' + '$Date$' + '$copyright$'
+repositoryId = '$Id $' + '$Revision$' + '$Date$' + '$copyright$' + '$LastChangedDate$'
 
 header = \
 """
