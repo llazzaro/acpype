@@ -37,8 +37,8 @@
 
     alanwilter _at_ gmail _dot_ com
 """
-svnDateTime = '$Date: 2009-03-24 21:51:40 +0000 (Tue, 24 Mar 2009) $'
-svnRev = '$Revision: 0$'
+svnDateTime = '$Date$'
+svnRev = '$Revision$'
 svnDate,svnTime = svnDateTime.split()[1:3]
 tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev.split()[1])
 
