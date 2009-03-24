@@ -42,12 +42,12 @@ svnRev = '$Revision$'
 svnDate,svnTime = svnDateTime.split()[1:3]
 tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev.split()[1])
 
-header = \
-"""
-==========================================================================
-| ACPYPI: AnteChamber PYthon Parser Interface version %s (c) 2008-2009 AWSdS|
-==========================================================================
-""" % tag
+lineHeader = \
+'''
+| ACPYPI: AnteChamber PYthon Parser Interface v. %s (c) 2008-2009 AWSdS |
+''' % tag
+frameLine = (len(lineHeader) -2) * '='
+header = '%s%s%s' % (frameLine, lineHeader, frameLine)
 
 #    TODO:
 #        Howto Charmm and Amber with NAMD
