@@ -37,6 +37,15 @@
 
     alanwilter _at_ gmail _dot_ com
 """
+repositoryTag = '$Name: $'
+repositoryId = '$Id: $'
+
+header = \
+"""
+==========================================================================
+| ACPYPI: AnteChamber PYthon Parser Interface version %s AWSdS 2008-2009 |
+==========================================================================
+""" % repositoryId
 
 #    TODO:
 #        Howto Charmm and Amber with NAMD
@@ -2487,6 +2496,7 @@ class Dihedral:
 
 if __name__ == '__main__':
     t0 = time.time()
+    print header
     argsDict = parseArgs(sys.argv[1:])
     iF = argsDict.get('-i', None)
     bn = argsDict.get('-b', None)

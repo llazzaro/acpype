@@ -55,6 +55,7 @@ def analyseFile(mol, structure, file):
         warnType 3 = 'no charge value given, trying to guess one...'
         warnType 4 = 'residue label ... is not all UPPERCASE'
         warnType 5 = 'this may raise problem with some applications like CNS'
+        # serious warnings:
         warnType 6 = "Couldn't determine all parameters"
         warnType 7 = "The unperturbed charge of the unit ..."
         warnType 8 = 'There is a bond of ... angstroms between'
@@ -146,7 +147,7 @@ def analyseFile(mol, structure, file):
             ET10.add('%s_%s'% (mol, structure))
     out = parseSummurisedLine(warnTypes, errorTypes)
     if out not in goodResults:
-        print "%s *%s*" % (mol, out)
+        print "%s *%s* %s" % (mol, out, structure)
     return out
 
 def parseSummurisedLine(warnTypes, errorTypes):
@@ -240,8 +241,9 @@ perPdb = totalPdbOkCount / (totalPdbMol2Count * 0.01)
 perIdeal= totalIdealOkCount / (totalIdealMol2Count * 0.01)
 
 print "\n--------------------------------\nTotal molecules (Dirs): %i" % numDirs
-print "\nPDB OK: %i of %i (%3.2f%%)" % (totalPdbOkCount,totalPdbMol2Count, perPdb)
-print "\nIdeal OK: %i of %i (%3.2f%%)" % (totalIdealOkCount, totalIdealMol2Count, perIdeal)
+print "\nPDB OK*: %i of %i (%3.2f%%)" % (totalPdbOkCount,totalPdbMol2Count, perPdb)
+print "\nIdeal OK*: %i of %i (%3.2f%%)" % (totalIdealOkCount, totalIdealMol2Count, perIdeal)
+print "\n*NOTE: it doesn't mean the results are flawless, see below."
 emptyDir.sort()
 print '\nComplete Empty Dirs (NO mol2 input files for either PDB or IDEAL):\n%i\t %s' % (len(emptyDir), str(emptyDir))
 
