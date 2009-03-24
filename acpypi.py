@@ -37,14 +37,17 @@
 
     alanwilter _at_ gmail _dot_ com
 """
-repositoryId = '$Id $' + '$Revision$' + '$Date$' + '$copyright$' + '$LastChangedDate$'
+svnDateTime = '$Date$'
+svnRev = '$Revision: 0$'
+svnDate,svnTime = svnDateTime.split()[1:3]
+tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev.split()[1])
 
 header = \
 """
 ==========================================================================
-| ACPYPI: AnteChamber PYthon Parser Interface version %s AWSdS 2008-2009 |
+| ACPYPI: AnteChamber PYthon Parser Interface version %s (c) 2008-2009 AWSdS|
 ==========================================================================
-""" % repositoryId
+""" % tag
 
 #    TODO:
 #        Howto Charmm and Amber with NAMD
