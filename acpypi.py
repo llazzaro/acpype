@@ -37,7 +37,7 @@
 
     alanwilter _at_ gmail _dot_ com
 """
-repositoryId = '$Id:$'
+repositoryId = '$Id $'
 
 header = \
 """
