@@ -38,10 +38,8 @@
     alanwilter _at_ gmail _dot_ com
 """
 svnId = '$Id$'
-svnDateTime = '$Date$'
-svnRev = '$Revision$'
-svnDate,svnTime = svnDateTime.split()[1:3]
-tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev.split()[1])
+svnRev,svnDate,svnTime = svnId.split()[2:5]
+tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev)
 
 lineHeader = \
 '''
