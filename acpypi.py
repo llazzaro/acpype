@@ -37,6 +37,7 @@
 
     alanwilter _at_ gmail _dot_ com
 """
+svnId = '$Id$'
 svnDateTime = '$Date$'
 svnRev = '$Revision$'
 svnDate,svnTime = svnDateTime.split()[1:3]
