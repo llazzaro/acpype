@@ -1,4 +1,4 @@
-'$Id$'
+$Id$
 
 Contents:
 dmp.pdb:    inhibitor for HIV-1 protease from 1BVG.pdb
