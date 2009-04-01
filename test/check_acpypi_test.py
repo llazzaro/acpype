@@ -10,43 +10,89 @@ results = {}
 ccpCodes = os.listdir('other')
 ccpCodes.sort()
 
-DirsPassed = []
-DirsFailed = []
-
-goodResults = [
-                '0 E, 1 W, ET , WT _0','0 E, 2 W, ET , WT _0_1',
-                '0 E, 2 W, ET , WT _0_2','0 E, 3 W, ET , WT _0_1_2',
-                '0 E, 2 W, ET , WT _0_3','0 E, 3 W, ET , WT _0_1_3',
-                '0 E, 3 W, ET , WT _0_2_3','0 E, 4 W, ET , WT _0_1_2_3'
+groupResults = [
+               ["totally empty dirs (NO mol2 input files for either PDB or IDEAL)", "Dirs missing pdb.mol2 input files",
+                []],
+               ["mols clean, no erros or warnings","Mols clean",
+                ['0 E, 1 W, ET , WT _0','0 E, 2 W, ET , WT _0_1',
+                 '0 E, 2 W, ET , WT _0_2','0 E, 3 W, ET , WT _0_1_2',
+                 '0 E, 2 W, ET , WT _0_3','0 E, 3 W, ET , WT _0_1_3',
+                 '0 E, 3 W, ET , WT _0_2_3','0 E, 4 W, ET , WT _0_1_2_3']],
+               ["only guessCharge failed, but running mopac with charge = 0 finished fine","Mols only guessCharge failed",
+                ['1 E, 1 W, ET _0, WT _0', '1 E, 2 W, ET _0, WT _0_1',
+                 '1 E, 2 W, ET _0, WT _0_2', '1 E, 3 W, ET _0, WT _0_1_2']],
+               ["atoms in close contact", "Mols have atoms in close contact",
+                ['0 E, 2 W, ET , WT _0_7', '0 E, 3 W, ET , WT _0_1_7',
+                 '0 E, 3 W, ET , WT _0_2_7', '0 E, 3 W, ET , WT _0_3_7',
+                 '0 E, 4 W, ET , WT _0_1_2_7', '0 E, 4 W, ET , WT _0_1_3_7',
+                 '0 E, 4 W, ET , WT _0_2_3_7', '0 E, 5 W, ET , WT _0_1_2_3_7']],
+               ["irregular bonds", "Mols have irregular bonds",
+                ['0 E, 2 W, ET , WT _0_5', '0 E, 3 W, ET , WT _0_1_5',
+                 '0 E, 3 W, ET , WT _0_2_5', '0 E, 4 W, ET , WT _0_1_2_5']],
+               ["irregular bonds and atoms in close contact", "Mols have irregular bonds and atoms in close contact",
+                ['0 E, 3 W, ET , WT _0_5_7', '0 E, 4 W, ET , WT _0_1_5_7',
+                 '0 E, 4 W, ET , WT _0_2_5_7', '0 E, 5 W, ET , WT _0_1_2_5_7',
+                 '0 E, 6 W, ET , WT _0_1_2_3_5_7']],
+               ["couldn't determine all parameters", "Mols have missing parameters",
+                ['0 E, 3 W, ET , WT _0_2_4']],
+               ["missing parameters, irregular bonds and atoms in close contact", "Mols have missing parameters, irregular bonds and atoms in close contact",
+                ['0 E, 5 W, ET , WT _0_2_4_5_7']],
+               ["no 'tmp', acpypi did nothing at all", "Mols have no 'tmp'",
+                ['1 E, 0 W, ET _7, WT ']],
+               ["atoms with same coordinates", "Mols have duplicated coordinates",
+                ['1 E, 0 W, ET _1, WT ']],
+               ["guessCharge failed and atoms in close contact", "Mols have guessCharge failed and atoms in close contact",
+                ['1 E, 3 W, ET _0, WT _0_1_7', '1 E, 3 W, ET _0, WT _0_2_7',
+                 '1 E, 4 W, ET _0, WT _0_1_2_7']],
+               ["guessCharge failed and missing parameters", "Mols have guessCharge failed and missing parameters",
+                ['1 E, 2 W, ET _0, WT _0_4', '1 E, 3 W, ET _0, WT _0_1_4',
+                 '1 E, 3 W, ET _0, WT _0_2_4', '1 E, 4 W, ET _0, WT _0_1_2_4']],
+               ["guessCharge failed and maybe wrong atomtype", "Mols have guessCharge failed and maybe wrong atomtype",
+                ['1 E, 2 W, ET _0, WT _0_6', '1 E, 3 W, ET _0, WT _0_1_6',
+                 '1 E, 3 W, ET _0, WT _0_2_6', '1 E, 4 W, ET _0, WT _0_1_2_6']],
+               ["guessCharge failed and irregular bonds", "Mols have guessCharge failed and irregular bonds",
+                ['1 E, 3 W, ET _0, WT _0_2_5']],
+               ["guessCharge failed, missing parameters and maybe wrong atomtype", "Mols have guessCharge failed, missing parameters and maybe wrong atomtype",
+                ['1 E, 3 W, ET _0, WT _0_4_6', '1 E, 4 W, ET _0, WT _0_1_4_6',
+                 '1 E, 4 W, ET _0, WT _0_2_4_6']],
+               ["guessCharge failed, irregular bonds and maybe wrong atomtype", "Mols have guessCharge failed, irregular bonds and maybe wrong atomtype",
+                ['1 E, 4 W, ET _0, WT _0_2_5_6']],
+               ["guessCharge failed, missing parameters and atoms in close contact", "Mols have guessCharge failed, missing parameters and atoms in close contact",
+                ['1 E, 3 W, ET _0, WT _0_4_7', '1 E, 4 W, ET _0, WT _0_2_4_7']],
+               ["guessCharge failed, maybe wrong atomtype and atoms in close contact", "Mols have guessCharge failed, maybe wrong atomtype and atoms in close contact",
+                ['1 E, 3 W, ET _0, WT _0_6_7', '1 E, 4 W, ET _0, WT _0_1_6_7',
+                 '1 E, 4 W, ET _0, WT _0_2_6_7', '1 E, 5 W, ET _0, WT _0_1_2_6_7']],
+               ["guessCharge failed, irregular bonds and atoms in close contact", "Mols have guessCharge failed, irregular bonds and atoms in close contact",
+                ['1 E, 4 W, ET _0, WT _0_2_5_7']],
+               ["guessCharge failed, irregular bonds, maybe wrong atomtype and atoms in close contact", "Mols have guessCharge failed, irregular bonds, maybe wrong atomtype and atoms in close contact",
+                ['1 E, 5 W, ET _0, WT _0_1_5_6_7', '1 E, 5 W, ET _0, WT _0_2_5_6_7']],
+               ["atoms too close", "Mols have atoms too close",
+                ['1 E, 0 W, ET _2, WT ']],
+               ["atoms too alone", "Mols have atoms too alone",
+                ['1 E, 0 W, ET _3, WT ']],
+               ["tleap failed", "Mols have tleap failed",
+                ['3 E, 1 W, ET _4_5_6, WT _0', '3 E, 2 W, ET _4_5_6, WT _0_1']],
+               ["guessCharge and tleap failed", "Mols have guessCharge and tleap failed",
+                ['4 E, 1 W, ET _0_4_5_6, WT _0', '4 E, 2 W, ET _0_4_5_6, WT _0_1']],
+               ["guessCharge and tleap failed, maybe wrong atomtype", "Mols have guessCharge and tleap failed, maybe wrong atomtype",
+                ['4 E, 2 W, ET _0_4_5_6, WT _0_6', '4 E, 3 W, ET _0_4_5_6, WT _0_1_6']],
+               ["guessCharge failed and mopac timeout", "Mols have guessCharge failed and mopac timeout",
+                ['2 E, 1 W, ET _0_9, WT _0']],
+               ["atoms with same coordinates and maybe wrong atomtype", "Mols have atoms with same coordinates and maybe wrong atomtype",
+                ['1 E, 1 W, ET _1, WT _6']],
+               ["atoms too close and maybe wrong atomtype", "Mols have atoms too close and maybe wrong atomtype",
+                ['1 E, 1 W, ET _2, WT _6']],
+               ["atoms too alone and maybe wrong atomtype", "Mols have atoms too alone and maybe wrong atomtype",
+                ['1 E, 1 W, ET _3, WT _6']],
+               ["atoms with same coordinates and too close", "Mols have atoms with same coordinates and too close",
+                ['2 E, 0 W, ET _1_2, WT ']],
+               ["atoms with same coordinates and too alone", "Mols have atoms with same coordinates and too alone",
+                ['2 E, 0 W, ET _1_3, WT ']],
+               ["atoms with same coordinates, too alone and maybe wrong atomtype", "Mols have atoms with same coordinates, too alone and maybe wrong atomtype",
+                ['2 E, 1 W, ET _1_3, WT _6']],
+               ["atoms with same coordinates, too close and too alone", "Mols have atoms with same coordinates, too close and too alone",
+                ['3 E, 0 W, ET _1_2_3, WT ']],
                ]
-
-guessFailedOnly = [
-                   '1 E, 1 W, ET _0, WT _0', '1 E, 2 W, ET _0, WT _0_1',
-                   '1 E, 2 W, ET _0, WT _0_2', '1 E, 3 W, ET _0, WT _0_1_2'
-                   ]
-
-closeContact = [
-                '0 E, 2 W, ET , WT _0_7', '0 E, 3 W, ET , WT _0_1_7',
-                '0 E, 3 W, ET , WT _0_2_7', '0 E, 3 W, ET , WT _0_3_7',
-                '0 E, 4 W, ET , WT _0_1_2_7', '0 E, 4 W, ET , WT _0_1_3_7',
-                '0 E, 4 W, ET , WT _0_2_3_7', '0 E, 5 W, ET , WT _0_1_2_3_7'
-                ]
-
-bondIrreg = [
-             '0 E, 2 W, ET , WT _0_5', '0 E, 3 W, ET , WT _0_1_5',
-             '0 E, 3 W, ET , WT _0_2_5', '0 E, 4 W, ET , WT _0_1_2_5'
-            ]
-
-# BOND IRREGULAR / ATOMS IN CLOSE CONTACT
-biAndAicc = [
-             '0 E, 3 W, ET , WT _0_5_7', '0 E, 4 W, ET , WT _0_1_5_7',
-             '0 E, 4 W, ET , WT _0_2_5_7', '0 E, 5 W, ET , WT _0_1_2_5_7',
-             '0 E, 6 W, ET , WT _0_1_2_3_5_7'
-             ]
-
-missingPar = [
-              '0 E, 3 W, ET , WT _0_2_4'
-              ]
 
 error_warn_messages = \
 '''
@@ -75,7 +121,8 @@ error_warn_messages = \
     errorType 6 = 'Tleap failed'
     errorType 7 = "No such file or directory: 'tmp'" # can be bondtyes wrong or wrong frozen atom type
     errorType 8 = 'syntax error'
-    errorType 9 = 'UNKNOWN ERROR'
+    errorType 9 = 'MOPAC taking too long to finish'
+    errorType 10 = 'UNKNOWN ERROR'
 '''
 
 totalPdbOkCount = 0
@@ -101,6 +148,7 @@ ET5 = []
 ET6 = []
 ET7 = set()
 ET8 = set()
+ET9 = []
 
 WT3 = set()
 WT4 = []
@@ -177,10 +225,13 @@ def analyseFile(mol, structure, file):
                 pass
             else:
                 print "UNKNOWN ERROR:", file, line
-                errorTypes += '_9'
+                errorTypes += '_10'
         if "No such file or directory: 'tmp'" in line:
             errorTypes += '_7'
             ET7.add('%s_%s'% (mol, structure))
+        if "MOPAC taking too long to finish" in line:
+            errorTypes += '_9'
+            ET9.append('%s_%s'% (mol, structure))
     out = parseSummurisedLine(warnTypes, errorTypes)
     if mapResults.has_key(out):
         if mapResults[out].has_key(mol):
@@ -243,19 +294,20 @@ def myComp(vx,vy):
         else:
             return -1
 
-def sortList(d,p,i,typeMess):
+def sortList(lista,typeMess):
     for mol, l in mapResults[typeMess].items():
         if len(l) == 2:
-            d.append(mol)
+            lista[0].append(mol)
         elif len(l) == 1:
-            if l[0] == 'pdb': p.append(mol)
-            elif l[0] == 'ideal': i.append(mol)
+            if l[0] == 'pdb': lista[1].append(mol)
+            elif l[0] == 'ideal': lista[2].append(mol)
         else:
             print "problem with", typeMess, mol, l
-    return d,p,i
+    return lista
 
-def printResults(dList, pList, iList, subHead, header=None):
+def printResults(lista, subHead, header=None):
     global id
+    dList, pList, iList = lista
     dList.sort()
     pList.sort()
     iList.sort()
@@ -273,9 +325,9 @@ def printResults(dList, pList, iList, subHead, header=None):
     per = total / (allTotal * 0.01)
     perPdb = pTotal / (allTotal * 0.01)
     perIdeal = iTotal / (allTotal * 0.01)
-    print "Total: %i of %i (%3.2f%%)" % (total, allTotal, per)
     print "PDB Total: %i of %i (%3.2f%%)" % (pTotal, allTotal, perPdb)
     print "IDEAL Total: %i of %i (%3.2f%%)" % (iTotal, allTotal, perIdeal)
+    print "Total: %i of %i (%3.2f%%)" % (total, allTotal, per)
     print 80*'-'
     id += 3
     return total
@@ -345,120 +397,48 @@ for molDir in ccpCodes:
     if not ideal: failedIdeal.append(molDir)
     if not pdb and not ideal: failedBoth.append(molDir)
 
-    if out1 in goodResults and out2 in goodResults:
-        DirsPassed.append(molDir)
+a, b, c = set(emptyDir), set(missPdbMol2), set(missIdealMol2)
+pdbList = list(b.difference(a))
+idealList = list(c.difference(a))
+groupResults[0].append([emptyDir, pdbList, idealList])
+
+c = 1
+while c < len(groupResults):
+    groupResults[c].append([[],[],[]])
+    c += 1
 
 keys = mapResults.keys()
 keys.sort()
 keys.sort(cmp=myComp)
-contador = 0
-dGood, pdbGood, idealGood = [],[],[]
-dGuessFail, pdbGuessFail, idealGuessFail = [],[],[]
-dCloseContact, pdbCloseContact, idealCloseContact = [],[],[]
-dBondIrreg, pdbBondIrreg, idealBondIrreg = [],[],[]
-dBiAndAicc, pdbBiAndAicc, idealBiAndAicc = [],[],[]
-dMissPar, pdbMissPar, idealMissPar = [],[],[]
+
+groupMess = []
+for m in groupResults:
+    groupMess += m[2]
 for typeMess in keys:
-    size = len(typeMess)
-    txt = str(mapResults[typeMess])
-    Nboth = txt.count("['pdb', 'ideal']") + txt.count("['ideal', 'pdb']")
-    Npdb = txt.count("['pdb']")
-    Nideal = txt.count("['ideal']")
-    contador += 2*Nboth + Npdb + Nideal
-    if typeMess in goodResults:
-        dGood, pdbGood, idealGood = sortList(dGood, pdbGood, idealGood, typeMess)
-    elif typeMess in guessFailedOnly:
-        dGuessFail, pdbGuessFail, idealGuessFail = sortList(dGuessFail, pdbGuessFail, idealGuessFail, typeMess)
-    elif typeMess in closeContact:
-        dCloseContact, pdbCloseContact, idealCloseContact = sortList(dCloseContact, pdbCloseContact, idealCloseContact, typeMess)
-    elif typeMess in bondIrreg:
-        dBondIrreg, pdbBondIrreg, idealBondIrreg = sortList(dBondIrreg, pdbBondIrreg, idealBondIrreg, typeMess)
-    elif typeMess in biAndAicc:
-        dBiAndAicc, pdbBiAndAicc, idealBiAndAicc = sortList(dBiAndAicc, pdbBiAndAicc, idealBiAndAicc, typeMess)
-    elif typeMess in missingPar:
-        dMissPar, pdbMissPar, idealMissPar = sortList(dMissPar, pdbMissPar, idealMissPar, typeMess)
-    else:
+    if typeMess not in groupMess:
+        size = len(typeMess)
+        txt = str(mapResults[typeMess])
+        Nboth = txt.count("['pdb', 'ideal']") + txt.count("['ideal', 'pdb']")
+        Npdb = txt.count("['pdb']")
+        Nideal = txt.count("['ideal']")
         print '*%s*%s%i %i %i' % (typeMess,(40-size)*' ', 2*Nboth, Npdb, Nideal)
+
+for typeMess in keys:
+    index = 0
+    for group in groupResults:
+        msg = group[2]
+        if typeMess in msg:
+            groupResults[index][3] = sortList(groupResults[index][3], typeMess)
+        index += 1
 
 allTotal = len(ccpCodes) *2
 
-emptyDir.sort()
-print '\n[A] Totally Empty Dirs (NO mol2 input files for either PDB or IDEAL):\n%i\t %s' % (len(emptyDir), str(emptyDir))
-a, b, c = set(emptyDir), set(missPdbMol2), set(missIdealMol2)
-diff1 = list(b.difference(a))
-diff1.sort()
-print '\n[B] Dirs missing pdb.mol2 input files (besides [A]):\n%i\t %s' % (len(diff1), str(diff1))
-diff3 = list(c.difference(a))
-diff3.sort()
-print '\n[C] Dirs missing ideal.mol2 input files (besides [A]):\n%i\t %s' % (len(diff3), str(diff3))
-missPdbTotal = len(missPdbMol2)
-missIdealTotal = len(missIdealMol2)
-missTotal = missPdbTotal + missIdealTotal
-perMiss = missTotal / (allTotal * 0.01)
-perPdbMiss = missPdbTotal / (allTotal * 0.01)
-perIdealMiss = missIdealTotal / (allTotal * 0.01)
-print "Missing Total: %i of %i (%3.2f%%)" % (missTotal, allTotal, perMiss)
-print "Missing PDB Total: %i of %i (%3.2f%%)" % (missPdbTotal, allTotal, perPdbMiss)
-print "Missing IDEAL Total: %i of %i (%3.2f%%)" % (missIdealTotal, allTotal, perIdealMiss)
-
-
-header = "mols clean, no erros or warnings"
-subHead = "Mols clean"
-goodTotal = printResults(dGood, pdbGood, idealGood, subHead, header)
-
-header = "only guessCharge failed, but running mopac with charge = 0 finished fine"
-subHead = "Mols only guessCharge failed"
-guessTotal = printResults(dGuessFail, pdbGuessFail, idealGuessFail, subHead, header)
-
-header = "atoms in close contact"
-subHead = "Mols have atoms in close contact"
-closeTotal = printResults(dCloseContact, pdbCloseContact, idealCloseContact, subHead, header)
-
-header = "irregular bonds "
-subHead = "Mols have irregular bonds"
-bondTotal = printResults(dBondIrreg, pdbBondIrreg, idealBondIrreg, subHead, header)
-
-header = "irregular bonds and atoms in close contact"
-subHead = "Mols have irregular bonds and atoms in close contact"
-biAndAiccTotal = printResults(dBiAndAicc, pdbBiAndAicc, idealBiAndAicc, subHead, header)
-
-header = "couldn't determine all parameters"
-subHead = "Mols have missing parameters"
-missParTotal = printResults(dMissPar, pdbMissPar, idealMissPar, subHead, header)
-
-print "\nmissTotal + goodTotal + guessTotal + closeTotal + bondTotal + biAndAiccTotal + missParTotal =" ,\
-     missTotal + goodTotal + guessTotal + closeTotal + bondTotal + biAndAiccTotal + missParTotal
-
-#print "\n*** For results [J], [K] and [L], guessCharge failed, but running mopac with charge = 0 finished fine:"
-#dBondProb.sort()
-#print '\n[M] Mols bond problems for both PDB and Ideal:\n%i\t %s' % (len(dBondProb), str(dBondProb))
-#pdbBondProb.sort()
-#print '\n[N] Mols bond problems with PDB ONLY, besides [M]:\n%i\t %s' % (len(pdbBondProb), str(pdbBondProb))
-#idealBondProb.sort()
-#print '\n[O] Mols bond problems with IDEAL ONLY, besides [M]:\n%i\t %s' % (len(idealBondProb), str(idealBondProb))
-
-
-#lChargeOk = parseChargeList(WT6, dGood)
-#print '\n[G] Mols with charge not ZERO that are OK: %i\t %s' % (len(lChargeOk), str(lChargeOk))
-#lPdbChargeOk = parseChargeList(WT6, pdbGood)
-#print '\n[H] Mols with charge not ZERO that are OK for PDB ONLY, besides [G]: %i\t %s' % (len(lPdbChargeOk), str(lPdbChargeOk))
-#lIdealChargeOk = parseChargeList(WT6, idealGood)
-#print '\n[I] Mols with charge not ZERO that are OK for IDEAL ONLY, besides [G]: %i\t %s' % (len(lIdealChargeOk), str(lIdealChargeOk))
-
-numDirs = len(ccpCodes)
-totalPdbGood = len(pdbGood) + len(dGood)
-totalIdealGood = len(idealGood) + len(dGood)
-perPdb = totalPdbGood / (totalPdbMol2Count * 0.01)
-perIdeal= totalIdealGood / (totalIdealMol2Count * 0.01)
-
-#print "\n--------------------------------\nTotal molecules (Dirs): %i" % numDirs
-#print "\nPDB believed to be OK: %i of %i (%3.2f%%)" % (totalPdbGood,totalPdbMol2Count, perPdb)
-#print "\nIdeal believed to be OK: %i of %i (%3.2f%%)" % (totalIdealGood, totalIdealMol2Count, perIdeal)
-#
-#perPdb = totalPdbOkCount / (totalPdbMol2Count * 0.01)
-#perIdeal= totalIdealOkCount / (totalIdealMol2Count * 0.01)
-#print "\nPDB for which ACPYPI generated results: %i of %i (%3.2f%%)" % (totalPdbOkCount,totalPdbMol2Count, perPdb)
-#print "\nIDEAL for which ACPYPI generated results: %i of %i (%3.2f%%)" % (totalIdealOkCount, totalIdealMol2Count, perIdeal)
-
-print contador
+totalTxt = ''
+for group in groupResults:
+    header, subHead, dummy, lista = group
+    subTot = printResults(lista, subHead, header)
+    totalTxt += "+ %i " % subTot
+totalTxt = totalTxt[2:]
+sumVal = eval(totalTxt)
+print "%s= %s" % (totalTxt, sumVal)
 
