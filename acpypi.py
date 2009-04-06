@@ -327,27 +327,30 @@ class AbstractTopol:
 
         if not self.chargeVal and not done:
             self.printWarn("no charge value given, trying to guess one...")
+            mol2FileForGuessCharge = self.inputFile
             if self.ext == ".pdb":
                 cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                       self.baseName)
                 self.printDebug("guessCharge: " + cmd)
                 out = getoutput(cmd)
                 self.printDebug(out)
+                mol2FileForGuessCharge = os.path.abspath(self.baseName+".mol2")
 
             cmd = '%s -i %s -fi mol2 -o tmp -fo mol2 -c gas -pf y' % \
-                                                        (self.acExe, self.inputFile)
+                                                        (self.acExe, mol2FileForGuessCharge)
 
             if self.debug:
                 self.printMess("Debugging...")
                 cmd = cmd.replace('-pf y', '-pf n')
-            #print cmd
+            print cmd
 
             log = getoutput(cmd)
             #print log
-            m = log.split()
-            if len(m) >= 21:
+            m = log.splitlines()
+            if len(m) > 5:
                 try:
-                    charge = float(m[14].replace('(','').replace(')',''))
+                    n = m[-1].split()
+                    charge = float(n[14].replace('(','').replace(')',''))
                 except:
                     error = True
             elif len(m) == 0:
