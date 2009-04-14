@@ -275,6 +275,130 @@ def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separa
 
     return separator.join(time)
 
+def splitBlock(dat):
+    '''split a amber parm dat file in blocks
+       0 = mass, 1 = extra + bond, 2 = angle, 3 = dihedral, 4 = improp, 5 = hbond
+       6 = equiv nbon, 7 = nbon, 8 = END, 9 = etc.
+    '''
+    dict = {}
+    count = 0
+    for line in dat:
+        line = line.rstrip()
+        if dict.has_key(count):
+            dict[count].append(line)
+        else:
+            dict[count] = [line]
+        if not line:
+            count += 1
+    return dict
+
+def getParCode(line):
+    key = line.replace(' -','-').replace('- ','-').split()[0]
+    return key
+
+def parseFrcmod(lista):
+    heads = ['MASS', 'BOND', 'ANGL', 'DIHE', 'IMPR', 'HBON', 'NONB']
+    dict = {}
+    for line in lista[1:]:
+        line = line.strip()
+        if line[:4] in heads:
+            head = line[:4]
+            dict[head] = []
+            dd = {}
+            continue
+        elif line:
+            key = line.replace(' -','-').replace('- ','-').split()[0]
+            if dd.has_key(key):
+                if not dd[key].count(line):
+                    dd[key].append(line)
+            else:
+                dd[key] = [line]
+            dict[head]= dd
+    for k in dict.keys():
+        if not dict[k]: dict.pop(k)
+    return dict
+
+def parmMerge(fdat1, fdat2, frcmod = False):
+    '''merge two amber parm dat/frcmod files and save in /tmp'''
+    name1 = os.path.basename(fdat1).split('.dat')[0]
+    if frcmod:
+        name2 = os.path.basename(fdat2).split('.')[1]
+    else:
+        name2 = os.path.basename(fdat2).split('.dat')[0]
+    mname = '/tmp/'+name1+name2+'.dat'
+    mdatFile = open(mname,'w')
+    mdat = ['merged %s %s' % (name1,name2)]
+
+    #if os.path.exists(mname): return mname
+    dat1 = splitBlock(file(fdat1).readlines())
+
+    if frcmod:
+        dHeads = {'MASS':0, 'BOND':1, 'ANGL':2, 'DIHE':3, 'IMPR':4, 'HBON':5, 'NONB':7}
+        dat2 = parseFrcmod(file(fdat2).readlines()) # dict
+        for k in dat2.keys():
+            for parEntry in dat2[k].keys():
+                idFirst = None
+                for line in dat1[dHeads[k]][:]:
+                    if line:
+                        key = line.replace(' -','-').replace('- ','-').split()[0]
+                        if key == parEntry:
+                            if not idFirst: idFirst = dat1[dHeads[k]].index(line)
+                            dat1[dHeads[k]].remove(line)
+                rev = dat2[k][parEntry][:]
+                rev.reverse()
+                if idFirst == None: idFirst = 0
+                for ll in rev:
+                    dat1[dHeads[k]].insert(idFirst,ll)
+        dat1[0][0] = mdat[0]
+        for k in dat1.keys():
+            for line in dat1[k]:
+                mdatFile.write(line+'\n')
+        return mname
+
+    dat2 = splitBlock(file(fdat2).readlines())
+    for k in dat1.keys()[:8]:
+        if k == 0:
+            lines = dat1[k][1:-1]+dat2[k][1:-1]+['']
+            for line in lines:
+                mdat.append(line)
+        if k == 1:
+            for i in dat1[k]:
+                if '-' in i:
+                    id1 = dat1[k].index(i)
+                    break
+            for j in dat2[k]:
+                if '-' in j:
+                    id2 = dat2[k].index(j)
+                    break
+            l1 = dat1[k][:id1]
+            l2 = dat2[k][:id2]
+            line = ''
+            for item in l1 + l2:
+                line += item.strip() + ' '
+            mdat.append(line)
+            lines = dat1[k][id1:-1]+dat2[k][id2:-1]+['']
+            for line in lines:
+                mdat.append(line)
+        if k in [2,3,4,5,6]: # angles, p dih, imp dih
+            lines = dat1[k][:-1]+dat2[k][:-1]+['']
+            for line in lines:
+                mdat.append(line)
+        if k == 7:
+            lines = dat1[k][:-1]+dat2[k][1:-1]+['']
+            for line in lines:
+                mdat.append(line)
+    for k in dat1.keys()[8:]:
+        for line in dat1[k]:
+            mdat.append(line)
+    for k in dat2.keys()[9:]:
+        for line in dat2[k]:
+            mdat.append(line)
+    for line in mdat:
+        mdatFile.write(line+'\n')
+    mdatFile.close()
+
+    return mname
+
 class AbstractTopol:
     """
         Super class to build topologies
@@ -788,11 +912,31 @@ Usage: antechamber -i   input file name
                 check += line
         self.printQuoted(check[:-1])
 
+    def locateDat(self, aFile):
+        '''locate a file pertinent to $AMBERHOME/dat/leap/parm/'''
+        amberhome = os.environ.get('AMBERHOME')
+        if amberhome:
+            aFileF = os.path.join(amberhome,'dat/leap/parm',aFile)
+            if os.path.exists(aFileF): return aFileF
+        aFileF = os.path.join(os.path.dirname(self.acExe),'../dat/leap/parm',aFile)
+        if os.path.exists(aFileF): return aFileF
+        return None
+
     def execParmchk(self):
 
         self.makeDir()
         cmd = '%s -i %s -f mol2 -o %s' % (self.parmchkExe, self.acMol2FileName,
                                           self.acFrcmodFileName)
+
+        if self.atomType == 'amber':
+            parm99file = self.locateDat('parm99.dat')
+            gaffFile = self.locateDat('gaff.dat')
+            frcmodff99SB = self.locateDat('frcmod.ff99SB')
+            parm99gaffFile = parmMerge(parm99file,gaffFile)
+            parm99SBgaffFile = parmMerge(parm99gaffFile,frcmodff99SB, frcmod = True)
+            #parm99gaffFile = '/Users/alan/workspace/acpypi/ffamber_additions/parm99SBgaff.dat'
+            cmd += ' -p %s' % parm99SBgaffFile
+
         self.parmchkLog = getoutput(cmd)
 
         self.printDebug(cmd)
@@ -1788,6 +1932,7 @@ Usage: antechamber -i   input file name
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
             temp.append(line)
+        temp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headBonds)
@@ -1812,6 +1957,7 @@ Usage: antechamber -i   input file name
             line = "%6i %6i %6i ; %6s - %-6s\n" % (id1, id2, 1, a1Name,
                                                         a2Name)
             temp.append(line)
+        temp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headPairs)
@@ -1833,6 +1979,7 @@ Usage: antechamber -i   input file name
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
             id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
             temp.append(line)
+        temp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headAngles)
@@ -1864,6 +2011,7 @@ Usage: antechamber -i   input file name
             (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
             + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
             temp.append(line)
+        temp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headProDih)
@@ -1894,6 +2042,7 @@ Usage: antechamber -i   input file name
             line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
                             (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
             temp.append(line)
+        temp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headImpDih)
@@ -2539,11 +2688,13 @@ if __name__ == '__main__':
 
             molecule.createACTopol()
             molecule.createMolTopol()
+        acpypiFailed = False
     except:
         exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
         print "ACPYPI FAILED: %s" % exceptionValue
         if dg:
             traceback.print_tb(exceptionTraceback, file=sys.stdout)
+        acpypiFailed = True
 
     execTime = int(round(time.time() - t0))
     if execTime == 0:
@@ -2553,4 +2704,6 @@ if __name__ == '__main__':
     try: rmtree(molecule.tmpDir)
     except: pass
     print "Total time of execution: %s" % msg
+    if acpypiFailed: sys.exit(1)
+
 

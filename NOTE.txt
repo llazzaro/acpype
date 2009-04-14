@@ -1,0 +1,27 @@
+Running check_acpypi.py
+
+22 pdb files created by pymol. They are tripeptides of every amino acid
+including 2 variants for HIS. PDBs with ARG and HIP are type gly-res-gly,
+because acpypi failed to run mopac if it was RRR or JJJ (3 x HIP). Peptides have
+N- and T- termini.
+
+Using Gromacs to generate tops for AMBER99SB and OPLSAA.
+
+By the way, JJJ has another problem: its net charge should be +1, but gasteiger
+method failed to get the right value, instead it says it is 'Zero'.
+
+Using acpypi with option '-a amber' (which means parm99.dat + gaff.dat +
+frcmod.ff99SB) seems to give to better results (a full test with EM with gromacs
+should be carried out).
+
+Comparing acpypi amber results against AMBER99SB and they *match* except
+by:
+    - charges (can be either gasteiger or bcc with acpypi)
+    - res WWW (trp-trp-trp) which has 6 extra improper dihedrals related
+      to atoms sharing in the 5-ring and 6-ring of the TRP. These imp dih
+      would be there in order to keep the planarity between 5-ring and 6-ring.
+    - res RRR (gly-arg-gly) for which atom CZ (id 25) got atom type CM instead
+      of CA.
+    - res YYY (tyr-tyr-tyr) for which atom CZ (id 15) got atom type CA instead
+      of C.
+    However, their influence are neglectful, also in potential energy.
