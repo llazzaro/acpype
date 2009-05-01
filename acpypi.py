@@ -83,6 +83,144 @@ minDist = 0.5
 maxDist2 = maxDist**2 #squared Ang.
 minDist2 = minDist**2 #squared Ang.
 
+dictAmbAtomType2AmbGmxCode = \
+{'BR':'amber99_1','C':'amber99_2','CA':'amber99_3','CB':'amber99_4','CC':'amber99_5',
+ 'CK':'amber99_6','CM':'amber99_7','CN':'amber99_8','CQ':'amber99_9','CR':'amber99_10',
+ 'CT':'amber99_11','CV':'amber99_12','CW':'amber99_13','C*':'amber99_14','Ca':'amber99_15',
+ 'F':'amber99_16','H':'amber99_17','HC':'amber99_18','H1':'amber99_19','H2':'amber99_20',
+ 'H3':'amber99_21','HA':'amber99_22','H4':'amber99_23','H5':'amber99_24','HO':'amber99_25',
+ 'HS':'amber99_26','HW':'amber99_27','HP':'amber99_28','I':'amber99_29','Cl':'amber99_30',
+ 'Na':'amber99_31','IB':'amber99_32','Mg':'amber99_33','N':'amber99_34','NA':'amber99_35',
+ 'NB':'amber99_36','NC':'amber99_37','N2':'amber99_38','N3':'amber99_39','N*':'amber99_40',
+ 'O':'amber99_41','OW':'amber99_42','OH':'amber99_43','OS':'amber99_44','O2':'amber99_45',
+ 'P':'amber99_46','S':'amber99_47','SH':'amber99_48','CU':'amber99_49','FE':'amber99_50',
+ 'K':'amber99_51','Rb':'amber99_52','Cs':'amber99_53','Li':'amber99_56','Zn':'amber99_57',
+ 'Sr':'amber99_58','Ba':'amber99_59','MCH3A':'MCH3A','MCH3B':'MCH3B','MNH2':'MNH2','MNH3':'MNH3','MW':'MW'}
+
+dictOplsAtomType2OplsGmxCode = \
+{'Ac3+':['697'],'Am3+':['699'],'Ar':['Ar','097'],'Ba2+':['414'],
+ 'Br':['722','730'],'Br-':['402'],
+ 'CT':['064','076','122','135','136','137','138','139','148','149','152','157','158','159','161','173','174','175','181','182','183','184','206','207','208','209','210','211','212','213','214','215','216','217','218','219','220','223','224','225','229','230','242','243','244','256','257','258','259','273','274','275','276','291','292','293','294','297','305','306','307','308','331','371','373','375','391','396','421','431','443','448','453','455','458','461','468','476','482','484','486','490','491','492','498','499','505','515','516','645','670','671','672','673','674','675','676','677','678','679','680','681','701','725','747','748','755','756','757','758','762','764','765','766','774','775','776','782','783','903','904','905','906','907','908','912','913','914','915','942','943','944','945','951','957','959','960','961','962','963','964'],
+ 'CA':['053','145','147','166','199','221','228','260','263','266','302','312','315','317','336','351','362','380','457','460','463','472','488','521','522','523','528','532','533','538','539','551','582','590','591','592','593','604','605','606','607','608','609','610','611','612','625','644','647','648','649','650','651','652','714','716','718','720','724','727','729','731','735','736','737','738','739','742','752','768','916','917','918'],
+ 'C3':['007','010','036','039','063','065','067','068','069','070','080','088','090','092','096','106','107','109','126','132','415','418','425','429'],
+ 'C':['001','017','026','058','095','131','231','234','235','247','252','267','320','322','334','366','378','470','471','772','952'],
+ 'C2':['005','009','015','016','019','022','027','028','031','034','037','056','057','061','071','081','089','091','093','110'],
+ 'CT_2':['223B','224B','225B','246','283','284','285','292B','293B','295','298','299','906B','912B'],
+ 'CM':['141','142','143','227','323','324','337','338','381','382','517','518','708'],
+ 'CW':['508','514','543','552','561','567','575','583','588','637'],
+ 'CB':['050','349','350','364','365','501','595','623','624'],
+ 'CH':['006','008','014','025','029','030','060','073'],
+ 'CZ':['261','423','754','925','927','928','929','931'],
+ 'CO':['189','191','193','195','197','198'],
+ 'C_2':['232','233','277','280','465'],
+ 'CR':['506','509','558','572','634'],
+ 'CQ':['347','531','621','642'],
+ 'CV':['507','560','574','636'],
+ 'CY':['711','712','713','733'],
+ 'CS':['544','568','589'],
+ 'CK':['353','627'],'CN':['502','594'],'CP':['043','048'],'CU':['550','581'],
+ 'CT_3':['245','296'],'C=':['150','178'],'CD':['011','075'],
+ 'C4':['066'],'C7':['077'],'C8':['074'],'C9':['072'],'CX':['510'],
+ 'C!':['145B'],'C*':['500'],'C+':['700'],'C_3':['271'],
+ 'CC':['045'],'CF':['044'],'CG':['049'],'CT_4':['160'],
+ 'Ca2+':['412'],
+ 'Cl':['123','151','226','264'],
+ 'Cl-':['401','709'],
+ 'Cs+':['410'],'Cu2+':['Cu2+'],'Eu3+':['705'],
+ 'F':['164','719','721','726','728','786','956','965'],
+ 'F-':['400'],'Fe2+':['Fe2+'],'Gd3+':['706'],
+ 'HA':['146','316','318','389','524','525','526','529','534','535','536','540','541','546','547','554','555','556','563','564','565','569','570','576','577','578','584','585','586','597','598','599','600','601','602','613','614','615','616','617','618','619','629','630','631','638','639','640','643','653','654','655','656','715','717','740','741','746'],
+ 'HC':['140','144','153','156','165','176','185','190','192','194','196','255','279','282','329','330','332','344','372','374','376','392','416','419','422','426','430','432','444','449','454','456','459','462','469','477','483','485','487','702','710','759','763','777','778','779','784','911','926','930','950','958'],
+ 'H':['004','013','041','047','128','240','241','250','254','314','325','327','339','342','343','357','358','360','367','369','383','385','387','388','428','479','481','504','513','545','553','562','596','632','744','745','909','910'],
+ 'H3':['021','052','055','104','105','289','290','301','304','310','941','955'],
+ 'HO':['024','079','155','163','168','170','172','188','270','435'],
+ 'HS':['033','086','087','204','205'],
+ 'HW':['112','114','117','119','796'],
+ 'H4':['345','390'],'H5':['355','359'],
+ 'He':['130'],'I':['732'],'I-':['403'],'K+':['408'],'Kr':['098'],
+ 'LP':['433','797'],'La3+':['703'],'Li+':['404','406'],
+ 'MCH3A':['MCH3A'],'MCH3B':['MCH3B'],'MNH2':['MNH2'],'MNH3':['MNH3'],
+ 'MW':['MW','115'],'Mg2+':['411'],
+ 'NA':['040','046','319','321','333','354','361','377','379','503','512','542','548','557','587','628'],
+ 'NC':['311','335','346','348','363','520','527','530','537','603','620','622','641','646'],
+ 'N':['003','012','094','237','238','239','249','251','265','478','480','787'],
+ 'N3':['020','101','102','103','286','287','288','309','427','940','953'],
+ 'N2':['051','054','300','303','313','341','356','368','386','743'],
+ 'NB':['042','352','511','549','559','573','580','626','635'],
+ 'N*':['319B','333B','354B','377B'],
+ 'NT':['127','900','901','902'],
+ 'NZ':['262','424','750','753'],
+ 'NO':['760','767'],'NY':['749','751'],
+ 'Na+':['405','407'],'Nd3+':['704'],'Ne':['129'],
+ 'OS':['062','108','179','180','186','395','442','447','452','467','473','566','571','579','773'],
+ 'O':['002','059','236','248','253','326','328','340','370','384','771','788'],
+ 'OH':['023','078','154','162','167','169','171','187','268','420','434'],
+ 'O2':['018','125','272','394','441','446','451','954'],
+ 'OW':['111','113','116','118','795'],
+ 'O_2':['278','281','466'],
+ 'OY':['475','494','497'],
+ 'OL':['120'],'ON':['761'],'OU':['437'],'O_3':['269'],
+ 'P':['393','440','445','450','785'],
+ 'P+':['781'],'Rb+':['409'],
+ 'S':['035','038','084','085','124','202','203','222','633'],
+ 'SH':['032','082','083','200','201','417','734'],
+ 'SI':['SI'],'SY':['474'],'SY2':['493'],'SZ':['496'],'Sr2+':['413'],
+ 'Th4+':['698'],'U':['436'],'Xe':['099'],'Yb3+':['707'],'Zn2+':['Zn2+']}
+
+# Cross dictAmbAtomType2AmbGmxCode with dictOplsAtomType2OplsGmxCode & add H1,HP,H2
+dictAtomTypeAmb2OplsGmxCode = {'H1':['140','1.00800'],'HP':['140','1.00800'],'H2':['140','1.00800']}
+dictOplsMass = {'SY2': ['32.06000'], 'Zn2+': ['65.37000'], 'CQ': ['12.01100'], 'CP': ['12.01100'], 'Nd3+': ['144.24000'], 'Br-': ['79.90400'], 'Cu2+': ['63.54600'], 'Br': ['79.90400'], 'H': ['1.00800'], 'P': ['30.97376'], 'Sr2+': ['87.62000'], 'ON': ['15.99940'], 'OL': ['0.00000'], 'OH': ['15.99940'], 'OY': ['15.99940'], 'OW': ['15.99940'], 'OU': ['15.99940'], 'OS': ['15.99940'], 'Am3+': ['243.06000'], 'HS': ['1.00800'], 'HW': ['1.00800'], 'HO': ['1.00800'], 'HC': ['1.00800'], 'HA': ['1.00800'], 'O2': ['15.99940'], 'Ca2+': ['40.08000'], 'Th4+': ['232.04000'], 'He': ['4.00260'], 'C': ['12.01100'], 'Cs+': ['132.90540'], 'O': ['15.99940'], 'Gd3+': ['157.25000'], 'S': ['32.06000'], 'P+': ['30.97376'], 'La3+': ['138.91000'], 'H3': ['1.00800'], 'H4': ['1.00800'], 'MNH2': ['0.00000'], 'MW': ['0.00000'], 'NB': ['14.00670'], 'K+': ['39.09830'], 'Ne': ['20.17970'], 'Rb+': ['85.46780'], 'C+': ['12.01100'], 'C*': ['12.01100'], 'NO': ['14.00670'], 'CT_4': ['12.01100'], 'NA': ['14.00670'], 'C!': ['12.01100'], 'NC': ['14.00670'], 'NZ': ['14.00670'], 'CT_2': ['12.01100'], 'CT_3': ['12.01100'], 'NY': ['14.00670'], 'C9': ['14.02700'], 'C8': ['13.01900'], 'C=': ['12.01100'], 'Yb3+': ['173.04000'], 'C3': ['15.03500', '12.01100'], 'C2': ['14.02700'], 'C7': ['12.01100'], 'C4': ['16.04300'], 'CK': ['12.01100'], 'Cl-': ['35.45300'], 'N*': ['14.00670'], 'CH': ['13.01900'], 'CO': ['12.01100'], 'CN': ['12.01100'], 'CM': ['12.01100'], 'F': ['18.99840'], 'CC': ['12.01100'], 'CB': ['12.01100'], 'CA': ['12.01100'], 'CG': ['12.01100'], 'CF': ['12.01100'], 'N': ['14.00670'], 'CZ': ['12.01100'], 'CY': ['12.01100'], 'CX': ['12.01100'], 'Ac3+': ['227.03000'], 'CS': ['12.01100'], 'CR': ['12.01100'], 'N2': ['14.00670'], 'N3': ['14.00670'], 'CW': ['12.01100'], 'CV': ['12.01100'], 'CU': ['12.01100'], 'CT': ['12.01100'], 'SZ': ['32.06000'], 'SY': ['32.06000'], 'Cl': ['35.45300'], 'NT': ['14.00670'], 'O_2': ['15.99940'], 'Xe': ['131.29300'], 'SI': ['28.08000'], 'SH': ['32.06000'], 'Eu3+': ['151.96000'], 'F-': ['18.99840'], 'MNH3': ['0.00000'], 'H5': ['1.00800'], 'C_3': ['12.01100'], 'C_2': ['12.01100'], 'I-': ['126.90450'], 'LP': ['0.00000'], 'I': ['126.90450'], 'Na+': ['22.98977'], 'Li+': ['6.94100'], 'U': ['0.00000'], 'MCH3A': ['0.00000'], 'MCH3B': ['0.00000'], 'CD': ['13.01900', '12.01100'], 'O_3': ['15.99940'], 'Kr': ['83.79800'], 'Fe2+': ['55.84700'], 'Ar': ['39.94800'], 'Mg2+': ['24.30500'], 'Ba2+': ['137.33000']}
+for ambKey in dictAmbAtomType2AmbGmxCode.keys():
+    if dictOplsAtomType2OplsGmxCode.has_key(ambKey):
+        dictAtomTypeAmb2OplsGmxCode[ambKey] = dictOplsAtomType2OplsGmxCode[ambKey]+list(dictOplsMass[ambKey])
+
+# learnt from 22 residues test.
+dictAtomTypeAmb2OplsGmxCode = {'HS': ['204', '1.008'], 'HP': ['140', '1.008'], 'HO': ['155', '168', '1.008'], 'HC': ['140', '1.008'], 'HA': ['146', '1.008'], 'O2': ['272', '15.9994'], 'C*': ['500', '12.011'], 'NA': ['503', '512', '14.0067'], 'NB': ['511', '14.0067'], 'CB': ['501', '12.011'], 'C': ['235', '271', '12.011'], 'CN': ['502', '12.011'], 'CM': ['302', '12.011'], 'CC': ['507', '508', '510', '12.011'], 'H': ['240', '241', '290', '301', '304', '310', '504', '513', '1.008'], 'CA': ['145', '166', '12.011'], 'O': ['236', '15.9994'], 'N': ['237', '238', '239', '14.0067'], 'S': ['202', '32.06'], 'CR': ['506', '509', '12.011'], 'N2': ['300', '303', '14.0067'], 'N3': ['287', '309', '14.0067'], 'CW': ['508', '510', '514', '12.011'], 'CV': ['507', '12.011'], 'CT': ['135', '136', '137', '149', '157', '158', '206', '209', '210', '223B', '224B', '245', '246', '274', '283', '284', '285', '292', '292B', '293B', '296', '307', '308', '505', '12.011'], 'OH': ['154', '167', '15.9994'], 'H1': ['140', '1.008'], 'H4': ['146', '1.008'], 'H5': ['146', '1.008'], 'SH': ['200', '32.06']}
+
+# learnt from 22 residues test.
+dictAtomTypeGaff2OplsGmxCode = {'cc': ['500', '506', '507', '508', '514', '12.011'], 'ca': ['145', '166', '501', '502', '12.011'], 'h1': ['140', '1.008'], 'h4': ['146', '1.008'], 'h5': ['146', '1.008'], 'cz': ['302', '12.011'], 'c2': ['509', '510', '12.011'], 'nh': ['300', '303', '14.0067'], 'ha': ['146', '1.008'], 'na': ['503', '512', '14.0067'], 'nc': ['511', '14.0067'], 'nd': ['511', '14.0067'], 'hx': ['140', '1.008'], 'hs': ['204', '1.008'], 'hn': ['240', '241', '290', '301', '304', '310', '504', '513', '1.008'], 'ho': ['155', '168', '1.008'], 'c3': ['135', '136', '137', '149', '157', '158', '206', '209', '210', '223B', '224B', '245', '246', '274', '283', '284', '285', '292', '292B', '293B', '296', '307', '308', '505', '12.011'], 'hc': ['140', '1.008'], 'cd': ['500', '506', '507', '508', '514', '12.011'], 'c': ['235', '271', '12.011'], 'oh': ['154', '167', '15.9994'], 'ss': ['202', '32.06'], 'o': ['236', '272', '15.9994'], 'n': ['237', '238', '239', '14.0067'], 'sh': ['200', '32.06'], 'n4': ['287', '309', '14.0067']}
+
+#draft
+atomTypeAmber2oplsDict = {'HS': ['HS'], 'HP': ['HC'], 'HO': ['HO'], 'HC': ['HC'],
+                   'HA': ['HA'], 'O2': ['O2'], 'C*': ['C*'], 'NA': ['NA'],
+                   'NB': ['NB'], 'CB': ['CB'], 'CN': ['CN'], 'CV': ['CV'],
+                   'CM': ['CA'], 'CA': ['CA'], 'CR': ['CR'], 'OH': ['OH'],
+                   'H1': ['HC'], 'H4': ['HA'], 'N2': ['N2'], 'N3': ['N3'],
+                   'H5': ['HA'], 'SH': ['SH'], 'N': ['N'], 'S': ['S'], 'O': ['O'],
+                   'C': ['C', 'C_3'], 'CW': ['CW', 'CX'], 'H': ['H', 'H3'],
+                   'CC': ['CX', 'CW', 'CV'], 'CT': ['CT', 'CT_2', 'CT_3']}
+
+# draft
+a2oD = {'amber99_2': ['opls_235', 'opls_271'],
+        'amber99_3': ['opls_302', 'opls_145'],
+        'amber99_5': ['opls_507', 'opls_508', 'opls_510'],
+        'amber99_11': ['opls_209','opls_158','opls_283','opls_223B','opls_293B',
+                       'opls_284','opls_292B','opls_274','opls_136','opls_135',
+                       'opls_292','opls_157','opls_206','opls_137','opls_505',
+                       'opls_224B','opls_307','opls_308','opls_210','opls_149'],
+        'amber99_13': ['opls_514'],
+        'amber99_14': ['opls_500'],
+        'amber99_17': ['opls_504','opls_241','opls_240','opls_290','opls_301',
+                       'opls_310','opls_304','opls_513'],
+        'amber99_18': ['opls_140'],
+        'amber99_19': ['opls_140'],
+        'amber99_22': ['opls_146'],
+        'amber99_23': ['opls_146'],
+        'amber99_25': ['opls_155'],
+        'amber99_26': ['opls_204'],
+        'amber99_28': ['opls_140'],
+        'amber99_34': ['opls_238', 'opls_239', 'opls_237'],
+        'amber99_35': ['opls_512', 'opls_503'],
+        'amber99_36': ['opls_511'],
+        'amber99_38': ['opls_300', 'opls_303'],
+        'amber99_39': ['opls_309', 'opls_287'],
+        'amber99_41': ['opls_236'],
+        'amber99_43': ['opls_154'],
+        'amber99_45': ['opls_272'],
+        'amber99_47': ['opls_202'],
+        'amber99_48': ['opls_200'],
+ }
+
 global pid
 pid = 0
 
@@ -100,7 +238,7 @@ USAGE = \
     -c    charge method: gas, bcc (default), user (user's charges in mol2 file)
     -n    net molecular charge (int), for gas default is 0
     -m    multiplicity (2S+1), default is 1
-    -a    atom type, can be gaff, amber, bcc and sybyl, default is gaff
+    -a    atom type, can be gaff or amber (AMBER99SB), default is gaff
     -f    force topologies recalculation anew
     -d    for debugging purposes, keep any temporary file created
     -o    output topologies: all (default), gmx, cns
@@ -134,6 +272,7 @@ SLEAP_TEMPLATE = \
 source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
+#set default disulfide auto
 %(res)s = loadpdb %(base)s.pdb
 #check %(res)s
 saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
@@ -181,7 +320,7 @@ def parseArgs(args):
     options = 'hftdi:c:n:m:o:a:e:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
-    atList = ['gaff', 'amber', 'bcc', 'sybyl']
+    atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
 
@@ -1163,7 +1302,7 @@ Usage: antechamber -i   input file name
             atoms.append(atom)
             id += 1
 
-        if atomTypeName[0].islower:
+        if atomTypeName[0].islower():
             self.atomTypeSystem = 'gaff'
         else:
             self.atomTypeSystem = 'amber'
@@ -1638,10 +1777,19 @@ Usage: antechamber -i   input file name
         #print delAtomTypes
 
     def writeGromacsTop(self, amb2gmx = False):
+        if self.atomTypeSystem == 'amber':
+            d2opls = dictAtomTypeAmb2OplsGmxCode
+        else:
+            d2opls = dictAtomTypeGaff2OplsGmxCode
+
         topText = []
         itpText = []
+        oitpText = []
+        otopText = []
         top = self.baseName+'_GMX.top'
         itp = self.baseName+'_GMX.itp'
+        otop = self.baseName+'_GMX_OPLS.top'
+        oitp = self.baseName+'_GMX_OPLS.itp'
 
         headDefault = \
 """
@@ -1653,6 +1801,11 @@ Usage: antechamber -i   input file name
 """
 ; Include %s topology
 #include "%s"
+"""
+        headOpls = \
+"""
+; Include forcefield parameters
+#include "ffoplsaa.itp"
 """
         headSystem = \
 """
@@ -1668,6 +1821,11 @@ Usage: antechamber -i   input file name
 """
 [ atomtypes ]
 ;name   bond_type     mass     charge   ptype   sigma         epsilon       Amb
+"""
+        headAtomtypesOpls = \
+"""
+; For OPLS atomtypes manual fine tuning
+; AtomType:OPLScode: Possible_Aternatives (see ffoplsaa.atp and ffoplsaanb.itp)
 """
         headMoleculetype = \
 """
@@ -1827,22 +1985,24 @@ Usage: antechamber -i   input file name
         nWat = nCl = nNa = 0
         #topFile.write("; " + head % (top, date))
         topText.append("; " + head % (top, date))
+        otopText.append("; " + head % (otop, date))
         #topFile.write(headDefault)
         topText.append(headDefault)
 
         nSolute = 0
         if not amb2gmx:
-            #nSolute = 1
-            #topFile.write(headItp % (itp, itp))
             topText.append(headItp % (itp, itp))
-            #itpFile.write("; " + head % (itp, date))
+            otopText.append(headOpls)
+            otopText.append(headItp % (itp, itp))
             itpText.append("; " + head % (itp, date))
-            #tmpFile = itpFile
+            oitpText.append("; " + head % (oitp, date))
 
         self.printDebug("atomTypes %i" % len(self.atomTypesGromacs))
         temp = []
+        otemp = []
         for aType in self.atomTypesGromacs:
             aTypeName = aType.atomTypeName
+            oaType = d2opls.get(aTypeName,['x','0'])[:-1]
             A = aType.ACOEF
             B = aType.BCOEF
             # one cannot infer sigma or epsilon for B = 0, assuming 0 for them
@@ -1863,8 +2023,10 @@ Usage: antechamber -i   input file name
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
             (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
             " ; %4.2f  %1.4f\n" % (r0, epAmber)
+            oline = "; %s:opls_%s: %s\n" % (aTypeName,oaType[0],str(oaType[1:]))
             #tmpFile.write(line)
             temp.append(line)
+            otemp.append(oline)
         if amb2gmx:
             topText.append(headAtomtypes)
             topText += temp
@@ -1874,6 +2036,8 @@ Usage: antechamber -i   input file name
         else:
             itpText.append(headAtomtypes)
             itpText += temp
+            oitpText.append(headAtomtypesOpls)
+            oitpText += otemp
         self.printDebug("GMX atomtypes done")
 
         if len(self.atoms) > 3 * nWat + nCl + nNa:
@@ -1888,11 +2052,13 @@ Usage: antechamber -i   input file name
                 topText.append(headMoleculetype % self.baseName)
             else:
                 itpText.append(headMoleculetype % self.baseName)
+                oitpText.append(headMoleculetype % self.baseName)
 
         self.printDebug("atoms %i" % len(self.atoms))
         qtot = 0.0
         count = 1
         temp = []
+        otemp = []
         for atom in self.atomsGromacs:
             resid = atom.resid
             resname = self.residueLabel[resid]
@@ -1900,15 +2066,19 @@ Usage: antechamber -i   input file name
                 break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
+            oaType = 'opls_'+d2opls.get(aType,['x',0])[0]
             charge = atom.charge
             mass = atom.mass
+            omass = float(d2opls.get(aType,['x',0])[-1])
             qtot += charge
             resnr = resid + 1
             line = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
-            (count, aType, resnr, resname, aName, count, charge,
-             mass, qtot)
+            (count, aType, resnr, resname, aName, count, charge, mass, qtot)
+            oline = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
+            (count, oaType, resnr, resname, aName, count, charge, omass, qtot)
             count += 1
             temp.append(line)
+            otemp.append(oline)
         if temp:
             if amb2gmx:
                 topText.append(headAtoms)
@@ -1916,11 +2086,14 @@ Usage: antechamber -i   input file name
             else:
                 itpText.append(headAtoms)
                 itpText += temp
+                oitpText.append(headAtoms)
+                oitpText += otemp
         self.printDebug("GMX atoms done")
 
         # remove bond of water
         self.printDebug("bonds %i" % len(self.bonds))
         temp = []
+        otemp = []
         for bond in self.bonds:
             res1 = self.residueLabel[bond.atoms[0].resid]
             res2 = self.residueLabel[bond.atoms[0].resid]
@@ -1931,8 +2104,12 @@ Usage: antechamber -i   input file name
             id2 = bond.atoms[1].id
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
+            oline = "%6i %6i %3i ; %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
+                   bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
             temp.append(line)
+            otemp.append(oline)
         temp.sort()
+        otemp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headBonds)
@@ -1940,6 +2117,8 @@ Usage: antechamber -i   input file name
             else:
                 itpText.append(headBonds)
                 itpText += temp
+                oitpText.append(headBonds)
+                oitpText += otemp
         self.printDebug("GMX bonds done")
 
         self.printDebug("atomPairs %i" % len(self.atomPairs))
@@ -1965,10 +2144,13 @@ Usage: antechamber -i   input file name
             else:
                 itpText.append(headPairs)
                 itpText += temp
+                oitpText.append(headPairs)
+                oitpText += temp
         self.printDebug("GMX pairs done")
 
         self.printDebug("angles %i" % len(self.angles))
         temp = []
+        otemp = []
         for angle in self.angles:
             a1 = angle.atoms[0].atomName
             a2 = angle.atoms[1].atomName
@@ -1978,8 +2160,12 @@ Usage: antechamber -i   input file name
             id3 = angle.atoms[2].id
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
             id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
+            oline = "%6i %6i %6i %6i ; %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
+            id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
             temp.append(line)
+            otemp.append(oline)
         temp.sort()
+        otemp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headAngles)
@@ -1987,11 +2173,14 @@ Usage: antechamber -i   input file name
             else:
                 itpText.append(headAngles)
                 itpText += temp
+                oitpText.append(headAngles)
+                oitpText += otemp
         self.printDebug("GMX angles done")
 
         self.setProperDihedralsCoefRB()
         self.printDebug("properDihedralsCoefRB %i" % len(self.properDihedralsCoefRB))
         temp = []
+        otemp = []
         for dih in self.properDihedralsCoefRB:
             a1 = dih[0][0].atomName
             a2 = dih[0][1].atomName
@@ -2010,8 +2199,14 @@ Usage: antechamber -i   input file name
             "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
             (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
             + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
+            oline = \
+            "%3i %3i %3i %3i %3i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
+            (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
+            + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
             temp.append(line)
+            otemp.append(oline)
         temp.sort()
+        otemp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headProDih)
@@ -2019,10 +2214,13 @@ Usage: antechamber -i   input file name
             else:
                 itpText.append(headProDih)
                 itpText += temp
+                oitpText.append(headProDih)
+                oitpText += otemp
         self.printDebug("GMX proper dihedrals done")
 
         self.printDebug("improperDihedrals %i" % len(self.improperDihedrals))
         temp = []
+        otemp = []
         for dih in self.improperDihedrals:
             a1 = dih.atoms[0].atomName
             a2 = dih.atoms[1].atomName
@@ -2041,8 +2239,12 @@ Usage: antechamber -i   input file name
             ph = dih.phase * radPi
             line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
                             (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+            oline = "%3i %3i %3i %3i %3i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
+                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
             temp.append(line)
+            otemp.append(oline)
         temp.sort()
+        otemp.sort()
         if temp:
             if amb2gmx:
                 topText.append(headImpDih)
@@ -2050,6 +2252,8 @@ Usage: antechamber -i   input file name
             else:
                 itpText.append(headImpDih)
                 itpText += temp
+                oitpText.append(headImpDih)
+                oitpText += otemp
         self.printDebug("GMX improper dihedrals done")
 
         if nNa:
@@ -2061,9 +2265,12 @@ Usage: antechamber -i   input file name
 
         topText.append(headSystem % (self.baseName))
         topText.append(headMols)
+        otopText.append(headSystem % (self.baseName))
+        otopText.append(headMols)
 
         if nSolute > 0:
             topText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
+            otopText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
 
         if nNa:
             topText.append(" %-16s %-6i\n" % ('Na+', nNa))
@@ -2074,13 +2281,19 @@ Usage: antechamber -i   input file name
 
         gmxDir = os.path.abspath('.')
         topFileName = os.path.join(gmxDir, top)
+        otopFileName = os.path.join(gmxDir, otop)
         topFile = open(topFileName, 'w')
+        otopFile = open(otopFileName, 'w')
         topFile.writelines(topText)
+        otopFile.writelines(otopText)
 
         if not amb2gmx:
             itpFileName = os.path.join(gmxDir, itp)
             itpFile = open(itpFileName, 'w')
             itpFile.writelines(itpText)
+            oitpFileName = os.path.join(gmxDir, oitp)
+            oitpFile = open(oitpFileName, 'w')
+            oitpFile.writelines(oitpText)
 
     def writeGroFile(self):
         #print "Writing GROMACS GRO file\n"

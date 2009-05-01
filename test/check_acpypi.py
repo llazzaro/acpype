@@ -183,25 +183,26 @@ def roundAllFloats(lista,l):
         nlista.append(tt)
     return nlista
 
-def checkTopAcpypiVsAmber(res):
-
+def checkTopAcpypi(res, ff):
+    '''Compare acpypi gmx itp against amber or opls pdb2gmx results'''
+    global amber2oplsDict, ac2opls
     def addParam(l,item):
         dict = {2:'bondtypes', 3:'angletypes', 4:'dihedraltypes'}
         dType = {} # dict
-        for type in aBon[0][dict[l]]:
+        for type in ffBon[0][dict[l]]:
             i = type[:l+1]
             j = type[l+1:]
             dType[str(i)] = j
         entries = []
         lNum = item[l]
-        ent = [agDictAtom[x] for x in item[:l]]
+        ent = [ffDictAtom[x] for x in item[:l]]
         rent = ent[:]
         rent.reverse()
         entries.append(ent+[lNum])
         entries.append(rent+[lNum])
         if l == 4:
             if len(item) == 6:
-                par = aBon[1][item[5]]
+                par = ffBon[1][item[5]]
                 return par
             tent = ent[:]
             rtent = rent[:]
@@ -235,19 +236,70 @@ def checkTopAcpypiVsAmber(res):
                 break
             except: pass
         if not found:
-            print "%s %s %s not found in aBon" % (dict[l], ent, item)
+            print "%s %s %s not found in %s Bon" % (dict[l], ent, item, ffType)
         return par
 
     compareParameters = False
-    if ffType == 'amber': compareParameters = True
+    if ff == 'a' : compareParameters = True
 
-    agRes = parseTopFile(file('ag%s.top' % res).readlines())
-    acRes = parseTopFile(file('ag%s.acpypi/ag%s_GMX.itp' % (res,res)).readlines())
+    agRes = parseTopFile(file('ag%s.top' % (res)).readlines())
+    ogRes = parseTopFile(file('og%s.top' % (res)).readlines())
+    #ffgRes = parseTopFile(file('%sg%s.top' % (ff,res)).readlines())
+    acRes = parseTopFile(file('%sg%s.acpypi/%sg%s_GMX.itp' % (ff,res,ff,res)).readlines())
+    if ff == 'a':
+        ffNb = aNb
+        ffBon = aBon
+        ffgRes = agRes
+    if ff == 'o':
+        ffNb = oNb
+        ffBon = oBon
+        ffgRes = ogRes
 
-    agDictAtom = {} # dict link res atom numbers to amber atom types
-    for item in agRes[0]['atoms']:
+    ffDictAtom = {} # dict link res atom numbers to amber or opls atom types
+    for item in ffgRes[0]['atoms']:
         i,j = item[:2]
-        agDictAtom[i] = aNb[j]
+        ffDictAtom[i] = ffNb[j]
+
+    acDictAtom = {}
+    for item in acRes[0]['atoms']:
+        i,j = item[:2]
+        acDictAtom[i] = j
+
+    for k in acDictAtom.keys():
+        if amber2oplsDict.has_key(acDictAtom[k]):
+            amber2oplsDict[acDictAtom[k]].add(ffDictAtom[k])
+        else:
+            amber2oplsDict[acDictAtom[k]] = set([ffDictAtom[k]])
+
+    # to build a dict acpypi atom types (amber or gaff) to [[opls_code],[opls_mass]]
+    #ac2opls
+    if ff == 'o':
+        for item in acRes[0]['atoms']:
+            id, at = item[:2]
+            it = ogRes[0]['atoms'][id-1]
+            ocode, omass = it[1],it[-1]
+            #print item, it, ocode, omass
+            if ac2opls.has_key(at):
+                ac2opls[at][0].add(ocode)
+                ac2opls[at][1].add(omass)
+            else:
+                ac2opls[at] = [set([ocode]),set([omass])]
+
+    # to build dict a2oD: amber atom type -> opls atom type
+    idx = 0
+    for aAT in agRes[0]['atoms']:
+        oAT = ogRes[0]['atoms'][idx]
+        aAT, aPdb = aAT[1], aAT[4]
+        oAT, oPdb = oAT[1], oAT[4]
+        if aPdb == oPdb:
+            if a2oD.has_key(aAT):
+                a2oD[aAT].add(oAT)
+            else:
+                a2oD[aAT] = set([oAT])
+        else:
+            #print agRes[0]['atoms'][idx], ogRes[0]['atoms'][idx]
+            pass
+        idx += 1
 
     flags = [('pairs',2), ('bonds',2), ('angles',3), ('dihedrals',4)] #, ['dihedraltypes', 'angletypes', 'bondtypes']
 
@@ -255,7 +307,7 @@ def checkTopAcpypiVsAmber(res):
         print "    ==> Comparing %s" % flag
         if flag != flags[0][0] and compareParameters:
             agres = []
-            tAgRes = agRes[0][flag]
+            tAgRes = ffgRes[0][flag]
             for item in tAgRes:
                 if flag == flags[1][0]:
                     par = addParam(l,item)
@@ -269,8 +321,8 @@ def checkTopAcpypiVsAmber(res):
             if compareParameters: acres = acRes[0][flag]
         else:
             if flag == flags[3][0]:
-                agres = [x[:l+1] for x in agRes[0][flag]]
-            else: agres = agRes[0][flag]
+                agres = [x[:l+1] for x in ffgRes[0][flag]]
+            else: agres = ffgRes[0][flag]
             if compareParameters: acres = acRes[0][flag]
             else: acres = [x[:l+1] for x in acRes[0][flag]]
 
@@ -280,12 +332,6 @@ def checkTopAcpypiVsAmber(res):
         if compareParameters:
             if flag != flags[0][0]:
                 # round parameters
-#                if flag == flags[3][0]:
-#                    act = roundAllFloats(act,l)
-#                    agt = roundAllFloats(agt,l)
-#                else:
-#                    act = [x[:-1]+[round(x[-1],-1)] for x in act][:]
-#                    agt = [x[:-1]+[round(x[-1],-1)] for x in agt][:]
                 act = roundAllFloats(act,l)
                 agt = roundAllFloats(agt,l)
                 act2 = act[:]
@@ -331,7 +377,7 @@ def checkTopAcpypiVsAmber(res):
             print "    ac: ", act3
         if agt3:
             agt3.sort()
-            print "    ag: ", agt3
+            print "    %sg: " % ff, agt3
 
         if not act3 and not agt3:
             print "        %s OK" % flag
@@ -370,7 +416,7 @@ def parseOut(out):
                 print line
         count += 1
 
-def fixRes4Amber(fpdb):
+def fixRes4Acpypi(fpdb):
     code = fpdb[2]
     fLines = file(fpdb).readlines()
     famb = open(fpdb,'w')
@@ -381,6 +427,14 @@ def fixRes4Amber(fpdb):
     famb.close()
 
 if __name__ == '__main__':
+
+    '''order: (pymol) AAA.pdb -f-> oAAA.pdb --> (pdb2gmx) ogAAA.pdb -f->
+         -f-> aogAAA.pdb --> (pdb2gmx) agAAA.pdb -f-> acpypi
+    '''
+    global amber2oplsDict, a2oD, ac2opls
+    amber2oplsDict = {}
+    a2oD = {}
+    ac2opls = {}
     aNb = nbDict(file('/sw/share/gromacs/top/ffamber99sbnb.itp').readlines())
     oNb = nbDict(file('/sw/share/gromacs/top/ffoplsaanb.itp').readlines())
 
@@ -417,12 +471,6 @@ if __name__ == '__main__':
                 (opdb, ogpdb, ogtop) # coords for O term changed
             out = commands.getstatusoutput(cmd)
             #parseOut(out[1])
-            #os.system('diff %s %s' % (resFile, fName))
-
-            # acpypi on ogpdb file
-#            cmd = "acpypi -di %s -c gas" % ogpdb
-#            out = commands.getstatusoutput(cmd)
-#            parseOut(out[1])
 
             # from ogpdb to amber pdb and top
             apdb = createAmberPdb(ogpdb, 1)
@@ -436,39 +484,24 @@ if __name__ == '__main__':
             #parseOut(out[1])
 
             # acpypi on agpdb file
-            fixRes4Amber(agpdb)
-            ffType = 'amber' # gaff
+#            fixRes4Acpypi(agpdb)
+#            ffType = 'amber' # gaff
+#            cType = 'gas' # bcc
+#            cmd = "acpypi -dfi %s -c %s -a %s" % (agpdb, cType, ffType)
+#            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
+#            out = commands.getstatusoutput(cmd)
+#            #parseOut(out[1])
+#            checkTopAcpypi(res)
+
+            # acpypi on ogpdb file
+            fixRes4Acpypi(ogpdb)
+            ffType = 'gaff' #'amber' # gaff
             cType = 'gas' # bcc
-            cmd = "acpypi -dfi %s -c %s -a %s" % (agpdb, cType, ffType)
+            cmd = "acpypi -dfi %s -c %s -a %s" % (ogpdb, cType, ffType)
             if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
             out = commands.getstatusoutput(cmd)
-            #parseOut(out[1])
-
-            checkTopAcpypiVsAmber(res)
-
-            # from pdb pymol to amber pdb and top
-#            apdb = createAmberPdb(resFile, 0)
-#            agpdb = 'ag%s.pdb' % res
-#            agtop = 'ag%s.top' % res
-#            cmd = 'pdb2gmx -f %s -o %s -p %s -ff amber99sb' % \
-#                (apdb, agpdb,agtop)
-#            out = commands.getstatusoutput(cmd)
-            #parseOut(out[1])
-
-#            createOplsPdb("a%s.pdb" % res)
-#            if res in hisDictConv.keys():
-#                hisConv(res, 2)
-#            cmd = 'pdb2gmx -f o%s.pdb -o _o%s.pdb -p o%s.top -ff oplsaa' % \
-#                (res, res, res)
-#            out = os.system(cmd)
-
-            # acpypi on agpdb file
-#            fixRes4Amber(agpdb)
-#            cmd = "acpypi -di %s -c gas" % agpdb
-#            out = commands.getstatusoutput(cmd)
-#            parseOut(out[1])
-
-            #checkTopOplsVsAmber(res)
+            parseOut(out[1])
+            checkTopAcpypi(res, 'o')
 
             if out[0] :
                 print "pdb2gmx for %s FAILED... aborting." % res
@@ -477,4 +510,65 @@ if __name__ == '__main__':
             #break
     os.system('rm -f %s/\#* posre.itp tempScript.py' % tmpDir)
     os.system("find . -name '*.itp' | xargs grep -v 'created by acpypi on' > standard_itp.txt")
+    #print ac2opls
+    tmp = {}
+    for k,v in ac2opls.items():
+        vOpls, vMass = v
+        vOpls = [x.replace('opls_','') for x in vOpls]
+        vMass = map(str,vMass)
+        vOpls.sort()
+        vMass.sort()
+        if len(vMass) > 1:
+            print k,v
+        tmp[k] = vOpls + vMass
+    print tmp
+
     #otopFiles = commands.getoutput('ls o*.top').splitlines()
+#    print amber2oplsDict
+#    print a2oD
+#    ll = []
+#    for k in amber2oplsDict:
+#        v = amber2oplsDict[k]
+#        if len(v) == 1:
+#            ll.append([1,k,list(v)])
+#        elif len(v) == 2:
+#            ll.append([2,k,list(v)])
+#        elif len(v) == 3:
+#            ll.append([3,k,list(v)])
+#        elif len(v) == 4:
+#            ll.append([4,k,list(v)])
+#
+#    aNbRev = {}
+#    for k,v in aNb.items():
+#        if aNbRev.has_key(v):
+#            aNbRev[v].append(k)
+#        else:
+#            aNbRev[v] = [k]
+#    for k,v in aNbRev.items():
+#        v.sort()
+#        v0 = v[0]
+#        aNbRev[k] = v0
+#    from operator import itemgetter
+#    print sorted(aNbRev.items(), key=itemgetter(1))
+#
+#    o1 = file('opls_sorted.txt').readlines()
+#    dictOplsAtomType2OplsGmxCode = {}
+#    dictOplsMass = {}
+#    for line in o1:
+#        line = line[:-1]
+#        atOpls, gmxCodeOpls, mass = line.split()
+#        if dictOplsAtomType2OplsGmxCode.has_key(atOpls):
+#            dictOplsAtomType2OplsGmxCode[atOpls].append(gmxCodeOpls)
+#            dictOplsMass[atOpls].add(mass)
+#        else:
+#            dictOplsAtomType2OplsGmxCode[atOpls] = [gmxCodeOpls]
+#            dictOplsMass[atOpls] = set([mass])
+#
+#
+#    notOpls = []
+#    for ambKey, ambVal in dictAmbAtomType2AmbGmxCode.items():
+#        if dictOplsAtomType2OplsGmxCode.has_key(ambKey):
+#            print ambKey,ambVal,dictOplsAtomType2OplsGmxCode[ambKey]
+#        else:
+#            notOpls.append(ambKey)
+#    print "No opls AT for %s" % str(notOpls)
