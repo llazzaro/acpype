@@ -20,7 +20,7 @@
     1.  Wang, J., Wang, W., Kollman P. A.; Case, D. A. "Automatic atom type and
         bond type perception in molecular mechanical calculations". Journal of
         Molecular Graphics and Modelling , 25, 2006, 247260.
-    2.  Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A.
+    2.  Wang, J., Wolf, R. M.; Caldwell, J. W.; Kollman, P. A.; Case, D. A.
         "Development and testing of a general AMBER force field". Journal of
         Computational Chemistry, 25, 2004, 1157-1174.
 

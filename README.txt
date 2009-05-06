@@ -36,7 +36,7 @@ For Antechamber, please cite:
 1.  Wang, J., Wang, W., Kollman P. A.; Case, D. A. "Automatic atom type and
     bond type perception in molecular mechanical calculations". Journal of
     Molecular Graphics and Modelling , 25, 2006, 247260.
-2.  Wang, J., Wolf, R. M.; Caldwell, J. W.;Kollman, P. A.; Case, D. A.
+2.  Wang, J., Wolf, R. M.; Caldwell, J. W.; Kollman, P. A.; Case, D. A.
     "Development and testing of a general AMBER force field". Journal of
     Computational Chemistry, 25, 2004, 1157-1174.
 
@@ -68,6 +68,13 @@ at all but *[http://www.python.org Python]*.
 At the moment, *acpypi* is only available for download via *svn*:
 
   * `svn checkout http://acpypi.googlecode.com/svn/trunk/ acpypi`
+
+Yet, if some reason you cannot use *svn*, one still can get *acpypi* with:
+
+  * `wget http://acpypi.googlecode.com/svn/trunk/acpypi.py`
+
+But be aware that one may run in extra troubles and I am not willing to support
+this way.
 
 == To Test ==
 
