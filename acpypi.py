@@ -743,13 +743,17 @@ class AbstractTopol:
                 sys.exit(1)
 
         resname = list(residues)[0]
+        newresname = resname
 
         if resname.isdigit() or 'E' in resname[1:3].upper() or 'ADD' in resname.upper():
-            resname = 'R' + resname
+            newresname = 'R' + resname
+        if not resname.isalnum():
+            newresname = 'MOL'
+        if newresname != resname:
             self.printWarn("In %s.lib, residue name will be '%s' instead of '%s' elsewhere"
-                           % (self.acBaseName, resname, resname[1:]))
+                           % (self.acBaseName, newresname, resname))
 
-        self.resName = resname
+        self.resName = newresname
 
         os.chdir(localDir)
         self.printDebug("setResNameCheckCoords done")
@@ -1585,7 +1589,7 @@ Usage: antechamber -i   input file name
 
         at = self.atomType
         self.getResidueLabel()
-        res = self.residueLabel[0]
+        res = self.resName #self.residueLabel[0]
         #print res, self.residueLabel, type(self.residueLabel)
 
         cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
@@ -1844,7 +1848,7 @@ Usage: antechamber -i   input file name
         headAtoms = \
 """
 [ atoms ]
-;   nr  type  resi  res  atom  cgnr     charge      mass       typeB    chargeB
+;   nr  type  resi  res  atom  cgnr     charge      mass       ; qtot   bond_type
 """
         headBonds = \
 """
@@ -2010,8 +2014,8 @@ Usage: antechamber -i   input file name
         otemp = []
         for aType in self.atomTypesGromacs:
             aTypeName = aType.atomTypeName
-            oaType = d2opls.get(aTypeName,['x','0'])[:-1]
-            aTypeNameOpls = oplsCode2AtomTypeDict.get(oaType[0],'x')
+            oaCode = d2opls.get(aTypeName,['x','0'])[:-1]
+            aTypeNameOpls = oplsCode2AtomTypeDict.get(oaCode[0],'x')
             A = aType.ACOEF
             B = aType.BCOEF
             # one cannot infer sigma or epsilon for B = 0, assuming 0 for them
@@ -2032,7 +2036,7 @@ Usage: antechamber -i   input file name
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
             (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
             " ; %4.2f  %1.4f\n" % (r0, epAmber)
-            oline = "; %s:%s:opls_%s: %s\n" % (aTypeName,aTypeNameOpls,oaType[0],`oaType[1:]`)
+            oline = "; %s:%s:opls_%s: %s\n" % (aTypeName,aTypeNameOpls,oaCode[0],`oaCode[1:]`)
             #tmpFile.write(line)
             temp.append(line)
             otemp.append(oline)
@@ -2068,6 +2072,7 @@ Usage: antechamber -i   input file name
         count = 1
         temp = []
         otemp = []
+        id2oplsATDict = {}
         for atom in self.atomsGromacs:
             resid = atom.resid
             resname = self.residueLabel[resid]
@@ -2075,16 +2080,20 @@ Usage: antechamber -i   input file name
                 break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
-            oaType = 'opls_'+d2opls.get(aType,['x',0])[0]
+            oItem = d2opls.get(aType,['x',0])
+            oplsAtName = oplsCode2AtomTypeDict.get(oItem[0],'x')
+            id = atom.id
+            id2oplsATDict[id] = oplsAtName
+            oaCode = 'opls_'+oItem[0]
             charge = atom.charge
             mass = atom.mass
-            omass = float(d2opls.get(aType,['x',0])[-1])
+            omass = float(oItem[-1])
             qtot += charge
             resnr = resid + 1
             line = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
             (count, aType, resnr, resname, aName, count, charge, mass, qtot)
-            oline = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
-            (count, oaType, resnr, resname, aName, count, charge, omass, qtot)
+            oline = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot % 3.3f  %-4s\n" % \
+            (count, oaCode, resnr, resname, aName, count, charge, omass, qtot, oplsAtName)
             count += 1
             temp.append(line)
             otemp.append(oline)
@@ -2111,10 +2120,13 @@ Usage: antechamber -i   input file name
             a2Name = bond.atoms[1].atomName
             id1 = bond.atoms[0].id
             id2 = bond.atoms[1].id
+            oat1 = id2oplsATDict[id1]
+            oat2 = id2oplsATDict[id2]
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
-            oline = "%6i %6i %3i ; %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
-                   bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
+            oline = "%6i %6i %3i ; %13.4e %13.4e ; %6s - %-6s %6s - %-6s\n" % \
+                (id1, id2, 1, bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name,
+                 a2Name, oat1, oat2)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
@@ -2167,10 +2179,14 @@ Usage: antechamber -i   input file name
             id1 = angle.atoms[0].id
             id2 = angle.atoms[1].id
             id3 = angle.atoms[2].id
+            oat1 = id2oplsATDict[id1]
+            oat2 = id2oplsATDict[id2]
+            oat3 = id2oplsATDict[id3]
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
             id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
-            oline = "%6i %6i %6i %6i ; %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
-            id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
+            oline = "%6i %6i %6i %6i ; %13.4e %13.4e ; %6s - %-4s - %-6s %4s - %+4s - %-4s\n" % \
+                (id1, id2, id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta,
+                 a1, a2, a3, oat1, oat2, oat3)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
@@ -2203,6 +2219,10 @@ Usage: antechamber -i   input file name
             id3 = dih[0][2].id
             #id4 = self.atoms.index(dih[0][3]) + 1
             id4 = dih[0][3].id
+            oat1 = id2oplsATDict[id1]
+            oat2 = id2oplsATDict[id2]
+            oat3 = id2oplsATDict[id3]
+            oat4 = id2oplsATDict[id4]
             c0, c1, c2, c3, c4, c5 = dih[1]
             line = \
             "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
@@ -2211,7 +2231,7 @@ Usage: antechamber -i   input file name
             oline = \
             "%3i %3i %3i %3i %3i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
             (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
-            + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
+            + " ; %6s-%6s-%6s-%6s    %4s-%4s-%4s-%4s\n" % (a1, a2, a3, a4, oat1, oat2, oat3, oat4)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
