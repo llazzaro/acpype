@@ -3,6 +3,14 @@ import commands
 import sys #@UnusedImport
 import os
 
+gmxrc = commands.getoutput("which GMXRC.bash")
+if os.path.exists(gmxrc):
+    cmd = 'grep "GMXDATA=" %s' % gmxrc
+    gmxTopDir = commands.getoutput(cmd).split('=')[1]
+else:
+    print "ERROR: no GROMACS... exiting"
+    sys.exit()
+
 aa_dict = {'A':'ala', 'C':'cys', 'D':'asp', 'E':'glu', 'F':'phe', 'G':'gly',
            'H':'hie', 'J':'hip', 'O':'hid', 'I':'ile', 'K':'lys', 'L':'leu',
            'M':'met', 'N':'asn', 'P':'pro', 'Q':'gln', 'R':'arg', 'S':'ser',
@@ -58,7 +66,10 @@ def hisConv(fName, his, opt):
     os.system(cmd)
 
 def createOplsPdb(fpdb):
-    '''pdb -> opdb (opls)'''
+    '''
+    pdb -> opdb (opls)
+    fix atom names for OPLS in GMX
+    '''
     fLines = file(fpdb).readlines()
     fName = 'o'+fpdb
     fopls = open(fName,'w')
@@ -255,10 +266,24 @@ def checkTopAcpypi(res, ff):
         ffBon = oBon
         ffgRes = ogRes
 
+    atError = False
+    if ff == 'a':
+        print "    ==> Comparing atomtypes AC x AMBER"
+
     ffDictAtom = {} # dict link res atom numbers to amber or opls atom types
     for item in ffgRes[0]['atoms']:
         i,j = item[:2]
-        ffDictAtom[i] = ffNb[j]
+        ambat = ffNb[j]
+        ffDictAtom[i] = ambat
+        # compare atom types AC x Amber
+        if ff == 'a':
+            acat = acRes[0]['atoms'][i-1][1]
+            if ambat != acat:
+                print "    %i %s AC: %s   x   AMB: %s" % (i, item[4], acat, ambat)
+                atError = True
+
+    if ff == 'a' and not atError:
+        print "        atomtypes OK"
 
     acDictAtom = {}
     for item in acRes[0]['atoms']:
@@ -435,15 +460,17 @@ if __name__ == '__main__':
     amber2oplsDict = {}
     a2oD = {}
     ac2opls = {}
-    aNb = nbDict(file('/sw/share/gromacs/top/ffamber99sbnb.itp').readlines())
-    oNb = nbDict(file('/sw/share/gromacs/top/ffoplsaanb.itp').readlines())
+    aNb = nbDict(file(gmxTopDir+'/gromacs/top/ffamber99sbnb.itp').readlines())
+    oNb = nbDict(file(gmxTopDir+'/gromacs/top/ffoplsaanb.itp').readlines())
 
-    aBon = parseTopFile(file('/sw/share/gromacs/top/ffamber99sbbon.itp').readlines())
-    oBon = parseTopFile(file('/sw/share/gromacs/top/ffoplsaabon.itp').readlines())
+    aBon = parseTopFile(file(gmxTopDir+'/gromacs/top/ffamber99sbbon.itp').readlines())
+    oBon = parseTopFile(file(gmxTopDir+'/gromacs/top/ffoplsaabon.itp').readlines())
 
     tmpDir = '/tmp/testAcpypi'
     tmpFile = 'tempScript.py'
-    os.putenv('PATH', '/usr/bin:/bin:/usr/sbin:/sbin:/sw/bin:/usr/local/bin:/Users/alan/Programmes/amber10/exe')
+    gmxbin = os.path.dirname(commands.getoutput("which grompp"))
+    acbin = os.path.dirname(commands.getoutput("which antechamber"))
+    os.putenv('PATH', '/usr/bin:/bin:/usr/sbin:/sbin:%s:/usr/local/bin:%s' % (gmxbin, acbin))
     exePymol = 'pymol' # '/sw/bin/pymol'
 #    print os.environ['PATH']
     if not os.path.exists(tmpDir):
@@ -458,7 +485,7 @@ if __name__ == '__main__':
     listRes.sort()
     for resFile in listRes:
         res, ext = os.path.splitext(resFile) # eg. res = 'AAA'
-        if len(resFile) == 7 and ext == ".pdb":
+        if len(resFile) == 7 and ext == ".pdb" and resFile[:3].isupper():
             print "File %s : residue %s" % (resFile, aa_dict[res[0]])
 
             # from pdb pymol to opls pdb and top
@@ -484,23 +511,25 @@ if __name__ == '__main__':
             #parseOut(out[1])
 
             # acpypi on agpdb file
-#            fixRes4Acpypi(agpdb)
-#            ffType = 'amber' # gaff
-#            cType = 'gas' # bcc
-#            cmd = "acpypi -dfi %s -c %s -a %s" % (agpdb, cType, ffType)
-#            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
-#            out = commands.getstatusoutput(cmd)
-#            #parseOut(out[1])
-#            checkTopAcpypi(res)
+            fixRes4Acpypi(agpdb)
+            ffType = 'amber' # gaff
+            cType = 'gas' # bcc
+            cmd = "acpypi -dfi %s -c %s -a %s" % (agpdb, cType, ffType)
+            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
+            out = commands.getstatusoutput(cmd)
+            #parseOut(out[1])
+            print "Compare ACPYPI x GMX AMBER99SB topol & param"
+            checkTopAcpypi(res, 'a')
 
             # acpypi on ogpdb file
             fixRes4Acpypi(ogpdb)
-            ffType = 'gaff' #'amber' # gaff
+            ffType = 'amber' #'amber' # gaff
             cType = 'gas' # bcc
             cmd = "acpypi -dfi %s -c %s -a %s" % (ogpdb, cType, ffType)
             if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
             out = commands.getstatusoutput(cmd)
-            parseOut(out[1])
+            #parseOut(out[1])
+            print "Compare ACPYPI x GMX OPLS/AA only topol"
             checkTopAcpypi(res, 'o')
 
             if out[0] :
@@ -509,7 +538,8 @@ if __name__ == '__main__':
                 #sys.exit(1)
             #break
     os.system('rm -f %s/\#* posre.itp tempScript.py' % tmpDir)
-    os.system("find . -name '*.itp' | xargs grep -v 'created by acpypi on' > standard_itp.txt")
+    os.system("find . -name 'ag*GMX*.itp' | xargs grep -v 'created by acpypi on' > standard_ag_itp.txt")
+    os.system("find . -name 'og*GMX*.itp' | xargs grep -v 'created by acpypi on' > standard_og_itp.txt")
     #print ac2opls
     tmp = {}
     for k,v in ac2opls.items():
@@ -521,7 +551,7 @@ if __name__ == '__main__':
         if len(vMass) > 1:
             print k,v
         tmp[k] = vOpls + vMass
-    print tmp
+    #print tmp
 
     #otopFiles = commands.getoutput('ls o*.top').splitlines()
 #    print amber2oplsDict

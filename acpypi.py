@@ -2310,11 +2310,8 @@ Usage: antechamber -i   input file name
 
         gmxDir = os.path.abspath('.')
         topFileName = os.path.join(gmxDir, top)
-        otopFileName = os.path.join(gmxDir, otop)
         topFile = open(topFileName, 'w')
-        otopFile = open(otopFileName, 'w')
         topFile.writelines(topText)
-        otopFile.writelines(otopText)
 
         if not amb2gmx:
             itpFileName = os.path.join(gmxDir, itp)
@@ -2323,6 +2320,9 @@ Usage: antechamber -i   input file name
             oitpFileName = os.path.join(gmxDir, oitp)
             oitpFile = open(oitpFileName, 'w')
             oitpFile.writelines(oitpText)
+            otopFileName = os.path.join(gmxDir, otop)
+            otopFile = open(otopFileName, 'w')
+            otopFile.writelines(otopText)
 
     def writeGroFile(self):
         #print "Writing GROMACS GRO file\n"
@@ -2459,8 +2459,8 @@ pbc                      = no
         parFile.write("\n{ Bonds: atomType1 atomType2 kb r0 }\n")
         lineSet = []
         for bond in self.bonds:
-            a1Type = bond.atoms[0].atomType.atomTypeName
-            a2Type = bond.atoms[1].atomType.atomTypeName
+            a1Type = bond.atoms[0].atomType.atomTypeName+'_'
+            a2Type = bond.atoms[1].atomType.atomTypeName+'_'
             kb = 1000.0
             if not self.allhdg:
                 kb = bond.kBond
@@ -2476,9 +2476,9 @@ pbc                      = no
         parFile.write("\n{ Angles: aType1 aType2 aType3 kt t0 }\n")
         lineSet = []
         for angle in self.angles:
-            a1 = angle.atoms[0].atomType.atomTypeName
-            a2 = angle.atoms[1].atomType.atomTypeName
-            a3 = angle.atoms[2].atomType.atomTypeName
+            a1 = angle.atoms[0].atomType.atomTypeName+'_'
+            a2 = angle.atoms[1].atomType.atomTypeName+'_'
+            a3 = angle.atoms[2].atomType.atomTypeName+'_'
             kt = 500.0
             if not self.allhdg:
                 kt = angle.kTheta
@@ -2500,10 +2500,10 @@ iod phase }\n")
             for dih in item:
                 #id = item.index(dih)
                 l = len(item)
-                a1 = dih.atoms[0].atomType.atomTypeName
-                a2 = dih.atoms[1].atomType.atomTypeName
-                a3 = dih.atoms[2].atomType.atomTypeName
-                a4 = dih.atoms[3].atomType.atomTypeName
+                a1 = dih.atoms[0].atomType.atomTypeName+'_'
+                a2 = dih.atoms[1].atomType.atomTypeName+'_'
+                a3 = dih.atoms[2].atomType.atomTypeName+'_'
+                a4 = dih.atoms[3].atomType.atomTypeName+'_'
                 kp = 750.0
                 if not self.allhdg:
                     kp = dih.kPhi
@@ -2528,10 +2528,10 @@ iod phase }\n")
 eriod phase }\n")
         lineSet = set()
         for idh in self.improperDihedrals:
-            a1 = idh.atoms[0].atomType.atomTypeName
-            a2 = idh.atoms[1].atomType.atomTypeName
-            a3 = idh.atoms[2].atomType.atomTypeName
-            a4 = idh.atoms[3].atomType.atomTypeName
+            a1 = idh.atoms[0].atomType.atomTypeName+'_'
+            a2 = idh.atoms[1].atomType.atomTypeName+'_'
+            a3 = idh.atoms[2].atomType.atomTypeName+'_'
+            a4 = idh.atoms[3].atomType.atomTypeName+'_'
             kp = 750.0
             if not self.allhdg:
                 kp = idh.kPhi
@@ -2547,7 +2547,7 @@ eriod phase }\n")
         for at in self.atomTypes:
             A = at.ACOEF
             B = at.BCOEF
-            atName = at.atomTypeName
+            atName = at.atomTypeName+'_'
             if B == 0.0:
                 sigma = epAmber = ep2 = sig2 = 0.0
             else:
@@ -2568,7 +2568,7 @@ eriod phase }\n")
 
         topFile.write("\n{ atomType  mass }\n")
         for at in self.atomTypes:
-            atType = at.atomTypeName
+            atType = at.atomTypeName+'_'
             mass = at.mass
             line = "MASS %-5s %8.3f\n" % (atType, mass)
             topFile.write(line)
@@ -2579,7 +2579,7 @@ eriod phase }\n")
         topFile.write("\n{ atomName  atomType  Charge }\n")
         for at in self.atoms:
             atName = at.atomName
-            atType = at.atomType.atomTypeName
+            atType = at.atomType.atomTypeName+'_'
             charge = at.charge
             line = "ATOM %-5s TYPE= %-5s CHARGE= %8.4f END\n" % (atName, atType,
                                                                  charge)
