@@ -2592,7 +2592,7 @@ eriod phase }\n")
             line = "BOND %-5s %-5s\n" % (a1Name, a2Name)
             topFile.write(line)
 
-        if not autoAngleFlag:
+        if not autoAngleFlag or 1: # generating angles anyway
             topFile.write("\n{ Angles: atomName1 atomName2 atomName3}\n")
             for angle in self.angles:
                 a1Name = angle.atoms[0].atomName
@@ -2601,7 +2601,7 @@ eriod phase }\n")
                 line = "ANGLe %-5s %-5s %-5s\n" % (a1Name, a2Name, a3Name)
                 topFile.write(line)
 
-        if not autoDihFlag:
+        if not autoDihFlag or 1: # generating angles anyway
             topFile.write("\n{ Proper Dihedrals: name1 name2 name3 name4 }\n")
             for item in self.condensedProperDihedrals:
                 for dih in item:
@@ -2728,7 +2728,16 @@ class ACTopol(AbstractTopol):
         self.force = force
         self.engine = engine
         self.allhdg = allhdg
-        self.acExe = getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+        self.acExe = ''
+        dirAmber = os.getenv('AMBERHOME',os.getenv('ACHOME'))
+        if dirAmber:
+            for ac_bin in ['bin','exe']:
+                ac_path = os.path.join(dirAmber,ac_bin,'antechamber')
+                if os.path.exists(ac_path):
+                    self.acExe = ac_path
+                    break
+        if not self.acExe:
+            self.acExe = getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not os.path.exists(self.acExe):
             self.printError("no 'antechamber' executable!")
             return None
@@ -2926,6 +2935,10 @@ if __name__ == '__main__':
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting!")
+                hint1 = "HINT1: is 'AMBERHOME' or 'ACHOME' environment variable set?"
+                hint2 = "HINT2: is 'antechamber' in your $PATH?\n    What 'which antechamber' in your terminal says?\n    'alias' doesn't work for ACPYPI."
+                molecule.printMess(hint1)
+                molecule.printMess(hint2)
                 sys.exit(1)
 
             molecule.createACTopol()
