@@ -239,7 +239,7 @@ USAGE = \
 """
     acpypi -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc. or
     acpypi -p _prmtop_ -x _inpcrd_ [-d]
-    -i    input file name with either extension '.pdb' or '.mol2' (mandatory if -p and -x not set)
+    -i    input file name with either extension '.pdb', '.mol2', '.mdl' or '.mol' (mandatory if -p and -x not set)
     -p    amber prmtop file name (always used with -x)
     -x    amber inpcrd file name (always used with -p)
     -c    charge method: gas, bcc (default), user (user's charges in mol2 file)
@@ -248,7 +248,7 @@ USAGE = \
     -a    atom type, can be gaff or amber (AMBER99SB), default is gaff
     -f    force topologies recalculation anew
     -d    for debugging purposes, keep any temporary file created
-    -o    output topologies: all (default), gmx, cns
+    -o    output topologies: all (default), gmx, cns or charmm
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
     -b    a basename for the project (folder and output files)
@@ -606,14 +606,18 @@ class AbstractTopol:
                 out = getoutput(cmd)
                 self.printDebug(out)
                 mol2FileForGuessCharge = os.path.abspath(self.baseName+".mol2")
+                in_mol = 'mol2'
+            else:
+                in_mol = self.ext[1:]
+                if in_mol == 'mol': in_mol = 'mdl'
 
-            cmd = '%s -i %s -fi mol2 -o tmp -fo mol2 -c gas -pf y' % \
-                                                        (self.acExe, mol2FileForGuessCharge)
+            cmd = '%s -i %s -fi %s -o tmp -fo mol2 -c gas -pf y' % \
+                                                        (self.acExe, mol2FileForGuessCharge, in_mol)
 
             if self.debug:
                 self.printMess("Debugging...")
                 cmd = cmd.replace('-pf y', '-pf n')
-            print cmd
+                print cmd
 
             log = getoutput(cmd)
             #print log
@@ -655,11 +659,13 @@ class AbstractTopol:
         copy2(self.absInputFile, self.tmpDir)
         os.chdir(self.tmpDir)
 
+        exten = self.ext[1:]
         if self.ext == '.pdb':
             tmpFile = open(self.inputFile, 'r')
         else:
+            if exten == 'mol': exten = 'mdl'
             cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
-                                    (self.acExe, self.inputFile, self.ext[1:])
+                                    (self.acExe, self.inputFile, exten)
             self.printDebug(cmd)
             out = getoutput(cmd)
             if not out.isspace():
@@ -872,8 +878,11 @@ Usage: antechamber -i   input file name
         ct = chargeType or self.chargeType
         at = atomType or self.atomType
 
+        exten = self.ext[1:]
+        if exten == 'mol': exten = 'mdl'
+
         cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df 0 -at\
- %s -pf y' % (self.acExe, self.inputFile, self.ext[1:], self.acMol2FileName,
+ %s -pf y' % (self.acExe, self.inputFile, exten, self.acMol2FileName,
                      ct, self.chargeVal, self.multiplicity, at)
 
         if self.debug:
@@ -904,7 +913,7 @@ Usage: antechamber -i   input file name
     def signal_handler(self, signum, frame):#, pid = 0):
         global pid
         pids = self.job_pids_family(pid)
-        print pid, pids
+        self.printDebug("PID: %s, PIDS: %s" % (pid, pids))
         self.printMess("Timed out! Process %s killed, max exec time (%ss) exceeded" \
                         % (pids, self.timeTol))
         os.system('kill -15 %s' % pids)
@@ -1597,6 +1606,7 @@ Usage: antechamber -i   input file name
 
         if self.debug:
             cmd = cmd.replace('-pf y', '-pf n')
+            self.printDebug(cmd)
         _log = getoutput(cmd)
 
     def writePdb(self, file):
@@ -2746,9 +2756,9 @@ class ACTopol(AbstractTopol):
         self.parmchkExe = getoutput('which parmchk') or ''
         self.babelExe = getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
-            if self.ext != '.mol2':
+            if self.ext != '.mol2' and self.ext != '.mdl' and self.ext != '.mol':
                 self.printError("no 'babel' executable... aborting!")
-                self.printError("use only MOL2 file as input")
+                self.printError("use only MOL2 or MDL file as input")
                 sys.exit(1)
             else:
                 self.printWarn("no 'babel' executable, no PDB file as input can be used!")
