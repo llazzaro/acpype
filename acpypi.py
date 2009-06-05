@@ -231,7 +231,7 @@ a2oD = {'amber99_2': ['opls_235', 'opls_271'],
 global pid
 pid = 0
 
-head = "%s created by acpypi on %s\n"
+head = "%s created by acpypi (Rev: "+svnRev+") on %s\n"
 
 date = datetime.now().ctime()
 
@@ -1218,6 +1218,9 @@ Usage: antechamber -i   input file name
         tFlag = '%FLAG ' + flag
         data = ''
 
+        if len(self.topFileData) == 0:
+            raise Exception("PRMTOP file empty?")
+
         for rawLine in self.topFileData:
             line = rawLine[:-1]
             if tFlag in line:
@@ -1264,6 +1267,8 @@ Usage: antechamber -i   input file name
             For a given acFileXyz file, return a list of coords as:
             [[x1,y1,z1],[x2,y2,z2], etc.]
         """
+        if len(self.xyzFileData) == 0:
+            raise Exception("INPCRD file empty?")
         data = ''
         for rawLine in self.xyzFileData[2:]:
             line = rawLine[:-1]
@@ -1913,7 +1918,7 @@ Usage: antechamber -i   input file name
   HW  HW  OW           1   125.265     0.000 ; SPCE water
 """
 #NOTE: headTopWaterTip3p and headTopWaterSpce actually do NOTHING
-        headCl = \
+        headNa = \
 """
 [ moleculetype ]
   ; molname       nrexcl
@@ -1923,7 +1928,7 @@ Usage: antechamber -i   input file name
   ; id    at type res nr  residu name     at name  cg nr  charge   mass
     1       IP      1          Na+         Na+       1      1     22.9898
 """
-        headNa = \
+        headCl = \
 """
 [ moleculetype ]
   ; molname       nrexcl
@@ -1933,7 +1938,16 @@ Usage: antechamber -i   input file name
   ; id    at type res nr  residu name     at name  cg nr  charge   mass
     1       IM      1         Cl-           Cl-      1     -1     35.45300
 """
+        headK = \
+"""
+[ moleculetype ]
+  ; molname       nrexcl
+  K+             1
 
+[ atoms ]
+  ; id    at type res nr  residu name     at name  cg nr  charge   mass
+    1       K       1          K+         K+       1      1     39.100
+"""
         headWaterTip3p = \
 """
 [ moleculetype ]
@@ -1999,12 +2013,15 @@ Usage: antechamber -i   input file name
 3   1   2
 #endif
 """
+        # Dict of ions dealt by acpypi emulating amb2gmx
+        ionsDict = {'Na+':headNa, 'Cl-':headCl, 'K+':headK}
+        ionsSorted = []
 #NOTE: headWaterTip3p and headWaterSpce actually do the real thing
 #      so, skipping headTopWaterTip3p and headWaterTip3p
         #headTopWater = headTopWaterTip3p
         headWater = headWaterTip3p
 
-        nWat = nCl = nNa = 0
+        nWat = 0
         #topFile.write("; " + head % (top, date))
         topText.append("; " + head % (top, date))
         otopText.append("; " + head % (otop, date))
@@ -2054,8 +2071,12 @@ Usage: antechamber -i   input file name
             topText.append(headAtomtypes)
             topText += temp
             nWat = self.residueLabel.count('WAT')
-            nCl = self.residueLabel.count('Cl-')
-            nNa = self.residueLabel.count('Na+')
+            for ion in ionsDict.keys():
+                nIon = self.residueLabel.count(ion)
+                if nIon > 0:
+                    idIon = self.residueLabel.index(ion)
+                    ionsSorted.append((idIon,nIon,ion))
+            ionsSorted.sort()
         else:
             itpText.append(headAtomtypes)
             itpText += temp
@@ -2063,7 +2084,7 @@ Usage: antechamber -i   input file name
             oitpText += otemp
         self.printDebug("GMX atomtypes done")
 
-        if len(self.atoms) > 3 * nWat + nCl + nNa:
+        if len(self.atoms) > 3 * nWat + sum([x[1] for x in ionsSorted]):
             nSolute = 1
 
         if nWat:
@@ -2086,7 +2107,7 @@ Usage: antechamber -i   input file name
         for atom in self.atomsGromacs:
             resid = atom.resid
             resname = self.residueLabel[resid]
-            if resname in ['Cl-', 'Na+', 'WAT' ]:
+            if resname in ionsDict.keys() + ['WAT' ]:
                 break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
@@ -2295,10 +2316,9 @@ Usage: antechamber -i   input file name
                 oitpText += otemp
         self.printDebug("GMX improper dihedrals done")
 
-        if nNa:
-            topText.append(headNa)
-        if nCl:
-            topText.append(headCl)
+        for ion in ionsSorted:
+            topText.append(ionsDict[ion[2]])
+
         if nWat:
             topText.append(headWater)
 
@@ -2311,10 +2331,9 @@ Usage: antechamber -i   input file name
             topText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
             otopText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
 
-        if nNa:
-            topText.append(" %-16s %-6i\n" % ('Na+', nNa))
-        if nCl:
-            topText.append(" %-16s %-6i\n" % ('Cl-', nCl))
+        for ion in ionsSorted:
+            topText.append(" %-16s %-6i\n" % (ion[2], ion[1]))
+
         if nWat:
             topText.append(" %-16s %-6i\n" % ('WAT', nWat))
 
