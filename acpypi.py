@@ -596,7 +596,7 @@ class AbstractTopol:
                 self.printWarn("cannot read charges from a PDB file")
                 self.printWarn("using now 'bcc' method for charge")
 
-        if not self.chargeVal and not done:
+        if self.chargeVal == None and not done:
             self.printWarn("no charge value given, trying to guess one...")
             mol2FileForGuessCharge = self.inputFile
             if self.ext == ".pdb":
