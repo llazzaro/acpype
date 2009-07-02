@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Gmm with 200 atoms, biggest OK
+
 import os, sys
 
 global id
