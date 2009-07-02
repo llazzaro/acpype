@@ -751,7 +751,37 @@ class AbstractTopol:
         resname = list(residues)[0]
         newresname = resname
 
-        if resname.isdigit() or 'E' in resname[1:3].upper() or 'ADD' in resname.upper():
+        # To avoid resname likes: 001 (all numbers), 1e2 (sci number), ADD : reserved terms for leap
+        leapWords = ['_cmd_options_','_types_','add','addAtomTypes','addIons',
+                     'addIons2','addPath','addPdbAtomMap','addPdbResMap','alias',
+                     'alignAxes','bond','bondByDistance','center','charge',
+                     'check','clearPdbAtomMap','clearPdbResMap','clearVariables',
+                     'combine','copy','createAtom','createParmset','createResidue',
+                     'createUnit','crossLink','debugOff','debugOn','debugStatus',
+                     'deleteBond','deleteOffLibEntry','deleteRestraint','desc',
+                     'deSelect','displayPdbAtomMap','displayPdbResMap','edit',
+                     'flip','groupSelectedAtoms','help','impose','list','listOff',
+                     'loadAmberParams','loadAmberPrep','loadMol2','loadOff',
+                     'loadPdb','loadPdbUsingSeq','logFile','matchVariables',
+                     'measureGeom','quit','relax','remove','restrainAngle',
+                     'restrainBond','restrainTorsion','saveAmberParm',
+                     'saveAmberParmPert','saveAmberParmPol','saveAmberParmPolPert',
+                     'saveAmberPrep','saveMol2','saveOff','saveOffParm','savePdb',
+                     'scaleCharges','select','sequence','set','setBox','solvateBox',
+                     'solvateCap','solvateDontClip','solvateOct','solvateShell',
+                     'source','transform','translate','verbosity','zMatrix']
+        isLeapWord = False
+        for word in leapWords:
+            if resname.upper().startswith(word.upper()):
+                print word
+                isLeapWord = True
+        try:
+            float(resname)
+            isNumber = True
+        except ValueError:
+            isNumber = False
+
+        if resname[0].isdigit() or isNumber or isLeapWord:
             newresname = 'R' + resname
         if not resname.isalnum():
             newresname = 'MOL'
@@ -2776,8 +2806,8 @@ class ACTopol(AbstractTopol):
         self.babelExe = getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
             if self.ext != '.mol2' and self.ext != '.mdl' and self.ext != '.mol':
-                self.printError("no 'babel' executable... aborting!")
-                self.printError("use only MOL2 or MDL file as input")
+                self.printError("no 'babel' executable; you need it if input is PDB")
+                self.printError("otherwise use only MOL2 or MDL file as input ... aborting!")
                 sys.exit(1)
             else:
                 self.printWarn("no 'babel' executable, no PDB file as input can be used!")
