@@ -42,6 +42,7 @@ def addMolPep(cnsPepPath, molName):
     nPepFile = open(cnsPepPath, 'w')
     nPepFile.writelines(pepFile)
     nPepFile.close()
+    print "%s added to %s" % (molName, cnsPepPath)
     return True
 
 def addMolPar(cnsParPath, molParPath):
@@ -105,7 +106,7 @@ def addMolPar(cnsParPath, molParPath):
     nParFile = open(cnsParPath, 'w')
     nParFile.writelines(parList)
     nParFile.close()
-
+    print "%s added to %s" % (molName, cnsParPath)
     return True
 
 def addMolTop(cnsTopPath, molTopPath):
@@ -160,7 +161,7 @@ def addMolTop(cnsTopPath, molTopPath):
     nTopFile = open(cnsTopPath, 'w')
     nTopFile.writelines(topList)
     nTopFile.close()
-
+    print "%s added to %s" % (molName, cnsTopPath)
     return True
 
 class AcpypiForCcpnProject:
@@ -179,19 +180,15 @@ class AcpypiForCcpnProject:
     def __init__(self, project):
 
         self.project = project
+        self.heteroMols = None
         self.acpypiFiles = None
 
-    def run(self, chargeType = 'bcc', chargeVal = None,
-        multiplicity = '1', atomType = 'gaff', force = False, basename = None,
-        debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-        timeTol = 36000):
-
+    def getHeteroMols(self):
+        '''Return a list [] of chains obj'''
         ccpnProject = self.project
         maxNumberAtoms = 300 # MAXATOM in AC is 256, then it uses memory reallocation
         other = []
-        acpypiFiles = None
         molSys = ccpnProject.findFirstMolSystem()
-
         for chain in molSys.chains:
             if chain.molecule.molType == 'other':
                 numRes = len(chain.residues)
@@ -203,6 +200,18 @@ class AcpypiForCcpnProject:
                         other.append(chain)
                 else:
                     print "molType 'other', chain %s with %i residues; skipped by acpypi" % (chain, numRes)
+        self.heteroMols = other
+        return other
+
+
+    def run(self, chargeType = 'bcc', chargeVal = None,
+        multiplicity = '1', atomType = 'gaff', force = False, basename = None,
+        debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
+        timeTol = 36000):
+
+        ccpnProject = self.project
+        other = self.getHeteroMols()
+        acpypiFiles = None
 
         if not other:
             print "WARN: no molecules entitled for ACPYPI"
@@ -275,7 +284,7 @@ class AcpypiForCcpnProject:
             print "Total time of execution: %s" % msg
             if acpypiFailed: sys.exit(1)
 
-            acpypiFiles = [x for x in dirWalk(dirTemp)]
+            acpypiFiles = [x for x in dirWalk(os.path.join(dirTemp,'%s.acpypi' % resName))]
 
             os.chdir(origCwd)
-            self.acpypiFiles =  acpypiFiles
+            self.acpypiFiles = acpypiFiles
