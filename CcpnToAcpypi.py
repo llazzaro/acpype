@@ -91,11 +91,18 @@ def addMolPar(cnsParPath, molParPath):
                 break
     parList.insert(id+1, txt)
     for line in molList: # NOTE: Check if pars are there, but using string size, need to be smarter
-        if pars[0][:4] in line or pars[4][:4] in line: # BOND and NONB
+        if pars[0][:4] in line: # BOND
+            parTxt = line[:16]
+            revParTxt = reverseParLine(parTxt)
+            if parTxt not in parFile and revParTxt not in parFile:
+                parList.insert(id+1,line)
+        if pars[4][:4] in line: # NONB
             if line[:16] not in parFile:
                 parList.insert(id+1,line)
         if pars[1][:4] in line: # ANGLe
-            if line[:23] not in parFile:
+            parTxt = line[:23]
+            revParTxt = reverseParLine(parTxt)
+            if parTxt not in parFile and revParTxt not in parFile:
                 parList.insert(id+1,line)
         if pars[2][:4] in line or pars[3][:4] in line: # DIHE and IMPR
             if line[:32] not in parFile:
@@ -108,6 +115,15 @@ def addMolPar(cnsParPath, molParPath):
     nParFile.close()
     print "%s added to %s" % (molName, cnsParPath)
     return True
+
+def reverseParLine(txt):
+    lvec = txt.split()
+    head = lvec[0]
+    pars = lvec[1:]
+    pars.reverse()
+    for item in [ "%6s" % x for x in pars]:
+        head += item
+    return head
 
 def addMolTop(cnsTopPath, molTopPath):
     """
@@ -172,8 +188,8 @@ class AcpypiForCcpnProject:
         usage:
         acpypiProject = AcpypiForCcpnProject(ccpnProject)
         acpypiProject.run(kw**)
-        acpypiFilesList = acpypiProject.acpypiFiles
-        returns a list of the files inside chem chomp acpypi folder
+        acpypiDictFilesList = acpypiProject.acpypiDictFiles
+        returns a dict with list of the files inside chem chomp acpypi folder
         or None
     '''
 
@@ -181,7 +197,7 @@ class AcpypiForCcpnProject:
 
         self.project = project
         self.heteroMols = None
-        self.acpypiFiles = None
+        self.acpypiDictFiles = None
 
     def getHeteroMols(self):
         '''Return a list [] of chains obj'''
@@ -204,18 +220,23 @@ class AcpypiForCcpnProject:
         return other
 
 
-    def run(self, chargeType = 'bcc', chargeVal = None,
+    def run(self, chain = None, chargeType = 'bcc', chargeVal = None,
         multiplicity = '1', atomType = 'gaff', force = False, basename = None,
         debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
         timeTol = 36000):
 
         ccpnProject = self.project
-        other = self.getHeteroMols()
-        acpypiFiles = None
+
+        if chain:
+            other = [chain]
+        else:
+            other = self.getHeteroMols()
 
         if not other:
             print "WARN: no molecules entitled for ACPYPI"
             return None
+
+        acpypiDict = {}
 
         for chain in other:
             if chargeVal == None:
@@ -282,9 +303,11 @@ class AcpypiForCcpnProject:
             try: rmtree(molecule.tmpDir)
             except: pass
             print "Total time of execution: %s" % msg
-            if acpypiFailed: sys.exit(1)
-
-            acpypiFiles = [x for x in dirWalk(os.path.join(dirTemp,'%s.acpypi' % resName))]
+            if not acpypiFailed:
+                acpypiDict[resName] = [x for x in dirWalk(os.path.join(dirTemp,'%s.acpypi' % resName))]
+            else:
+                acpypiDict[resName] = []
+#                sys.exit(1)
 
             os.chdir(origCwd)
-            self.acpypiFiles = acpypiFiles
+            self.acpypiDictFiles = acpypiDict

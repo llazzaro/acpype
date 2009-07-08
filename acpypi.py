@@ -722,7 +722,7 @@ class AbstractTopol:
                 if dist2 < maxDist2: # and not longOK:
                     longSet.add(str(item[1]))
                     longSet.add(str(item2[1]))
-            if str(item[1]) not in longSet:
+            if str(item[1]) not in longSet and l > 1:
                 long += "%s\n" % item[1]
 
         if dups:
