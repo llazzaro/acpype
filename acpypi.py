@@ -748,7 +748,7 @@ class AbstractTopol:
                 rmtree(self.tmpDir)
                 sys.exit(1)
 
-        resname = list(residues)[0]
+        resname = list(residues)[0].strip()
         newresname = resname
 
         # To avoid resname likes: 001 (all numbers), 1e2 (sci number), ADD : reserved terms for leap
@@ -773,10 +773,11 @@ class AbstractTopol:
         isLeapWord = False
         for word in leapWords:
             if resname.upper().startswith(word.upper()):
-                print word
+                self.printDebug("Residue name is a reserved word: '%s'" % word.upper())
                 isLeapWord = True
         try:
             float(resname)
+            self.printDebug("Residue name is a 'number': '%s'" % word)
             isNumber = True
         except ValueError:
             isNumber = False
@@ -967,10 +968,9 @@ Usage: antechamber -i   input file name
         return string.join(pids)
 
     def delOutputFiles(self):
-        delFiles = ['mopac.in', 'mopac.pdb', 'mopac.out', 'tleap.in','sleap.in',
-                    'divcon.pdb', 'fixbo.log',
-                    'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp',
-                    'fragment.mol2', self.tmpDir] #leap.log
+        delFiles = ['mopac.in', 'tleap.in','sleap.in', 'divcon.pdb', 'fixbo.log',
+                    'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp', 'fragment.mol2',
+                    self.tmpDir] #, 'mopac.pdb', 'mopac.out'] #'leap.log'
         self.printMess("Removing temporary files...")
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
