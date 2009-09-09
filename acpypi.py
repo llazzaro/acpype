@@ -39,7 +39,7 @@
 """
 svnId = '$Id$'
 try: svnRev,svnDate,svnTime = svnId.split()[2:5]
-except: svnRev,svnDate,svnTime = 0,0,0
+except: svnRev,svnDate,svnTime = '0','0','0'
 tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev)
 
 lineHeader = \
