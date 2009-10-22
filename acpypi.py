@@ -2151,9 +2151,9 @@ Usage: antechamber -i   input file name
             omass = float(oItem[-1])
             qtot += charge
             resnr = resid + 1
-            line = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot %1.3f\n" % \
+            line = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot %1.3f\n" % \
             (count, aType, resnr, resname, aName, count, charge, mass, qtot)
-            oline = "%6d %4s %5d %5s %5s %4d %12.5f %12.5f ; qtot % 3.3f  %-4s\n" % \
+            oline = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot % 3.3f  %-4s\n" % \
             (count, oaCode, resnr, resname, aName, count, charge, omass, qtot, oplsAtName)
             count += 1
             temp.append(line)
