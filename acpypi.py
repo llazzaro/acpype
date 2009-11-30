@@ -1346,6 +1346,7 @@ Usage: antechamber -i   input file name
                 countRes += 1
             mass = massList[id]
             charge = balanceChargeList[id]
+            chargeConverted = charge / qConv
             totalCharge += charge
             coord = coords[id]
             ACOEF = ACOEFs[id]
@@ -1354,7 +1355,7 @@ Usage: antechamber -i   input file name
             if atomTypeName not in tmpList:
                 tmpList.append(atomTypeName)
                 atomTypes.append(atomType)
-            atom = Atom(atomName, atomType, id + 1, resid, mass, charge, coord)
+            atom = Atom(atomName, atomType, id + 1, resid, mass, chargeConverted, coord)
             atoms.append(atom)
             id += 1
 
@@ -2915,7 +2916,7 @@ class Atom:
         self.id = id
         self.resid = resid
         self.mass = mass
-        self.charge = charge / qConv
+        self.charge = charge #/ qConv
         self.coords = coord
 
 class AtomType:
