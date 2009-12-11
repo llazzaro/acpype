@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# usage: ./run_test_acpypi_db_ligands.py (opt: n=10 or ['001','Rca'])
+
 import sys, os, time
 
 from subprocess import Popen

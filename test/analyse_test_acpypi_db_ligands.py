@@ -2,6 +2,8 @@
 
 # Gmm with 200 atoms, biggest OK
 
+# usage: ./analyse_test_acpypi_db_ligands.py (opt: n=10 or ['001','Rca'])
+
 import os, sys
 
 global id
@@ -343,6 +345,7 @@ if len(sys.argv) > 1:
         num = int(args[0][2:])
         ccpCodes = ccpCodes[:num]
     else:
+        args = list(set(args))
         args.sort()
         ccpCodes = args
 
