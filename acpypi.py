@@ -71,6 +71,7 @@ import subprocess as sub
 
 # List of Topology Formats created by acpypi so far:
 outTopols = ['gmx', 'cns', 'charmm']
+qDict = {'mopac' : 0, 'divcon' : 1, 'sqm': 2}
 
 leapGaffFile = 'leaprc.gaff'
 leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
@@ -246,6 +247,7 @@ USAGE = \
     -n    net molecular charge (int), for gas default is 0
     -m    multiplicity (2S+1), default is 1
     -a    atom type, can be gaff or amber (AMBER99SB), default is gaff
+    -q    am1-bcc flag, sqm (default), divcon, mopac
     -f    force topologies recalculation anew
     -d    for debugging purposes, keep any temporary file created
     -o    output topologies: all (default), gmx, cns or charmm
@@ -325,12 +327,13 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hftdi:c:n:m:o:a:e:x:p:b:s:'
+    options = 'hftdi:c:n:m:o:a:q:e:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
+    qList = ['mopac','sqm','divcon']
 
     if '-h' in args:
         invalidArgs()
@@ -368,6 +371,10 @@ def parseArgs(args):
     if '-e' in d.keys():
         if d['-e'] not in enList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-e'], str(enList)))
+
+    if '-q' in d.keys():
+        if d['-q'] not in qList:
+            invalidArgs("'%s' not valid, has to be one of %s" % (d['-q'], str(qList)))
 
     if not '-i' in d.keys():
         amb2gmx = True
@@ -831,75 +838,76 @@ class AbstractTopol:
         return charge
 
     def execAntechamber(self, chargeType = None, atomType = None):
-        """
+        """ AmaberTools 1.3
             To call Antechamber and execute it
 
-Usage: antechamber -i   input file name
-                   -fi  input file format
-                   -o   output file name
-                   -fo  output file format
-                   -c   charge method
-                   -cf  charge file name
-                   -nc  net molecular charge (int)
-                   -a   additional file name
-                   -fa  additional file format
-                   -ao  additional file operation
-                        crd : only read in coordinate
-                        crg: only read in charge
-                        name  : only read in atom name
-                        type  : only read in atom type
-                        bond  : only read in bond type
-                   -m   multiplicity (2S+1), default is 1
-                   -rn  residue name, if not available in the input file, default is MOL
-                   -rf  residue toplogy file name in prep input file, default is molecule.res
-                   -ch  check file name in gaussian input file, default is molecule
-                   -ek  empirical calculation (mopac or divcon) keyword in a pair of quotation marks
-                   -gk  gaussian keyword in a pair of quotation marks
-                   -df  use divcon flag, 1 - use divcon; 0 - use mopac (default)
-                   -at  atom type, can be gaff, amber, bcc and sybyl, default is gaff
-                   -du  check atom name duplications, can be yes(y) or no(n), default is yes
-                   -j   atom type and bond type prediction index, default is 4
-                        0    : no assignment
-                        1    : atom type
-                        2    : full  bond types
-                        3    : part  bond types
-                        4    : atom and full bond type
-                        5    : atom and part bond type
-                   -s   status information, can be 0 (brief), 1 (the default) and 2 (verbose)
-                   -pf  remove the intermediate files: can be yes (y) and no (n), default is no
-                   -i -o -fi and -fo must appear in command lines and the others are optional
+Usage: antechamber -i  input file name
+                   -fi input file format
+                   -o  output file name
+                   -fo output file format
+                   -c  charge method
+                   -cf charge file name
+                   -nc net molecular charge (int)
+                   -a  additional file name
+                   -fa additional file format
+                   -ao additional file operation
+                        crd  only read in coordinate
+                        crg only read in charge
+                        name   only read in atom name
+                        type   only read in atom type
+                        bond   only read in bond type
+                   -m  multiplicity (2S+1), default is 1
+                   -rn residue name, overrides input file, default is MOL
+                   -rf residue toplogy file name in prep input file,
+                              default is molecule.res
+                   -ch check file name for gaussian, default is molecule
+                   -ek mopac or sqm keyword, inside quotes
+                   -gk gaussian keyword, inside quotes
+                   -df am1-bcc flag, 2 - use sqm(default); 0 - use mopac
+                   -at atom type, can be gaff (default), amber, bcc and sybyl
+                   -du fix duplicate atom names: yes(y)[default] or no(n)
+                   -j  atom type and bond type prediction index, default is 4
+                        0     no assignment
+                        1     atom type
+                        2     full  bond types
+                        3     part  bond types
+                        4     atom and full bond type
+                        5     atom and part bond type
+                   -s  status information: 0(brief), 1(default) or 2(verbose)
+                   -pf remove intermediate files: yes(y) or no(n)[default]
+                   -i -o -fi and -fo must appear; others are optional
 
-                             List of the File Formats
+                      List of the File Formats
 
-                file format type  abbre. index | file format type abbre. index
-                ---------------------------------------------------------------
-                Antechamber        ac       1  | Sybyl Mol2         mol2    2
-                PDB                pdb      3  | Modified PDB       mpdb    4
-                AMBER PREP (int)   prepi    5  | AMBER PREP (car)   prepc   6
-                Gaussian Z-Matrix  gzmat    7  | Gaussian Cartesian gcrt    8
-                Mopac Internal     mopint   9  | Mopac Cartesian    mopcrt 10
-                Gaussian Output    gout    11  | Mopac Output       mopout 12
-                Alchemy            alc     13  | CSD                csd    14
-                MDL                mdl     15  | Hyper              hin    16
-                AMBER Restart      rst     17  | Jaguar Cartesian   jcrt   18
-                Jaguar Z-Matrix    jzmat   19  | Jaguar Output      jout   20
-                Divcon Input       divcrt  21  | Divcon Output      divout 22
-                Charmm             charmm  23
-                --------------------------------------------------------------
+         file format type  abbre. index | file format type abbre. index
+        ---------------------------------------------------------------
+        Antechamber        ac       1  | Sybyl Mol2         mol2    2
+        PDB                pdb      3  | Modified PDB       mpdb    4
+        AMBER PREP (int)   prepi    5  | AMBER PREP (car)   prepc   6
+        Gaussian Z-Matrix  gzmat    7  | Gaussian Cartesian gcrt    8
+        Mopac Internal     mopint   9  | Mopac Cartesian    mopcrt 10
+        Gaussian Output    gout    11  | Mopac Output       mopout 12
+        Alchemy            alc     13  | CSD                csd    14
+        MDL                mdl     15  | Hyper              hin    16
+        AMBER Restart      rst     17  | Jaguar Cartesian   jcrt   18
+        Jaguar Z-Matrix    jzmat   19  | Jaguar Output      jout   20
+        Divcon Input       divcrt  21  | Divcon Output      divout 22
+        Charmm             charmm  23  | SQM Output         sqmout 24
+        --------------------------------------------------------------
 
                 AMBER restart file can only be read in as additional file.
 
-                             List of the Charge Methods
+                      List of the Charge Methods
 
-                charge method     abbre.  index | charge method      abbre. index
-                ----------------------------------------------------------------
-                RESP               resp     1  |  AM1-BCC            bcc     2
-                CM1                cm1      3  |  CM2                cm2     4
-                ESP (Kollman)      esp      5  |  Mulliken           mul     6
-                Gasteiger          gas      7  |  Read in charge     rc      8
-                Write out charge   wc       9  |  Delete Charge      dc     10
-                ----------------------------------------------------------------
-        """
+        charge method     abbre.  index | charge method    abbre. index
+        ----------------------------------------------------------------
+        RESP               resp     1  |  AM1-BCC            bcc     2
+        CM1                cm1      3  |  CM2                cm2     4
+        ESP (Kollman)      esp      5  |  Mulliken           mul     6
+        Gasteiger          gas      7  |  Read in charge     rc      8
+        Write out charge   wc       9  |  Delete Charge      dc     10
+        ----------------------------------------------------------------
+a        """
         global pid
 
         self.printMess("Executing Antechamber...")
@@ -912,9 +920,9 @@ Usage: antechamber -i   input file name
         exten = self.ext[1:]
         if exten == 'mol': exten = 'mdl'
 
-        cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df 0 -at\
+        cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df %i -at\
  %s -pf y' % (self.acExe, self.inputFile, exten, self.acMol2FileName,
-                     ct, self.chargeVal, self.multiplicity, at)
+                     ct, self.chargeVal, self.multiplicity, self.qFlag, at)
 
         if self.debug:
             self.printMess("Debugging...")
@@ -968,9 +976,9 @@ Usage: antechamber -i   input file name
         return string.join(pids)
 
     def delOutputFiles(self):
-        delFiles = ['mopac.in', 'tleap.in','sleap.in', 'divcon.pdb', 'fixbo.log',
+        delFiles = ['mopac.in', 'tleap.in','sleap.in', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp', 'fragment.mol2',
-                    self.tmpDir] #, 'mopac.pdb', 'mopac.out'] #'leap.log'
+                    self.tmpDir] #, 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
         self.printMess("Removing temporary files...")
         for file in delFiles:
             file = os.path.join(self.absHomeDir, file)
@@ -1637,8 +1645,9 @@ Usage: antechamber -i   input file name
         res = self.resName #self.residueLabel[0]
         #print res, self.residueLabel, type(self.residueLabel)
 
-        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df 0 -at %s \
-        -pf y -rn %s' % (self.acExe, self.acMol2FileName, self.charmmBase, at, res)
+        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df %i -at %s \
+        -pf y -rn %s' % (self.acExe, self.acMol2FileName, self.charmmBase,
+                          self.qFlag, at, res)
 
         if self.debug:
             cmd = cmd.replace('-pf y', '-pf n')
@@ -2759,13 +2768,13 @@ stop
 
 class ACTopol(AbstractTopol):
     """
-        Class to build the AC topologies (Antechamber AmberTools 1.2)
+        Class to build the AC topologies (Antechamber AmberTools 1.2/1.3)
     """
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-            timeTol = 36000):
+            timeTol = 36000, qprog = 'sqm'):
 
         self.debug = debug
         self.inputFile = os.path.basename(inputFile)
@@ -2823,6 +2832,33 @@ class ACTopol(AbstractTopol):
         acMol2FileName = '%s_%s_%s.mol2' % (base, chargeType, atomType)
         self.acMol2FileName = acMol2FileName
         self.charmmBase = '%s_CHARMM' % base
+        # check for which version of antechamber
+        if 'amber10' in self.acExe:
+            if qprog == 'sqm':
+                self.printWarn("SQM is not implemented in AmberTools 1.2")
+                self.printWarn("Setting mopac for antechamber")
+                qprog = 'mopac'
+            elif qprog == 'divcon':
+                if not os.path.exists(os.path.join(os.path.dirname(self.acExe), qprog)):
+                    self.printWarn("DIVCON is not installed")
+                    self.printWarn("Setting mopac for antechamber")
+                    qprog = 'mopac'
+        elif 'amber11' in self.acExe:
+            if qprog == 'divcon':
+                self.printWarn("DIVCON is not implemented in AmberTools 1.3 anymore")
+                self.printWarn("Setting sqm for antechamber")
+                qprog = 'sqm'
+            elif qprog == 'mopac':
+                if not os.path.exists(os.path.join(os.path.dirname(self.acExe), qprog)):
+                    self.printWarn("MOPAC is not installed")
+                    self.printWarn("Setting sqm for antechamber")
+                    return None
+                    qprog = 'sqm'
+        else:
+            self.printWarn("Old version of antechamber. Strongly consider upgrading to AmberTools")
+            self.printWarn("Setting mopac for antechamber")
+            qprog = 'mopac'
+        self.qFlag = qDict[qprog]
         self.outTopols = [outTopol]
         if outTopol == 'all':
             self.outTopols = outTopols
@@ -2971,6 +3007,7 @@ if __name__ == '__main__':
     at = argsDict.get('-a', 'gaff')
     ot = argsDict.get('-o', 'all')
     en = argsDict.get('-e', 'tleap')
+    qq = argsDict.get('-q', 'sqm')
     amb2gmx = argsDict.get('amb2gmx')
     prmtop = argsDict.get('-p', None)
     inpcrd = argsDict.get('-x', None)
@@ -2991,7 +3028,7 @@ if __name__ == '__main__':
             molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                                multiplicity = mt, atomType = at, force = fs,
                                outTopol = ot, engine = en, allhdg=tt, basename = bn,
-                               timeTol = to)
+                               timeTol = to, qprog = qq)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting!")
