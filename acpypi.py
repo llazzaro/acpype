@@ -76,6 +76,9 @@ qDict = {'mopac' : 0, 'divcon' : 1, 'sqm': 2}
 leapGaffFile = 'leaprc.gaff'
 leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
 
+# "qm_theory='AM1', grms_tol=0.0002, maxcyc=999, tight_p_conv=1, scfconv=1.d-10,"
+# "AM1 ANALYT MMOK GEO-OK PRECISE"
+
 cal = 4.184
 Pi = 3.141593
 qConv = 18.2223
@@ -248,6 +251,7 @@ USAGE = \
     -m    multiplicity (2S+1), default is 1
     -a    atom type, can be gaff or amber (AMBER99SB), default is gaff
     -q    am1-bcc flag, sqm (default), divcon, mopac
+    -k    mopac or sqm keyword, inside quotes
     -f    force topologies recalculation anew
     -d    for debugging purposes, keep any temporary file created
     -o    output topologies: all (default), gmx, cns or charmm
@@ -283,7 +287,7 @@ source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
 #set default disulfide auto
-%(res)s = loadpdb %(base)s.pdb
+%(res)s = loadpdb %(baseOrg)s.pdb
 #check %(res)s
 saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
 saveoff %(res)s %(acBase)s.lib
@@ -327,7 +331,7 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hftdi:c:n:m:o:a:q:e:x:p:b:s:'
+    options = 'hftdi:c:n:m:o:a:q:e:k:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
@@ -921,8 +925,9 @@ a        """
         if exten == 'mol': exten = 'mdl'
 
         cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df %i -at\
- %s -pf y' % (self.acExe, self.inputFile, exten, self.acMol2FileName,
-                     ct, self.chargeVal, self.multiplicity, self.qFlag, at)
+ %s -pf y %s' % (self.acExe, self.inputFile, exten, self.acMol2FileName,
+                     ct, self.chargeVal, self.multiplicity, self.qFlag, at,
+                     self.ekFlag)
 
         if self.debug:
             self.printMess("Debugging...")
@@ -1645,9 +1650,9 @@ a        """
         res = self.resName #self.residueLabel[0]
         #print res, self.residueLabel, type(self.residueLabel)
 
-        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -df %i -at %s \
+        cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -at %s \
         -pf y -rn %s' % (self.acExe, self.acMol2FileName, self.charmmBase,
-                          self.qFlag, at, res)
+                         at, res)
 
         if self.debug:
             cmd = cmd.replace('-pf y', '-pf n')
@@ -1670,14 +1675,19 @@ a        """
         for atom in self.atoms:
             #id = self.atoms.index(atom) + 1
             aName = atom.atomName
-            if len(aName) != 4:
-                aName = ' ' + aName
-            s = aName[1]
+            if len(aName) == 2:
+                aName = ' %s ' % aName
+            elif len(aName) == 1:
+                aName = ' %s  ' % aName
+            for l in aName:
+                if l.isalpha():
+                    s = l
+                    break
             rName = self.residueLabel[0]
             x = atom.coords[0]
             y = atom.coords[1]
             z = atom.coords[2]
-            line = "%-6s%5d %-5s%3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
+            line = "%-6s%5d %4s %3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
             ('ATOM', id, aName, rName, 1, 4*' ', x, y, z, 1.0, 0.0, 10*' ', s)
             pdbFile.write(line)
             id += 1
@@ -2774,7 +2784,7 @@ class ACTopol(AbstractTopol):
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-            timeTol = 36000, qprog = 'sqm'):
+            timeTol = 36000, qprog = 'sqm', ekFlag = None):
 
         self.debug = debug
         self.inputFile = os.path.basename(inputFile)
@@ -2782,12 +2792,17 @@ class ACTopol(AbstractTopol):
         self.absInputFile = os.path.abspath(inputFile)
         if not os.path.exists(self.absInputFile):
             self.printWarn("input file doesn't exist")
-        base, ext = os.path.splitext(self.inputFile)
-        base = basename or base
+        baseOriginal, ext = os.path.splitext(self.inputFile)
+        base = basename or baseOriginal
+        self.baseOriginal = baseOriginal
         self.baseName = base # name of the input file without ext.
         self.timeTol = timeTol
         self.printDebug("Max execution time tolerance is %s" % elapsedTime(self.timeTol))
         self.ext = ext
+        if ekFlag == '"None"':
+            self.ekFlag = ''
+        else:
+            self.ekFlag = '-ek %s' % ekFlag
         self.extOld = ext
         self.homeDir = self.baseName + '.acpypi'
         self.chargeType = chargeType
@@ -2864,7 +2879,7 @@ class ACTopol(AbstractTopol):
             self.outTopols = outTopols
         self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
                           'acMol2FileName' : acMol2FileName, 'res' : self.resName,
-                          'leapAmberFile':leapAmberFile,
+                          'leapAmberFile':leapAmberFile, 'baseOrg' : self.baseOriginal,
                           'leapGaffFile':leapGaffFile}
 
 class MolTopol(ACTopol):
@@ -3008,6 +3023,7 @@ if __name__ == '__main__':
     ot = argsDict.get('-o', 'all')
     en = argsDict.get('-e', 'tleap')
     qq = argsDict.get('-q', 'sqm')
+    ek = argsDict.get('-k', None)
     amb2gmx = argsDict.get('amb2gmx')
     prmtop = argsDict.get('-p', None)
     inpcrd = argsDict.get('-x', None)
@@ -3028,7 +3044,7 @@ if __name__ == '__main__':
             molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                                multiplicity = mt, atomType = at, force = fs,
                                outTopol = ot, engine = en, allhdg=tt, basename = bn,
-                               timeTol = to, qprog = qq)
+                               timeTol = to, qprog = qq, ekFlag = '''"%s"''' % ek)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting!")
