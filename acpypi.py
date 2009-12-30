@@ -73,6 +73,10 @@ import subprocess as sub
 outTopols = ['gmx', 'cns', 'charmm']
 qDict = {'mopac' : 0, 'divcon' : 1, 'sqm': 2}
 
+# Residues that are not solute, to be avoided when balancing charges in amb2gmx mode
+ionOrSolResNameList = ['Cl-', 'Na+', 'K+', 'CIO', 'Cs+', 'IB', 'Li+', 'MG2', 'Rb+',
+                         'WAT', 'MOH', 'NMA']
+
 leapGaffFile = 'leaprc.gaff'
 leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
 
@@ -1340,9 +1344,18 @@ a        """
         self._atomTypeNameList = atomTypeNameList
         massList = self.getFlagData('MASS')
         chargeList = self.getFlagData('CHARGE')
+#        totalCharge = sum(chargeList)
+#        self.printDebug('charge to be balanced: total %13.10f' % (totalCharge/qConv))
+
         resIds = self.getFlagData('RESIDUE_POINTER') + [0]
+        # to guess the resId of the last residue before ion or water
+#        for resTemp in self.residueLabel:
+#            if resTemp in ionOrWaterResNameList:
+#                lastSoluteResId = self.residueLabel.index(resTemp) - 1
+#                break
+        #print lastSoluteResId, self.residueLabel[lastSoluteResId]
         #uniqAtomTypeId = self.getFlagData('ATOM_TYPE_INDEX') # for LJ
-        balanceChargeList = self.balanceCharges(chargeList)
+#        balanceChargeList = self.balanceCharges(chargeList)
         coords = self.getCoords()
         ACOEFs, BCOEFs = self.getABCOEFs()
 
@@ -1352,13 +1365,19 @@ a        """
         totalCharge = 0.0
         countRes = 0
         id = 0
+        FirstNonSoluteId = None
         for atomName in atomNameList:
             atomTypeName = atomTypeNameList[id]
             if id + 1 == resIds[countRes]:
                 resid = countRes #self.residueLabel[countRes]
                 countRes += 1
+            resName = self.residueLabel[resid]
+            if resName in ionOrSolResNameList and not FirstNonSoluteId:
+                FirstNonSoluteId = id
+                #print id, resid, resName
             mass = massList[id]
-            charge = balanceChargeList[id]
+            #charge = balanceChargeList[id]
+            charge = chargeList[id]
             chargeConverted = charge / qConv
             totalCharge += charge
             coord = coords[id]
@@ -1372,12 +1391,16 @@ a        """
             atoms.append(atom)
             id += 1
 
+        balanceChargeList, balanceValue, balanceId = self.balanceCharges(chargeList, FirstNonSoluteId)
+
+        atoms[balanceId].charge = balanceValue / qConv
+
         if atomTypeName[0].islower():
             self.atomTypeSystem = 'gaff'
         else:
             self.atomTypeSystem = 'amber'
 
-        self.printDebug('Balanced TotalCharge %13.10f' % float(totalCharge / qConv))
+        self.printDebug('Balanced TotalCharge %13.10f' % float(sum(balanceChargeList) / qConv))
         self.totalCharge = int(totalCharge)
 
         self.atoms = atoms
@@ -1531,7 +1554,7 @@ a        """
         self.excludedAtoms = excludedAtomsList
         self.printDebug("getExcludedAtoms")
 
-    def balanceCharges(self, chargeList):
+    def balanceCharges(self, chargeList, FirstNonSoluteId = None):
         """
             Note that python is very annoying about floating points.
             Even after balance, there will always be some residue of order e-12
@@ -1540,20 +1563,18 @@ a        """
             maximum decimals.
         """
         #self.printDebug(chargeList)
-        total = sum(chargeList)/qConv
-        self.printDebug('charge to be balanced: total %13.10f' % total)
-        maxVal = max(chargeList)
-        minVal = min(chargeList)
-        #print maxVal, minVal
+        total = sum(chargeList)
+        self.printDebug('charge to be balanced: total %13.10f' % (total/qConv))
+        maxVal = max(chargeList[:FirstNonSoluteId])
+        minVal = min(chargeList[:FirstNonSoluteId])
         if abs(maxVal) >= abs(minVal): lim = maxVal
         else: lim = minVal
         limId = chargeList.index(lim)
-        diff = (total - round(total)) * qConv
-        #print diff
+        diff = total - round(total)
         fix = lim - diff
         chargeList[limId] = fix
         self.printDebug("balanceCharges done")
-        return chargeList
+        return chargeList, fix, limId
 
     def getABCOEFs(self):
         uniqAtomTypeIdList = self.getFlagData('ATOM_TYPE_INDEX')

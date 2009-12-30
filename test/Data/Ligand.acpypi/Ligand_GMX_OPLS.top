@@ -1,0 +1,14 @@
+; Ligand_GMX_OPLS.top created by acpypi (Rev: 264) on Wed Dec 30 13:17:35 2009
+
+; Include forcefield parameters
+#include "ffoplsaa.itp"
+
+; Include Ligand_GMX.itp topology
+#include "Ligand_GMX.itp"
+
+[ system ]
+ Ligand
+
+[ molecules ]
+; Compound        nmols
+ Ligand           1     
