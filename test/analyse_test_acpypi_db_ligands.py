@@ -4,6 +4,8 @@
 
 # usage: ./analyse_test_acpypi_db_ligands.py (opt: n=10 or ['001','Rca'])
 
+# semi-QM = mopac (AT 1.2) or sqm (AT 1.3)
+
 import os, sys
 
 global id
@@ -22,7 +24,7 @@ groupResults = [
                  '0 E, 2 W, ET , WT _0_2','0 E, 3 W, ET , WT _0_1_2',
                  '0 E, 2 W, ET , WT _0_3','0 E, 3 W, ET , WT _0_1_3',
                  '0 E, 3 W, ET , WT _0_2_3','0 E, 4 W, ET , WT _0_1_2_3']],
-               ["only guessCharge failed, but running mopac with charge = 0 finished fine","Mols only guessCharge failed",
+               ["only guessCharge failed, but running semi-QM with charge = 0 finished fine","Mols only guessCharge failed",
                 ['1 E, 1 W, ET _0, WT _0', '1 E, 2 W, ET _0, WT _0_1',
                  '1 E, 2 W, ET _0, WT _0_2', '1 E, 3 W, ET _0, WT _0_1_2']],
                ["atoms in close contact", "Mols have atoms in close contact",
@@ -80,7 +82,7 @@ groupResults = [
                 ['4 E, 1 W, ET _0_4_5_6, WT _0', '4 E, 2 W, ET _0_4_5_6, WT _0_1']],
                ["guessCharge and tleap failed, maybe wrong atomtype", "Mols have guessCharge and tleap failed, maybe wrong atomtype",
                 ['4 E, 2 W, ET _0_4_5_6, WT _0_6', '4 E, 3 W, ET _0_4_5_6, WT _0_1_6']],
-               ["guessCharge failed and mopac timeout", "Mols have guessCharge failed and mopac timeout",
+               ["guessCharge failed and semi-QM timeout", "Mols have guessCharge failed and semi-QM timeout",
                 ['2 E, 1 W, ET _0_9, WT _0']],
                ["atoms with same coordinates and maybe wrong atomtype", "Mols have atoms with same coordinates and maybe wrong atomtype",
                 ['1 E, 1 W, ET _1, WT _6']],
@@ -116,7 +118,7 @@ error_warn_messages = \
     warnType 8 = 'no 'babel' executable, no PDB file as input can be used!'
     warnType 9 = 'UNKNOWN WARN'
 
-    errorType 0 = 'guessCharge failed' # (not so serious if only err    or because mopac worked with charge Zero)
+    errorType 0 = 'guessCharge failed' # (not so serious if only err    or because semi-QM worked with charge Zero)
     errorType 1 = 'Atoms with same coordinates in'
     errorType 2 = 'Atoms TOO close'
     errorType 3 = 'Atoms TOO alone'
@@ -125,7 +127,7 @@ error_warn_messages = \
     errorType 6 = 'Tleap failed'
     errorType 7 = "No such file or directory: 'tmp'" # can be bondtyes wrong or wrong frozen atom type
     errorType 8 = 'syntax error'
-    errorType 9 = 'MOPAC taking too long to finish'
+    errorType 9 = 'semi-QM taking too long to finish'
     errorType 10 = 'UNKNOWN ERROR'
 '''
 
@@ -233,7 +235,7 @@ def analyseFile(mol, structure, file):
         if "No such file or directory: 'tmp'" in line:
             errorTypes += '_7'
             ET7.add('%s_%s'% (mol, structure))
-        if "MOPAC taking too long to finish" in line:
+        if "semi-QM taking too long to finish" in line:
             errorTypes += '_9'
             ET9.append('%s_%s'% (mol, structure))
     out = parseSummurisedLine(warnTypes, errorTypes)

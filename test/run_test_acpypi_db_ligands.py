@@ -148,5 +148,5 @@ if __name__ == '__main__':
 
 # nohup ./run_test_acpypi_db_ligands.py &
 # grep started nohup.out | wc -l ; grep finished nohup.out | wc -l # 17405 17405
-# grep -r "FAILED: MOPAC taking" other/*
+# grep -r "FAILED: semi-QM taking" other/*
 # grep -r "invalid" other/*
