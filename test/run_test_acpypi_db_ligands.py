@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# usage: ./run_test_acpypi_db_ligands.py (opt: n=10 or ['001','Rca'])
+# usage: ./run_test_acpypi_db_ligands.py (opt: n=10 or "['001','Rca']")
 
 import sys, os, time
 
@@ -125,7 +125,7 @@ if __name__ == '__main__':
             num = int(args[0][2:])
             ccpCodes = ccpCodes[:num]
         else:
-            args = list(set(args))
+            args = list(set(eval(args[0])))
             args.sort()
             ccpCodes = args
 
