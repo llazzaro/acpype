@@ -47,6 +47,8 @@ groupResults = [
                 ['1 E, 0 W, ET _7, WT ']],
                ["atoms with same coordinates", "Mols have duplicated coordinates",
                 ['1 E, 0 W, ET _1, WT ']],
+               ["maybe wrong atomtype", "Mols with maybe wrong atomtype",
+                ['0 E, 3 W, ET , WT _0_1_6']],
                ["guessCharge failed and atoms in close contact", "Mols have guessCharge failed and atoms in close contact",
                 ['1 E, 3 W, ET _0, WT _0_1_7', '1 E, 3 W, ET _0, WT _0_2_7',
                  '1 E, 4 W, ET _0, WT _0_1_2_7']],

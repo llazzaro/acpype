@@ -75,7 +75,7 @@ def runConversionJobs(chemCompVarFiles,scriptName):
 
                     varDir, varFile = os.path.split(chemCompVarFile)
                     os.chdir(varDir)
-                    process = Popen(['nice', '-19', scriptName, '-i', varFile, '-fd'], stdout = jobOut, stderr = jobOut)
+                    process = Popen(['nice', '-19', scriptName, '-i', varFile, '-d'], stdout = jobOut, stderr = jobOut)
 
                     currentJobOut[chemCompVarFile] = jobOut
                     currentProcesses[chemCompVarFile] = process

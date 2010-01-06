@@ -965,7 +965,7 @@ a        """
         self.printMess("Timed out! Process %s killed, max exec time (%ss) exceeded" \
                         % (pids, self.timeTol))
         os.system('kill -15 %s' % pids)
-        raise Exception("MOPAC taking too long to finish... aborting!")
+        raise Exception("Semi-QM taking too long to finish... aborting!")
 
     def job_pids_family(self,jpid):
         '''INTERNAL: Return all job processes (PIDs)'''
