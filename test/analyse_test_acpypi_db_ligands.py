@@ -42,7 +42,7 @@ groupResults = [
                  '0 E, 4 W, ET , WT _0_2_5_7', '0 E, 5 W, ET , WT _0_1_2_5_7',
                  '0 E, 6 W, ET , WT _0_1_2_3_5_7']],
                ["couldn't determine all parameters", "Mols have missing parameters",
-                ['0 E, 3 W, ET , WT _0_2_4']],
+                ['0 E, 3 W, ET , WT _0_2_4', '0 E, 3 W, ET , WT _0_1_4']],
                ["missing parameters, irregular bonds and atoms in close contact", "Mols have missing parameters, irregular bonds and atoms in close contact",
                 ['0 E, 5 W, ET , WT _0_2_4_5_7']],
                ["no 'tmp', acpypi did nothing at all", "Mols have no 'tmp'",
@@ -320,8 +320,29 @@ def sortList(lista,typeMess):
     return lista
 
 def printResults(lista, subHead, header=None):
+    '''
+    print results as
+    --------------------------------------------------------------------------------
+
+    *** For results [1], [2], [3], totally empty dirs (NO mol2 input files for either PDB or IDEAL):
+
+    [1] Dirs missing pdb.mol2 input files for both PDB and Ideal:
+    0     []
+
+    [2] Dirs missing pdb.mol2 input files with PDB ONLY, besides [1]:
+    0     []
+
+    [3] Dirs missing pdb.mol2 input files with IDEAL ONLY, besides [1]:
+    1     ['006']
+    PDB Total: 0 of 20 (0.00%)
+    IDEAL Total: 1 of 20 (5.00%)
+    Total: 1 of 20 (5.00%)
+    --------------------------------------------------------------------------------
+    '''
     global id
     dList, pList, iList = lista
+    if not dList and not pList and not iList:
+        return 0
     dList.sort()
     pList.sort()
     iList.sort()
@@ -452,8 +473,13 @@ totalTxt = ''
 for group in groupResults:
     header, subHead, dummy, lista = group
     subTot = printResults(lista, subHead, header)
+    if not subTot: continue
     totalTxt += "+ %i " % subTot
 totalTxt = totalTxt[2:]
 sumVal = eval(totalTxt)
 print "%s= %s" % (totalTxt, sumVal)
 
+#print results
+
+# mols with charge not 0
+#print WT3
