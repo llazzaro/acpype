@@ -25,7 +25,8 @@ groupResults = [
                 ['0 E, 1 W, ET , WT _0','0 E, 2 W, ET , WT _0_1',
                  '0 E, 2 W, ET , WT _0_2','0 E, 3 W, ET , WT _0_1_2',
                  '0 E, 2 W, ET , WT _0_3','0 E, 3 W, ET , WT _0_1_3',
-                 '0 E, 3 W, ET , WT _0_2_3','0 E, 4 W, ET , WT _0_1_2_3']],
+                 '0 E, 3 W, ET , WT _0_2_3','0 E, 4 W, ET , WT _0_1_2_3',
+                 '0 E, 2 W, ET , WT _0_8']],
                ["only guessCharge failed, but running semi-QM with charge = 0 finished fine","Mols only guessCharge failed",
                 ['1 E, 1 W, ET _0, WT _0', '1 E, 2 W, ET _0, WT _0_1',
                  '1 E, 2 W, ET _0, WT _0_2', '1 E, 3 W, ET _0, WT _0_1_2']],
@@ -50,9 +51,11 @@ groupResults = [
                ["atoms with same coordinates", "Mols have duplicated coordinates",
                 ['1 E, 0 W, ET _1, WT ']],
                ["maybe wrong atomtype", "Mols with maybe wrong atomtype",
-                ['0 E, 3 W, ET , WT _0_1_6','0 E, 4 W, ET , WT _0_1_3_6']],
+                ['0 E, 2 W, ET , WT _0_6','0 E, 3 W, ET , WT _0_1_6','0 E, 4 W, ET , WT _0_1_3_6','0 E, 3 W, ET , WT _0_3_6']],
                ["maybe wrong atomtype and atoms in close contact", "Mols with maybe wrong atomtype and atoms in close contact",
-                ['0 E, 4 W, ET , WT _0_1_6_7']],
+                ['0 E, 4 W, ET , WT _0_1_6_7','0 E, 3 W, ET , WT _0_6_7']],
+               ["irregular bonds, maybe wrong atomtype and atoms in close contact", "Mols with irregular bonds, maybe wrong atomtype and atoms in close contact",
+                ['0 E, 5 W, ET , WT _0_1_5_6_7']],
                ["guessCharge failed and atoms in close contact", "Mols have guessCharge failed and atoms in close contact",
                 ['1 E, 3 W, ET _0, WT _0_1_7', '1 E, 3 W, ET _0, WT _0_2_7',
                  '1 E, 4 W, ET _0, WT _0_1_2_7']],
@@ -85,7 +88,7 @@ groupResults = [
                ["tleap failed", "Mols have tleap failed",
                 ['3 E, 1 W, ET _4_5_6, WT _0', '3 E, 2 W, ET _4_5_6, WT _0_1']],
                ["tleap failed, maybe wrong atomtype", "Mols have tleap failed and maybe wrong atomtype",
-                ['3 E, 3 W, ET _4_5_6, WT _0_1_6']],
+                ['3 E, 3 W, ET _4_5_6, WT _0_1_6', '3 E, 2 W, ET _4_5_6, WT _0_6']],
                ["guessCharge and tleap failed", "Mols have guessCharge and tleap failed",
                 ['4 E, 1 W, ET _0_4_5_6, WT _0', '4 E, 2 W, ET _0_4_5_6, WT _0_1']],
                ["guessCharge and tleap failed, maybe wrong atomtype", "Mols have guessCharge and tleap failed, maybe wrong atomtype",
@@ -123,7 +126,8 @@ error_warn_messages = \
     warnType 6 = 'atom type may be wrong'
     warnType 7 = 'Close contact of ... angstroms between ...'
 
-    warnType 8 = 'no 'babel' executable, no PDB file as input can be used!'
+    #warnType 8 = 'no 'babel' executable, no PDB file as input can be used!'
+    warnType 8 = "residue name will be 'MOL' instead of"
     warnType 9 = 'UNKNOWN WARN'
 
     errorType 0 = 'guessCharge failed' # (not so serious if only err    or because semi-QM worked with charge Zero)
@@ -201,7 +205,8 @@ def analyseFile(mol, structure, file):
             elif ' atom type of ' in line:
                 warnTypes += '_6'
                 WT6.add('%s_%s'% (mol, structure))
-            elif "no 'babel' executable, no PDB" in line:
+            #elif "no 'babel' executable, no PDB" in line:
+            elif "residue name will be 'MOL' instead of" in line:
                 warnTypes += '_8'
             else:
                 print "UNKNOWN WARN:", file, line
