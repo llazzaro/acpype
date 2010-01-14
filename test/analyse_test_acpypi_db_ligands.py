@@ -41,7 +41,7 @@ groupResults = [
                ["irregular bonds and atoms in close contact", "Mols have irregular bonds and atoms in close contact",
                 ['0 E, 3 W, ET , WT _0_5_7', '0 E, 4 W, ET , WT _0_1_5_7',
                  '0 E, 4 W, ET , WT _0_2_5_7', '0 E, 5 W, ET , WT _0_1_2_5_7',
-                 '0 E, 6 W, ET , WT _0_1_2_3_5_7']],
+                 '0 E, 6 W, ET , WT _0_1_2_3_5_7', '0 E, 4 W, ET , WT _0_3_5_7']],
                ["couldn't determine all parameters", "Mols have missing parameters",
                 ['0 E, 3 W, ET , WT _0_2_4', '0 E, 3 W, ET , WT _0_1_4']],
                ["missing parameters, irregular bonds and atoms in close contact", "Mols have missing parameters, irregular bonds and atoms in close contact",
@@ -71,7 +71,7 @@ groupResults = [
                 ['1 E, 3 W, ET _0, WT _0_4_6', '1 E, 4 W, ET _0, WT _0_1_4_6',
                  '1 E, 4 W, ET _0, WT _0_2_4_6']],
                ["guessCharge failed, irregular bonds and maybe wrong atomtype", "Mols have guessCharge failed, irregular bonds and maybe wrong atomtype",
-                ['1 E, 4 W, ET _0, WT _0_2_5_6']],
+                ['1 E, 4 W, ET _0, WT _0_2_5_6', '0 E, 3 W, ET , WT _0_5_6']],
                ["guessCharge failed, missing parameters and atoms in close contact", "Mols have guessCharge failed, missing parameters and atoms in close contact",
                 ['1 E, 3 W, ET _0, WT _0_4_7', '1 E, 4 W, ET _0, WT _0_2_4_7']],
                ["guessCharge failed, maybe wrong atomtype and atoms in close contact", "Mols have guessCharge failed, maybe wrong atomtype and atoms in close contact",
@@ -89,6 +89,10 @@ groupResults = [
                 ['3 E, 1 W, ET _4_5_6, WT _0', '3 E, 2 W, ET _4_5_6, WT _0_1']],
                ["tleap failed, maybe wrong atomtype", "Mols have tleap failed and maybe wrong atomtype",
                 ['3 E, 3 W, ET _4_5_6, WT _0_1_6', '3 E, 2 W, ET _4_5_6, WT _0_6']],
+               ["semi-QM timeout", "Mols have semi-QM timeout",
+                ['1 E, 2 W, ET _9, WT _0_1', '1 E, 1 W, ET _9, WT _0']],
+               ["semi-QM timeout and maybe wrong atomtype", "Mols have semi-QM timeout and maybe wrong atomtype",
+                ['1 E, 3 W, ET _9, WT _0_1_6', '1 E, 2 W, ET _9, WT _0_6']],
                ["guessCharge and tleap failed", "Mols have guessCharge and tleap failed",
                 ['4 E, 1 W, ET _0_4_5_6, WT _0', '4 E, 2 W, ET _0_4_5_6, WT _0_1']],
                ["guessCharge and tleap failed, maybe wrong atomtype", "Mols have guessCharge and tleap failed, maybe wrong atomtype",
@@ -139,7 +143,7 @@ error_warn_messages = \
     errorType 6 = 'Tleap failed'
     errorType 7 = "No such file or directory: 'tmp'" # can be bondtyes wrong or wrong frozen atom type
     errorType 8 = 'syntax error'
-    errorType 9 = 'semi-QM taking too long to finish'
+    errorType 9 = 'Semi-QM taking too long to finish'
     errorType 10 = 'UNKNOWN ERROR'
 '''
 
@@ -175,6 +179,8 @@ WT6 = set()
 WT7 = set()
 
 mapResults = {}
+
+execTime = {}
 
 def analyseFile(mol, structure, file):
     warnTypes = ''
@@ -248,9 +254,16 @@ def analyseFile(mol, structure, file):
         if "No such file or directory: 'tmp'" in line:
             errorTypes += '_7'
             ET7.add('%s_%s'% (mol, structure))
-        if "semi-QM taking too long to finish" in line:
+        if "Semi-QM taking too long to finish" in line:
             errorTypes += '_9'
             ET9.append('%s_%s'% (mol, structure))
+        if "Total time of execution:" in line:
+            if execTime.has_key(mol):
+                #execTime[mol].append({structure:line[:-1].split(':')[1]})
+                execTime[mol][structure] = line[:-1].split(':')[1]
+            else:
+                #execTime[mol] = [{structure:line[:-1].split(':')[1]}]
+                execTime[mol] = {structure:line[:-1].split(':')[1]}
     out = parseSummurisedLine(warnTypes, errorTypes)
     if mapResults.has_key(out):
         if mapResults[out].has_key(mol):
@@ -372,6 +385,52 @@ def printResults(lista, subHead, header=None):
     id += 3
     return total
 
+def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separator=' '):
+    """
+    Takes an amount of seconds and turns it into a human-readable amount of time.
+    """
+    # the formatted time string to be returned
+    if seconds == 0:
+        return '0s'
+    time = []
+
+    # the pieces of time to iterate over (days, hours, minutes, etc)
+    # - the first piece in each tuple is the suffix (d, h, w)
+    # - the second piece is the length in seconds (a day is 60s * 60m * 24h)
+    parts = [(suffixes[0], 60 * 60 * 24 * 7 * 52),
+          (suffixes[1], 60 * 60 * 24 * 7),
+          (suffixes[2], 60 * 60 * 24),
+          (suffixes[3], 60 * 60),
+          (suffixes[4], 60),
+          (suffixes[5], 1)]
+
+    # for each time piece, grab the value and remaining seconds, and add it to
+    # the time string
+    for suffix, length in parts:
+        value = seconds / length
+        if value > 0:
+            seconds = seconds % length
+            time.append('%s%s' % (str(value),
+                           (suffix, (suffix, suffix + 's')[value > 1])[add_s]))
+        if seconds < 1:
+            break
+
+    return separator.join(time)
+
+def convertStringTime2Seconds(stringTime):
+    if 'less' in stringTime:
+        return 0
+    vecTime = stringTime.split()
+    totalSec = 0
+    for n in vecTime:
+        if 'h' in n:
+            totalSec += eval(n[:-1])*3600
+        elif 'm' in n:
+            totalSec += eval(n[:-1])*60
+        elif 's' in n:
+            totalSec += eval(n[:-1])
+    return totalSec
+
 os.chdir('other')
 
 # Only run this on 'other'!
@@ -452,6 +511,7 @@ keys = mapResults.keys()
 keys.sort()
 keys.sort(cmp=myComp)
 
+# Print messages that was not classified yet
 groupMess = []
 for m in groupResults:
     groupMess += m[2]
@@ -464,6 +524,7 @@ for typeMess in keys:
         Nideal = txt.count("['ideal']")
         print '*%s*%s%i %i %i' % (typeMess,(40-size)*' ', 2*Nboth, Npdb, Nideal)
 
+# Append to groupResults[index] a list of Mols belonging to this group
 for typeMess in keys:
     index = 0
     for group in groupResults:
@@ -473,10 +534,12 @@ for typeMess in keys:
         index += 1
 
 allTotal = len(ccpCodes) *2
-
+jobsOK = [] # list of Mols that have at least a PDB or IDEAL clean: [[both],[pdb,ideal]]
 totalTxt = ''
 for group in groupResults:
     header, subHead, dummy, lista = group
+    if "Mols clean" == subHead:
+        jobsOK = lista
     subTot = printResults(lista, subHead, header)
     if not subTot: continue
     totalTxt += "+ %i " % subTot
@@ -486,5 +549,51 @@ print "%s= %s" % (totalTxt, sumVal)
 
 #print results
 
+#print 'execTime', execTime
+
+#print 'jobsOK', jobsOK
+
+print "\nTime summary"
+maxExecTime = 0
+#minExecTime = 0
+firstPass = True
+maxMolTime = None
+minMolTime = None
+totalExecTime = 0
+nJobs = 0
+listMolTime = []
+for mol in jobsOK[0]:
+    listMolTime.append([mol+' PDB',execTime[mol]['pdb']])
+    listMolTime.append([mol+' IDEAL',execTime[mol]['ideal']])
+for mol in jobsOK[1]:
+    listMolTime.append([mol+' PDB',execTime[mol]['pdb']])
+for mol in jobsOK[2]:
+    listMolTime.append([mol+' IDEAL',execTime[mol]['ideal']])
+
+#print 'listMolTime', listMolTime
+
+for item in listMolTime:
+    mol, jtime = item
+    tSec = convertStringTime2Seconds(jtime)
+#    print 'tSec', tSec
+    if firstPass:
+        minExecTime = tSec
+        firstPass = False
+#        print 'firstPass'
+    if tSec >= maxExecTime:
+        maxExecTime = tSec
+        maxMolTime = mol
+    if tSec <= minExecTime:
+        minExecTime = tSec
+        minMolTime = mol
+    totalExecTime += tSec
+    nJobs += 1
+if listMolTime:
+    #print maxExecTime, minExecTime
+    print "Longest job: Mol='%s', time= %s" % (maxMolTime, elapsedTime(maxExecTime))
+    print "Fatest job: Mol='%s', time= %s" % (minMolTime, elapsedTime(minExecTime))
+    print "Average time of execution per job: %s" % elapsedTime(totalExecTime/nJobs)
+else:
+    print "NO time stats available"
 # mols with charge not 0
 #print WT3

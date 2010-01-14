@@ -13,6 +13,8 @@ def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separa
     Takes an amount of seconds and turns it into a human-readable amount of time.
     """
     # the formatted time string to be returned
+    if seconds == 0:
+        return '0s'
     time = []
 
     # the pieces of time to iterate over (days, hours, minutes, etc)
