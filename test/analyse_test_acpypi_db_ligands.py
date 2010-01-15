@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from commands import getoutput
 
 # Gmm with 200 atoms, biggest OK
 
@@ -10,6 +11,8 @@ import os, sys
 
 global id
 id = 1
+
+detailed = True
 
 results = {}
 
@@ -553,13 +556,56 @@ print "%s= %s" % (totalTxt, sumVal)
 
 #print 'jobsOK', jobsOK
 
-print "\nTime summary"
+if detailed:
+    print "\n>>> Detailed report per atom <<<\n"
+
+    print "=>Mols have duplicated coordinates"
+    for molLabel in ET1:
+        mol,structure = molLabel.split('_')
+        cmd = "grep -e '^ATOM' %s/*%s.out" % (mol, structure)
+        out = getoutput(cmd)
+        print "# %s #" % molLabel
+        print out,"\n"
+
+    print "=>Mols have atoms in close contact"
+    for molLabel in WT7:
+        mol,structure = molLabel.split('_')
+        cmd = "grep -e '^Warning: Close contact of' %s/*%s.out" % (mol, structure)
+        out = getoutput(cmd)
+        print "# %s #" % molLabel
+        print out,"\n"
+
+    print "=>Mols have irregular bonds"
+    for molLabel in WT5:
+        mol,structure = molLabel.split('_')
+        cmd = "grep -A 1 -e '^WARNING: There is a bond of' %s/*%s.out" % (mol, structure)
+        out = getoutput(cmd)
+        print "# %s #" % molLabel
+        print out,"\n"
+
+    print "=>Mols have atoms too close"
+    for molLabel in ET2:
+        mol,structure = molLabel.split('_')
+        cmd = "grep -e '^ .*ATOM' %s/*%s.out" % (mol, structure)
+        out = getoutput(cmd)
+        print "# %s #" % molLabel
+        print out,"\n"
+
+    print "=>Mols have atoms too alone"
+    for molLabel in ET3:
+        mol,structure = molLabel.split('_')
+        cmd = '''grep -e "^\['ATOM" %s/*%s.out''' % (mol, structure)
+        out = getoutput(cmd)
+        print "# %s #" % molLabel
+        print out,"\n"
+
+
+print "\n>>> Time Job Execution Summary <<<\n"
 maxExecTime = 0
-#minExecTime = 0
 firstPass = True
 maxMolTime = None
 minMolTime = None
-totalExecTime = 0
+totalCleanExecTime = 0
 nJobs = 0
 listMolTime = []
 for mol in jobsOK[0]:
@@ -586,14 +632,34 @@ for item in listMolTime:
     if tSec <= minExecTime:
         minExecTime = tSec
         minMolTime = mol
-    totalExecTime += tSec
+    totalCleanExecTime += tSec
     nJobs += 1
 if listMolTime:
     #print maxExecTime, minExecTime
+    print "Number of clean jobs:", nJobs
     print "Longest job: Mol='%s', time= %s" % (maxMolTime, elapsedTime(maxExecTime))
     print "Fatest job: Mol='%s', time= %s" % (minMolTime, elapsedTime(minExecTime))
-    print "Average time of execution per job: %s" % elapsedTime(totalExecTime/nJobs)
+    print "Average time of execution per clean job: %s" % elapsedTime(totalCleanExecTime/nJobs)
 else:
     print "NO time stats available"
+
+# Global average exec time
+totalGlobalExecTime = 0
+nGJobs = 0
+for item in execTime.items():
+    mol, tDict = item
+    if tDict.has_key('pdb'):
+        totalGlobalExecTime += convertStringTime2Seconds(tDict['pdb'])
+        nGJobs += 1
+    if tDict.has_key('ideal'):
+        totalGlobalExecTime += convertStringTime2Seconds(tDict['ideal'])
+        nGJobs += 1
+print "\nTotal number of jobs:", nGJobs
+print "Global average time of execution per job: %s" % elapsedTime(totalGlobalExecTime/nGJobs)
+
+cmd = 'find . -name "sqm.out" | xargs grep -l "No convergence in SCF after" | wc -l'
+#print "\nNumber of sqm.out with 'No convergence in SCF':", getoutput(cmd)
+#os.system(cmd)
+
 # mols with charge not 0
 #print WT3
