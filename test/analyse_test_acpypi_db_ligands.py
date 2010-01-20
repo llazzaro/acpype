@@ -12,7 +12,9 @@ import os, sys
 global id
 id = 1
 
-detailed = True
+atomicDetailed = False
+
+checkChargeComparison = True
 
 results = {}
 
@@ -185,7 +187,20 @@ mapResults = {}
 
 execTime = {}
 
+compareCharges = set()
+compareChargesOK = set()
+# ==> Trying with net charge = 0 ...
+# ==> ... charge set to 0
+# Overall charge: 0
+
 def analyseFile(mol, structure, file):
+    """
+         mol = string molDir, e.g. 'Gnp'
+         structure = string 'pdb' or 'ideal'
+         file = string e.g. '10a/10a.none_neutral.pdb.out'
+    """
+    _flagChargeType = None # if charge was guesed correctly ('Y') or tried with 0 ('Z' for Zero)
+    guessChargeValue = None
     warnTypes = ''
     errorTypes = ''
     tmpFile = open(file, 'r')
@@ -267,6 +282,31 @@ def analyseFile(mol, structure, file):
             else:
                 #execTime[mol] = [{structure:line[:-1].split(':')[1]}]
                 execTime[mol] = {structure:line[:-1].split(':')[1]}
+    # to compare charges from acpypi out with input mol2
+        if "==> ... charge set to" in line:
+            guessChargeValue = int(line.split('to')[1])
+            _flagChargeType = 'Y'
+            #print "*%s*" % guessChargeValue
+        elif "Trying with net charge =" in line:
+            guessChargeValue = 0
+            _flagChargeType = 'Z'
+
+    if checkChargeComparison:
+        mol2FileName = file.replace('.out','.mol2')
+        mol2File = open(mol2FileName,'r').readlines()
+        for line in mol2File:
+            if "# Overall charge:" in line:
+                mol2Charge = int(line.split(':')[1])
+        if guessChargeValue:
+            if mol2Charge != guessChargeValue:
+                compareCharges.add("%s_%i_%i" % (mol,mol2Charge, guessChargeValue))
+            else:
+                compareChargesOK.add("%s_%i" % (mol, mol2Charge))
+            # this excpetion should happen only if acpypi early aborted for both outs
+            #if mol not in `compareChargesOK.union(compareCharges)`:
+            if mol not in `compareChargesOK` and mol not in `compareCharges`:
+                print "!!!! Unable to compare. Failed to guess charge for", mol, structure
+
     out = parseSummurisedLine(warnTypes, errorTypes)
     if mapResults.has_key(out):
         if mapResults[out].has_key(mol):
@@ -556,49 +596,60 @@ print "%s= %s" % (totalTxt, sumVal)
 
 #print 'jobsOK', jobsOK
 
-if detailed:
+if atomicDetailed:
     print "\n>>> Detailed report per atom <<<\n"
 
-    print "=>Mols have duplicated coordinates"
-    for molLabel in ET1:
-        mol,structure = molLabel.split('_')
-        cmd = "grep -e '^ATOM' %s/*%s.out" % (mol, structure)
-        out = getoutput(cmd)
-        print "# %s #" % molLabel
-        print out,"\n"
+    if ET1:
+        print "=>Mols have duplicated coordinates"
+        for molLabel in ET1:
+            mol,structure = molLabel.split('_')
+            cmd = "grep -e '^ATOM' %s/*%s.out" % (mol, structure)
+            out = getoutput(cmd)
+            print "# %s #" % molLabel
+            print out,"\n"
 
-    print "=>Mols have atoms in close contact"
-    for molLabel in WT7:
-        mol,structure = molLabel.split('_')
-        cmd = "grep -e '^Warning: Close contact of' %s/*%s.out" % (mol, structure)
-        out = getoutput(cmd)
-        print "# %s #" % molLabel
-        print out,"\n"
+    if WT7:
+        print "=>Mols have atoms in close contact"
+        for molLabel in WT7:
+            mol,structure = molLabel.split('_')
+            cmd = "grep -e '^Warning: Close contact of' %s/*%s.out" % (mol, structure)
+            out = getoutput(cmd)
+            print "# %s #" % molLabel
+            print out,"\n"
 
-    print "=>Mols have irregular bonds"
-    for molLabel in WT5:
-        mol,structure = molLabel.split('_')
-        cmd = "grep -A 1 -e '^WARNING: There is a bond of' %s/*%s.out" % (mol, structure)
-        out = getoutput(cmd)
-        print "# %s #" % molLabel
-        print out,"\n"
+    if WT5:
+        print "=>Mols have irregular bonds"
+        for molLabel in WT5:
+            mol,structure = molLabel.split('_')
+            cmd = "grep -A 1 -e '^WARNING: There is a bond of' %s/*%s.out" % (mol, structure)
+            out = getoutput(cmd)
+            print "# %s #" % molLabel
+            print out,"\n"
 
-    print "=>Mols have atoms too close"
-    for molLabel in ET2:
-        mol,structure = molLabel.split('_')
-        cmd = "grep -e '^ .*ATOM' %s/*%s.out" % (mol, structure)
-        out = getoutput(cmd)
-        print "# %s #" % molLabel
-        print out,"\n"
+    if ET2:
+        print "=>Mols have atoms too close"
+        for molLabel in ET2:
+            mol,structure = molLabel.split('_')
+            cmd = "grep -e '^ .*ATOM' %s/*%s.out" % (mol, structure)
+            out = getoutput(cmd)
+            print "# %s #" % molLabel
+            print out,"\n"
 
-    print "=>Mols have atoms too alone"
-    for molLabel in ET3:
-        mol,structure = molLabel.split('_')
-        cmd = '''grep -e "^\['ATOM" %s/*%s.out''' % (mol, structure)
-        out = getoutput(cmd)
-        print "# %s #" % molLabel
-        print out,"\n"
+    if ET3:
+        print "=>Mols have atoms too alone"
+        for molLabel in ET3:
+            mol,structure = molLabel.split('_')
+            cmd = '''grep -e "^\['ATOM" %s/*%s.out''' % (mol, structure)
+            out = getoutput(cmd)
+            print "# %s #" % molLabel
+            print out,"\n"
 
+# mols with MOL2 charge different from ACPYPI guessed charge
+if compareCharges:
+    print "\n>>> Mols with MOL2 charge different from ACPYPI guessed charge <<<\n"
+    lCC = list(compareCharges)
+    lCC.sort()
+    print lCC
 
 print "\n>>> Time Job Execution Summary <<<\n"
 maxExecTime = 0
@@ -641,7 +692,7 @@ if listMolTime:
     print "Fatest job: Mol='%s', time= %s" % (minMolTime, elapsedTime(minExecTime))
     print "Average time of execution per clean job: %s" % elapsedTime(totalCleanExecTime/nJobs)
 else:
-    print "NO time stats available"
+    print "NO time stats available for clean jobs"
 
 # Global average exec time
 totalGlobalExecTime = 0

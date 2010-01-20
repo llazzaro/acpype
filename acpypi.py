@@ -792,7 +792,7 @@ class AbstractTopol:
                 isLeapWord = True
         try:
             float(resname)
-            self.printDebug("Residue name is a 'number': '%s'" % word)
+            self.printDebug("Residue name is a 'number': '%s'" % resname)
             isNumber = True
         except ValueError:
             isNumber = False
