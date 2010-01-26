@@ -7,12 +7,12 @@ from commands import getoutput
 
 # semi-QM = mopac (AT 1.2) or sqm (AT 1.3)
 
-import os, sys
+import os, sys, fnmatch
 
 global id
 id = 1
 
-atomicDetailed = False
+atomicDetailed = True
 
 checkChargeComparison = True
 
@@ -22,7 +22,7 @@ ccpCodes = os.listdir('other')
 ccpCodes.sort()
 
 groupResults = [
-               ["totally empty dirs (NO mol2 input files for either PDB or IDEAL)", "Dirs missing pdb.mol2 input files",
+               ["dirs totally empty or at least missing one *.mol2 input files for either PDB or IDEAL)", "Dirs missing *.mol2 input files",
                 []],
                ["still running presumably", "Mols still running presumably",
                 ['0 E, 0 W, ET , WT ']],
@@ -51,6 +51,8 @@ groupResults = [
                 ['0 E, 3 W, ET , WT _0_2_4', '0 E, 3 W, ET , WT _0_1_4', '0 E, 2 W, ET , WT _0_4']],
                ["missing parameters, irregular bonds and atoms in close contact", "Mols have missing parameters, irregular bonds and atoms in close contact",
                 ['0 E, 5 W, ET , WT _0_2_4_5_7']],
+               ["missing parameters, irregular bonds, maybe wrong atomtype and atoms in close contact", "Mols have missing parameters, irregular bonds, maybe wrong atomtype and atoms in close contact",
+                ['0 E, 5 W, ET , WT _0_4_5_6_7']],
                ["no 'tmp', acpypi did nothing at all", "Mols have no 'tmp'",
                 ['1 E, 0 W, ET _7, WT ']],
                ["atoms with same coordinates", "Mols have duplicated coordinates",
@@ -193,11 +195,14 @@ compareChargesOK = set()
 # ==> ... charge set to 0
 # Overall charge: 0
 
+SCFfailedList = []
+
 def analyseFile(mol, structure, file):
     """
          mol = string molDir, e.g. 'Gnp'
          structure = string 'pdb' or 'ideal'
          file = string e.g. '10a/10a.none_neutral.pdb.out'
+         returns e.g. 'pdb: 0 E, 3 W, ET , WT _0_1_7'
     """
     _flagChargeType = None # if charge was guesed correctly ('Y') or tried with 0 ('Z' for Zero)
     guessChargeValue = None
@@ -474,6 +479,13 @@ def convertStringTime2Seconds(stringTime):
             totalSec += eval(n[:-1])
     return totalSec
 
+def locate(pattern, root=os.curdir):
+    '''Locate all files matching supplied filename pattern in and below
+    supplied root directory.'''
+    for path, _dirs, files in os.walk(os.path.abspath(root)):
+        for filename in fnmatch.filter(files, pattern):
+            yield os.path.join(path, filename)
+
 os.chdir('other')
 
 # Only run this on 'other'!
@@ -490,8 +502,9 @@ if len(sys.argv) > 1:
 for molDir in ccpCodes:
 #    files = os.listdir(molDir)
     files = []
-    for dirpath, dirnames, filenames in os.walk(molDir):
-        files += filenames
+#    for dirpath, dirnames, filenames in os.walk(molDir):
+#        files += filenames
+    files = list(locate("*",molDir))
     results[molDir] = []
     pdb = False
     ideal = False
@@ -532,6 +545,14 @@ for molDir in ccpCodes:
             else:
                 pdbMol2 = True
                 totalPdbMol2Count += 1
+        elif ".ideal.acpypi/sqm.out" in file:
+            content = open(file, 'r').read()
+            if "No convergence in SCF after" in content:
+                SCFfailedList.append("%s_%s" % (molDir, 'ideal'))
+        elif ".pdb.acpypi/sqm.out" in file:
+            content = open(file, 'r').read()
+            if "No convergence in SCF after" in content:
+                SCFfailedList.append("%s_%s" % (molDir, 'pdb'))
     if countIdealMol2 > 2: multIdealMol2.append(molDir)
     if countPdbMol2 > 2: multPdbMol2.append(molDir)
     if not pdbMol2: missPdbMol2.append(molDir)
@@ -649,9 +670,8 @@ if compareCharges:
     print "\n>>> Mols with MOL2 charge different from ACPYPI guessed charge <<<\n"
     lCC = list(compareCharges)
     lCC.sort()
-    print lCC
+    print len(lCC), lCC
 
-print "\n>>> Time Job Execution Summary <<<\n"
 maxExecTime = 0
 firstPass = True
 maxMolTime = None
@@ -660,14 +680,28 @@ totalCleanExecTime = 0
 nJobs = 0
 listMolTime = []
 for mol in jobsOK[0]:
-    listMolTime.append([mol+' PDB',execTime[mol]['pdb']])
-    listMolTime.append([mol+' IDEAL',execTime[mol]['ideal']])
+    listMolTime.append([mol+'_pdb',execTime[mol]['pdb']])
+    listMolTime.append([mol+'_ideal',execTime[mol]['ideal']])
 for mol in jobsOK[1]:
-    listMolTime.append([mol+' PDB',execTime[mol]['pdb']])
+    listMolTime.append([mol+'_pdb',execTime[mol]['pdb']])
 for mol in jobsOK[2]:
-    listMolTime.append([mol+' IDEAL',execTime[mol]['ideal']])
+    listMolTime.append([mol+'_ideal',execTime[mol]['ideal']])
 
 #print 'listMolTime', listMolTime
+#print jobsOK
+
+if SCFfailedList:
+    SCFfailedList.sort()
+    print "\n>>>Mol Jobs whose sqm.out has 'No convergence in SCF'<<<\n"
+    print len(SCFfailedList), SCFfailedList
+    molsOKinSCFfailedList = []
+    for item in SCFfailedList:
+        if item in [x[0] for x in listMolTime]:
+            molsOKinSCFfailedList.append(item)
+    if molsOKinSCFfailedList:
+        molsOKinSCFfailedList.sort()
+        print "\n>>>Mol Jobs whose sqm.out has 'No convergence in SCF' but finished OK<<<\n"
+        print len(molsOKinSCFfailedList), molsOKinSCFfailedList
 
 for item in listMolTime:
     mol, jtime = item
@@ -685,6 +719,8 @@ for item in listMolTime:
         minMolTime = mol
     totalCleanExecTime += tSec
     nJobs += 1
+
+print "\n>>> Time Job Execution Summary <<<\n"
 if listMolTime:
     #print maxExecTime, minExecTime
     print "Number of clean jobs:", nJobs
@@ -706,11 +742,8 @@ for item in execTime.items():
         totalGlobalExecTime += convertStringTime2Seconds(tDict['ideal'])
         nGJobs += 1
 print "\nTotal number of jobs:", nGJobs
-print "Global average time of execution per job: %s" % elapsedTime(totalGlobalExecTime/nGJobs)
-
-cmd = 'find . -name "sqm.out" | xargs grep -l "No convergence in SCF after" | wc -l'
-#print "\nNumber of sqm.out with 'No convergence in SCF':", getoutput(cmd)
-#os.system(cmd)
+if nGJobs:
+    print "Global average time of execution per job: %s" % elapsedTime(totalGlobalExecTime/nGJobs)
 
 # mols with charge not 0
 #print WT3
