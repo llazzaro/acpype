@@ -3,13 +3,15 @@ import commands
 import sys #@UnusedImport
 import os
 
-gmxrc = commands.getoutput("which GMXRC.bash")
-if os.path.exists(gmxrc):
-    cmd = 'grep "GMXDATA=" %s' % gmxrc
-    gmxTopDir = commands.getoutput(cmd).split('=')[1]
-else:
-    print "ERROR: no GROMACS... exiting"
-    sys.exit()
+#gmxrc = commands.getoutput("which GMXRC.bash")
+#if os.path.exists(gmxrc):
+#    cmd = 'grep "GMXDATA=" %s' % gmxrc
+#    gmxTopDir = commands.getoutput(cmd).split('=')[1]
+#else:
+#    print "ERROR: no GROMACS... exiting"
+#    sys.exit()
+
+gmxTopDir = "/sw/share"
 
 aa_dict = {'A':'ala', 'C':'cys', 'D':'asp', 'E':'glu', 'F':'phe', 'G':'gly',
            'H':'hie', 'J':'hip', 'O':'hid', 'I':'ile', 'K':'lys', 'L':'leu',

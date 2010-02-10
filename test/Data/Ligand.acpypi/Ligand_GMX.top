@@ -1,4 +1,4 @@
-; Ligand_GMX.top created by acpypi (Rev: 264) on Wed Dec 30 13:17:35 2009
+; Ligand_GMX.top created by acpypi (Rev: 275) on Wed Feb 10 10:46:48 2010
 
 [ defaults ]
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ

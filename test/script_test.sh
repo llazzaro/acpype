@@ -1,5 +1,7 @@
 #!/bin/sh
 
+rm -fr temp_test
+
 mkdir -p temp_test
 
 cd temp_test
@@ -10,8 +12,8 @@ wget -c "http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compress
 grep 'ATOM  ' 1BVG.pdb>| Protein.pdb
 grep 'HETATM' 1BVG.pdb>| Ligand.pdb
 
-echo "\n#=#=# CHECK 1BVG.pdb"
-diff 1BVG.pdb ../Data/1BVG.pdb
+echo "\n#=#=# CHECK 1BVG.pdb" >| diff_out.log
+diff 1BVG.pdb ../Data/1BVG.pdb >> diff_out.log
 
 # Edit Protein.pdb according to ffAMBER (http://chemistry.csulb.edu/ffamber/#usage)
 sed s/PRO\ A\ \ \ 1/NPROA\ \ \ 1/g Protein.pdb | sed s/PRO\ B\ \ \ 1/NPROB\ \ \ 1/g \
@@ -38,8 +40,8 @@ cat Complex.top | sed '/\#include\ \"ffamber99sb\.itp\"/a\
 echo "Ligand   1" >> Complex2.top
 \mv Complex2.top Complex.top
 
-echo "\n#=#=# CHECK Ligand.itp"
-diff Ligand.itp ../Data/Ligand.itp
+echo "\n#=#=# CHECK Ligand.itp" >> diff_out.log
+diff Ligand.itp ../Data/Ligand.itp >> diff_out.log
 
 # Setup the box and add water
 editconf -bt triclinic -f Complex.pdb -o Complex.pdb -d 1.0
@@ -143,9 +145,9 @@ tleap -f leap.in >| leap.out
 # convert AMBER to GROMACS
 acpypi -p ComplexAmber.prmtop -x ComplexAmber.inpcrd
 
-echo "\n#=#=# CHECK ComplexAmber_GMX.top & ComplexAmber_GMX.gro"
-diff ComplexAmber_GMX.top ../Data/ComplexAmber_GMX.top
-diff ComplexAmber_GMX.gro ../Data/ComplexAmber_GMX.gro
+echo "\n#=#=# CHECK ComplexAmber_GMX.top & ComplexAmber_GMX.gro" >> diff_out.log
+diff ComplexAmber_GMX.top ../Data/ComplexAmber_GMX.top >> diff_out.log
+diff ComplexAmber_GMX.gro ../Data/ComplexAmber_GMX.gro >> diff_out.log
 
 # Run EM and MD
 grompp -f EM.mdp -c ComplexAmber_GMX.gro -p ComplexAmber_GMX.top -o em.tpr
@@ -153,3 +155,8 @@ om-mpirun -n 2 mdrun -v -deffnm em
 grompp -f MD.mdp -c em.gro -p ComplexAmber_GMX.top -o md.tpr
 om-mpirun -n 2 mdrun -v -deffnm md
 # vmd md.gro md.trr
+
+echo "############################"
+echo "####### DIFF SUMMARY #######"
+echo "############################"
+cat diff_out.log

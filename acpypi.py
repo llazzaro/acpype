@@ -85,7 +85,7 @@ leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
 
 cal = 4.184
 Pi = 3.141593
-qConv = 18.2223
+qConv = 18.222281775 #18.2223
 radPi = 57.295780 # 180/Pi
 maxDist = 3.0
 minDist = 0.5
@@ -1391,9 +1391,11 @@ a        """
             atoms.append(atom)
             id += 1
 
-        balanceChargeList, balanceValue, balanceId = self.balanceCharges(chargeList, FirstNonSoluteId)
+        balanceChargeList, balanceValue, balanceIds = self.balanceCharges(chargeList, FirstNonSoluteId)
 
-        atoms[balanceId].charge = balanceValue / qConv
+        for id in balanceIds:
+            atoms[id].charge = balanceValue / qConv
+        #self.printDebug("atom ids and balanced charges: %s, %3f10" % (balanceIds, balanceValue/qConv))
 
         if atomTypeName[0].islower():
             self.atomTypeSystem = 'gaff'
@@ -1562,19 +1564,28 @@ a        """
             file, say, for CNS or GMX, where floats are represented with 4 or 5
             maximum decimals.
         """
+        limIds = []
         #self.printDebug(chargeList)
         total = sum(chargeList)
-        self.printDebug('charge to be balanced: total %13.10f' % (total/qConv))
+        totalConverted = total/qConv
+        self.printDebug('charge to be balanced: total %13.10f' % (totalConverted))
         maxVal = max(chargeList[:FirstNonSoluteId])
         minVal = min(chargeList[:FirstNonSoluteId])
         if abs(maxVal) >= abs(minVal): lim = maxVal
         else: lim = minVal
-        limId = chargeList.index(lim)
-        diff = total - round(total)
-        fix = lim - diff
-        chargeList[limId] = fix
+        nLims = chargeList.count(lim)
+        #limId = chargeList.index(lim)
+        diff = totalConverted - round(totalConverted)
+        fix = lim - diff*qConv/nLims
+        id = 0
+        for c in chargeList:
+            if c == lim:
+                limIds.append(id)
+                chargeList[id] = fix
+            id += 1
+        #self.printDebug(chargeList)
         self.printDebug("balanceCharges done")
-        return chargeList, fix, limId
+        return chargeList, fix, limIds
 
     def getABCOEFs(self):
         uniqAtomTypeIdList = self.getFlagData('ATOM_TYPE_INDEX')
