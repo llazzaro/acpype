@@ -220,10 +220,10 @@ class AcpypiForCcpnProject:
         return other
 
 
-    def run(self, chain = None, chargeType = 'bcc', chargeVal = None,
+    def run(self, chain = None, chargeType = 'bcc', chargeVal = None, guessCharge = False,
         multiplicity = '1', atomType = 'gaff', force = False, basename = None,
         debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-        timeTol = 36000):
+        timeTol = 36000, qprog = 'sqm', ekFlag = None):
 
         ccpnProject = self.project
 
@@ -239,12 +239,15 @@ class AcpypiForCcpnProject:
         acpypiDict = {}
 
         for chain in other:
-            if chargeVal == None:
+            if chargeVal == None and not guessCharge:
                 chargeVal = chain.molecule.formalCharge
 #            pdbCode = ccpnProject.name
             res = chain.findFirstResidue()
             resName = res.ccpCode.upper()
-            print "Running ACPYPI for '%s : %s' with charge '%i'" % (resName, chain.molecule.name, chargeVal)
+            if chargeVal == None:
+                print "Running ACPYPI for '%s : %s' and trying to guess net charge" % (resName, chain.molecule.name)
+            else:
+                print "Running ACPYPI for '%s : %s' with charge '%s'" % (resName, chain.molecule.name, chargeVal)
             random.seed()
             d = [random.choice(string.letters) for x in xrange(10)]
             randString = "".join(d)
@@ -275,7 +278,7 @@ class AcpypiForCcpnProject:
                     chargeVal = chargeVal, debug = debug, multiplicity = multiplicity,
                     atomType = atomType, force = force, outTopol = outTopol,
                     engine = engine, allhdg = allhdg, basename = basename,
-                    timeTol = timeTol)
+                    timeTol = timeTol, qprog = qprog, ekFlag = '''"%s"''' % ekFlag)
 
                 if not molecule.acExe:
                     molecule.printError("no 'antechamber' executable... aborting!")
