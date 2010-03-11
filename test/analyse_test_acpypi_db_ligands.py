@@ -49,6 +49,8 @@ groupResults = [
                  '0 E, 6 W, ET , WT _0_1_2_3_5_7', '0 E, 4 W, ET , WT _0_3_5_7']],
                ["couldn't determine all parameters", "Mols have missing parameters",
                 ['0 E, 3 W, ET , WT _0_2_4', '0 E, 3 W, ET , WT _0_1_4', '0 E, 2 W, ET , WT _0_4']],
+               ["missing parameters and atoms in close contact", "Mols have missing parameters and atoms in close contact",
+                ['0 E, 4 W, ET , WT _0_1_4_7']],
                ["missing parameters, irregular bonds and atoms in close contact", "Mols have missing parameters, irregular bonds and atoms in close contact",
                 ['0 E, 5 W, ET , WT _0_2_4_5_7']],
                ["missing parameters, irregular bonds, maybe wrong atomtype and atoms in close contact", "Mols have missing parameters, irregular bonds, maybe wrong atomtype and atoms in close contact",
