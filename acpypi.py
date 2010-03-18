@@ -2766,19 +2766,23 @@ segment name="    "
   end
 end
 coordinates @%(NEW_pdb)s
+coord copy end
 
 ! Remarks If you want to shake up the coordinates a bit ...
- do (x=x+rand(10)-5) (all)
- do (y=y+rand(10)-5) (all)
- do (z=z+rand(10)-5) (all)
+ vector do (x=x+6*(rand()-0.5)) (all)
+ vector do (y=y+6*(rand()-0.5)) (all)
+ vector do (z=z+6*(rand()-0.5)) (all)
  write coordinates output=%(CNS_ran)s end
+
+! Remarks RMS diff after randomisation and before minimisation
+coord rms sele=(known and not hydrogen) end
 
 print threshold=0.02 bonds
 print threshold=3.0 angles
 print threshold=3.0 dihedrals
 print threshold=3.0 impropers
 
-Remarks Do Powell energy minimisation
+! Remarks Do Powell energy minimisation
 minimise powell
   nstep=250 drop=40.0
 end
@@ -2795,6 +2799,9 @@ print threshold=3.0 impropers
 
 flags exclude * include vdw end energy end
 distance from=(not hydro) to=(not hydro) cutoff=2.6 end
+
+! Remarks RMS fit after minimisation
+coord fit sele=(known and not hydrogen) end
 
 stop
 """
