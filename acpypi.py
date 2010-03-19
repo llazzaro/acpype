@@ -1367,6 +1367,10 @@ a        """
         id = 0
         FirstNonSoluteId = None
         for atomName in atomNameList:
+            if atomName != atomName.upper():
+                self.printDebug("atom name '%s' HAS to be all UPPERCASE... Applying this here." %
+                               atomName)
+                atomName = atomName.upper()
             atomTypeName = atomTypeNameList[id]
             if id + 1 == resIds[countRes]:
                 resid = countRes #self.residueLabel[countRes]
