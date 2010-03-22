@@ -40,6 +40,11 @@ cat Complex.top | sed '/\#include\ \"ffamber99sb\.itp\"/a\
 echo "Ligand   1" >> Complex2.top
 \mv Complex2.top Complex.top
 
+echo "\n#=#=# CHECK parm99gaffff99SBparmbsc0File" >> diff_out.log
+# Generate Ligand topology file with acpypi (AMBERbsc0)
+acpypi -i Ligand.pdb -a amber -b Ligand_Amber -c gas
+diff -w /tmp/parm99gaffff99SBparmbsc0.dat ../../ffamber_additions/parm99bsc0SBgaff.dat >> diff_out.log
+
 echo "\n#=#=# CHECK Ligand.itp" >> diff_out.log
 diff Ligand.itp ../Data/Ligand.itp >> diff_out.log
 

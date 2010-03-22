@@ -1,4 +1,4 @@
-; ComplexAmber_GMX.top created by acpypi (Rev: 275) on Wed Feb 10 11:04:33 2010
+; ComplexAmber_GMX.top created by acpypi (Rev: 285) on Mon Mar 22 22:45:48 2010
 
 [ defaults ]
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
@@ -30103,19 +30103,19 @@
 
 [ moleculetype ]
   ; molname       nrexcl
-  Na+             1
+  NA+             1
 
 [ atoms ]
   ; id    at type res nr  residu name     at name  cg nr  charge   mass
-    1       IP      1          Na+         Na+       1      1     22.9898
+    1       IP      1          NA+         NA+       1      1     22.9898
 
 [ moleculetype ]
   ; molname       nrexcl
-  Cl-             1
+  CL-             1
 
 [ atoms ]
   ; id    at type res nr  residu name     at name  cg nr  charge   mass
-    1       IM      1         Cl-           Cl-      1     -1     35.45300
+    1       IM      1         CL-           CL-      1     -1     35.45300
 
 [ moleculetype ]
 ; molname       nrexcl ; TIP3P model
@@ -30153,6 +30153,6 @@
 [ molecules ]
 ; Compound        nmols
  ComplexAmber     1     
- Na+              23    
- Cl-              27    
+ NA+              23    
+ CL-              27    
  WAT              7541  

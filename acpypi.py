@@ -78,7 +78,7 @@ ionOrSolResNameList = ['Cl-', 'Na+', 'K+', 'CIO', 'Cs+', 'IB', 'Li+', 'MG2', 'Rb
                          'WAT', 'MOH', 'NMA']
 
 leapGaffFile = 'leaprc.gaff'
-leapAmberFile = 'leaprc.ff99SB' #'leaprc.ff03.r1' #'oldff/leaprc.ff99'
+leapAmberFile = 'leaprc.ff99bsc0' #'leaprc.ff99SB'
 
 # "qm_theory='AM1', grms_tol=0.0002, maxcyc=999, tight_p_conv=1, scfconv=1.d-10,"
 # "AM1 ANALYT MMOK GEO-OK PRECISE"
@@ -253,7 +253,7 @@ USAGE = \
     -c    charge method: gas, bcc (default), user (user's charges in mol2 file)
     -n    net molecular charge (int), for gas default is 0
     -m    multiplicity (2S+1), default is 1
-    -a    atom type, can be gaff or amber (AMBER99SB), default is gaff
+    -a    atom type, can be gaff or amber (AMBER99+SB+bsc0), default is gaff
     -q    am1-bcc flag, sqm (default), divcon, mopac
     -k    mopac or sqm keyword, inside quotes
     -f    force topologies recalculation anew
@@ -510,7 +510,10 @@ def parmMerge(fdat1, fdat2, frcmod = False):
                 rev.reverse()
                 if idFirst == None: idFirst = 0
                 for ll in rev:
-                    dat1[dHeads[k]].insert(idFirst,ll)
+                    if dHeads[k] in [0,1,7]: # MASS has title in index 0 and so BOND, NONB
+                        dat1[dHeads[k]].insert(idFirst+1,ll)
+                    else:
+                        dat1[dHeads[k]].insert(idFirst,ll)
         dat1[0][0] = mdat[0]
         for k in dat1.keys():
             for line in dat1[k]:
@@ -1139,10 +1142,13 @@ a        """
             parm99file = self.locateDat('parm99.dat')
             gaffFile = self.locateDat('gaff.dat')
             frcmodff99SB = self.locateDat('frcmod.ff99SB')
+            frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
             parm99gaffFile = parmMerge(parm99file,gaffFile)
-            parm99SBgaffFile = parmMerge(parm99gaffFile,frcmodff99SB, frcmod = True)
+            parm99gaffff99SBFile = parmMerge(parm99gaffFile,frcmodff99SB, frcmod = True)
             #parm99gaffFile = '/Users/alan/workspace/acpypi/ffamber_additions/parm99SBgaff.dat'
-            cmd += ' -p %s' % parm99SBgaffFile
+            parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile,frcmodparmbsc0, frcmod = True)
+            #parm99gaffff99SBparmbsc0File = '/Users/alan/workspace/acpypi/ffamber_additions/parm99bsc0SBgaff.dat'
+            cmd += ' -p %s' % parm99gaffff99SBparmbsc0File
 
         self.parmchkLog = getoutput(cmd)
 
@@ -2008,21 +2014,21 @@ a        """
 """
 [ moleculetype ]
   ; molname       nrexcl
-  Na+             1
+  NA+             1
 
 [ atoms ]
   ; id    at type res nr  residu name     at name  cg nr  charge   mass
-    1       IP      1          Na+         Na+       1      1     22.9898
+    1       IP      1          NA+         NA+       1      1     22.9898
 """
         headCl = \
 """
 [ moleculetype ]
   ; molname       nrexcl
-  Cl-             1
+  CL-             1
 
 [ atoms ]
   ; id    at type res nr  residu name     at name  cg nr  charge   mass
-    1       IM      1         Cl-           Cl-      1     -1     35.45300
+    1       IM      1         CL-           CL-      1     -1     35.45300
 """
         headK = \
 """
@@ -2418,7 +2424,7 @@ a        """
             otopText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
 
         for ion in ionsSorted:
-            topText.append(" %-16s %-6i\n" % (ion[2], ion[1]))
+            topText.append(" %-16s %-6i\n" % (ion[2].upper(), ion[1]))
 
         if nWat:
             topText.append(" %-16s %-6i\n" % ('WAT', nWat))

@@ -1,4 +1,4 @@
-; Ligand_GMX_OPLS.itp created by acpypi (Rev: 275) on Wed Feb 10 10:46:48 2010
+; Ligand_GMX_OPLS.itp created by acpypi (Rev: 285) on Mon Mar 22 22:28:14 2010
 
 ; For OPLS atomtypes manual fine tuning
 ; AC_at:OPLS_at:OPLScode: Possible_Aternatives (see ffoplsaa.atp and ffoplsaanb.itp)

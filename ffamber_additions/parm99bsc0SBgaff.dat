@@ -1,4 +1,5 @@
-Merge of parm99.dat, gaff.dat and frcmod.ff99SB
+Merge of parm99.dat, gaff.dat, frcmod.ff99SB and frcmod.parmbsc0
+CI  12.001
 C  12.01         0.616  !            sp2 C carbonyl group
 CA 12.01         0.360               sp2 C pure aromatic (benzene)
 CB 12.01         0.360               sp2 aromatic C, 5&6 membered ring junction
@@ -136,6 +137,10 @@ sy 32.06         2.900               Special s6 in conjugated systems
 
 C   H   HO  N   NA  NB  NC  N2  NT  N2  N3  N*  O   OH  OS  P   O2 hn  ho  hs
 n   na  nc  nd  ne  nf  n2  n3  n4  o   oh  os  ow  sh  ss
+OS-CI  320.0    1.410
+CI-CT  310.0    1.526
+OH-CI  320.0    1.410
+CI-H1  340.0    1.090
 OW-HW  553.0    0.9572    ! TIP3P water
 HW-HW  553.0    1.5136      TIP3P water
 C -C   310.0    1.525       Junmei et al, 1999
@@ -992,6 +997,17 @@ sx-sx   80.9    2.391        SOURCE3     3    0.0174    0.0185
 sx-sy  105.3    2.255        SOURCE3     5    0.0703    0.0737
 sy-sy  106.4    2.250        SOURCE3     3    0.0272    0.0289
 
+CI-CT-OS    50.0      109.50
+OS-CI-CT    50.0      109.50
+CI-CT-CT    40.0      109.50
+HO-OH-CI    55.0      108.50
+H1-CI-CT    50.0      109.50
+OS-CI-H1    50.0      109.50
+CI-CT-H1    50.0      109.50
+P -OS-CI   100.0      120.50
+H1-CI-H1    35.0      109.50
+OH-CI-H1    50.0      109.50
+OH-CI-CT    50.0      109.50
 HW-OW-HW    100.      104.52    TIP3P water
 HW-HW-OW      0.      127.74    (found in crystallographic water with 3 bonds)
 C -C -O     80.0      120.00    Junmei et al, 1999 acrolein
@@ -4778,6 +4794,30 @@ nh-c1-nh    59.0      180.00    Guess
 no-c1-no    56.8      180.00    Guess
 na-c1-na    58.6      180.00    Guess
 
+X -CI-CT-X     9       1.400       0.0         3.0
+OH-P -OS-CI    1       0.185181   31.79508    -1.0  alfa
+OH-P -OS-CI    1       1.256531  351.95960    -2.0  alfa
+OH-P -OS-CI    1       0.354858  357.24748     3.0  alfa
+H1-CT-CI-OS    1       0.250       0.0         1.0
+CT-CT-CI-OH    1       1.178040  190.97653    -1.0  gamma
+CT-CT-CI-OH    1       0.092102  295.63279    -2.0  gamma
+CT-CT-CI-OH    1       0.962830  348.09535     3.0  gamma
+CT-OS-CT-CI    1       0.383       0.0        -3.0
+CT-OS-CT-CI    1       0.100     180.0         2.0
+CI-CT-CT-CT    1       0.180       0.0        -3.0
+CI-CT-CT-CT    1       0.250     180.0        -2.0
+CI-CT-CT-CT    1       0.200     180.0         1.0
+H1-CI-CT-OH    1       0.250       0.0         1.0
+X -CI-OS-X     3       1.150       0.0         3.0
+H1-CI-CT-OS    1       0.250       0.0         1.0
+CT-CT-CI-OS    1       1.178040  190.97653    -1.0  gamma
+CT-CT-CI-OS    1       0.092102  295.63279    -2.0  gamma
+CT-CT-CI-OS    1       0.962830  348.09535     3.0  gamma
+OS-P -OS-CI    1       0.185181   31.79508    -1.0  alfa
+OS-P -OS-CI    1       1.256531  351.95960    -2.0  alfa
+OS-P -OS-CI    1       0.354858  357.24748     3.0  alfa
+X -CI-OH-X     3       0.500       0.0         3.0
+H1-CT-CI-OH    1       0.250       0.0         1.0
 X -C -C -X    4   14.50        180.0             2.         Junmei et al, 1999
 X -C -CA-X    4   14.50        180.0             2.         intrpol.bsd.on C6H6
 X -C -CB-X    4   12.00        180.0             2.         intrpol.bsd.on C6H6
@@ -5747,6 +5787,7 @@ N   NA  N2  N*  NC  NB  NT  NY
 C*  CA  CB  CC  CD  CK  CM  CN  CQ  CR  CV  CW  CY  CZ
 
 MOD4      RE
+CI          1.9080  0.1094
   H           0.6000  0.0157            !Ferguson base pair geom.
   HO          0.0000  0.0000             OPLS Jorgensen, JACS,110,(1988),1657
   HS          0.6000  0.0157             W. Cornell CH3SH --> CH3OH FEP
