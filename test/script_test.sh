@@ -15,7 +15,7 @@ grep 'HETATM' 1BVG.pdb>| Ligand.pdb
 echo "\n#=#=# CHECK 1BVG.pdb" >| diff_out.log
 diff 1BVG.pdb ../Data/1BVG.pdb >> diff_out.log
 
-# Edit Protein.pdb according to ffAMBER (http://chemistry.csulb.edu/ffamber/#usage)
+# Edit Protein.pdb according to ffAMBER (http://ffamber.cnsm.csulb.edu/#usage)
 sed s/PRO\ A\ \ \ 1/NPROA\ \ \ 1/g Protein.pdb | sed s/PRO\ B\ \ \ 1/NPROB\ \ \ 1/g \
 | sed s/PHE\ A\ \ 99/CPHEA\ \ 99/g | sed s/PHE\ B\ \ 99/CPHEB\ \ 99/g \
 | sed s/O\ \ \ CPHE/OC1\ CPHE/g | sed s/OXT\ CPHE/OC2\ CPHE/g \

@@ -1638,48 +1638,58 @@ a        """
             amb2gmx.pl does.
         """
         properDihedralsCoefRB = []
+        properDihedralsAlphaGamma = []
         for item in self.condensedProperDihedrals:
             V = 6 * [0.0]
             C = 6 * [0.0]
             for dih in item:
-                period = dih.period
+                period = dih.period # Pn
                 kPhi = dih.kPhi # in rad
-                phase = int(dih.phase * radPi)
-                if kPhi > 0: V[period] = 2 * kPhi * cal
-                if period == 1:
-                    C[0] += 0.5 * V[period]
-                    if phase == 0:
-                        C[1] -= 0.5 * V[period]
-                    else:
-                        C[1] += 0.5 * V[period]
-                elif period == 2:
-                    if phase == 180:
-                        C[0] += V[period]
-                        C[2] -= V[period]
-                    else:
-                        C[2] += V[period]
-                elif period == 3:
-                    C[0] += 0.5 * V[period]
-                    if phase == 0:
-                        C[1] += 1.5 * V[period]
-                        C[3] -= 2 * V[period]
-                    else:
-                        C[1] -= 1.5 * V[period]
-                        C[3] += 2 * V[period]
-                elif period == 4:
-                    if phase == 180:
-                        C[2] += 4 * V[period]
-                        C[4] -= 4 * V[period]
-                    else:
-                        C[0] += V[period]
-                        C[2] -= 4 * V[period]
-                        C[4] += 4 * V[period]
-                #print kPhi, period, phase, V, C
-            properDihedralsCoefRB.append([item[0].atoms,C])
+                phaseRaw = dih.phase * radPi # in degree
+                phase = int(phaseRaw) # in degree
+                if phase in [0,180]:
+                    if kPhi > 0: V[period] = 2 * kPhi * cal
+                    if period == 1:
+                        C[0] += 0.5 * V[period]
+                        if phase == 0:
+                            C[1] -= 0.5 * V[period]
+                        else:
+                            C[1] += 0.5 * V[period]
+                    elif period == 2:
+                        if phase == 180:
+                            C[0] += V[period]
+                            C[2] -= V[period]
+                        else:
+                            C[2] += V[period]
+                    elif period == 3:
+                        C[0] += 0.5 * V[period]
+                        if phase == 0:
+                            C[1] += 1.5 * V[period]
+                            C[3] -= 2 * V[period]
+                        else:
+                            C[1] -= 1.5 * V[period]
+                            C[3] += 2 * V[period]
+                    elif period == 4:
+                        if phase == 180:
+                            C[2] += 4 * V[period]
+                            C[4] -= 4 * V[period]
+                        else:
+                            C[0] += V[period]
+                            C[2] -= 4 * V[period]
+                            C[4] += 4 * V[period]
+                else:
+                    properDihedralsAlphaGamma.append([item[0].atoms, phaseRaw, kPhi, period])
+                    #print phaseRaw, kPhi, period
+            if phase in [0,180]:
+                properDihedralsCoefRB.append([item[0].atoms,C])
+
+        #print properDihedralsCoefRB
+        #print properDihedralsAlphaGamma
 
         self.printDebug("setProperDihedralsCoefRB done")
 
         self.properDihedralsCoefRB = properDihedralsCoefRB
+        self.properDihedralsAlphaGamma = properDihedralsAlphaGamma
 
     def writeCharmmTopolFiles(self):
 
@@ -1757,7 +1767,7 @@ a        """
 
             # dihedral    idivf        barrier hight/2 kcal/mol  phase degrees       periodicity     comments
             X -ca-ca-X    4           14.500*                     180.000                2.000             intrpol.bsd.on C6H6
-            * to convert to gmx: 14.5/4 * 4.184 * 2 (?) (yes in amb2gmx, no in topolbuild, why?) = 30.334 or 15.167 kJ/mol
+            * to convert to gmx: 14.5/4 * 4.184 * 2 (?) (yes in amb2gmx, not in topolbuild, why?) = 30.334 or 15.167 kJ/mol
             # X -CA-CA-X    4   14.50        180.0             2.         intrpol.bsd.on C6H6 (from parm99.dat)
             # X   CA  CA  X     3    30.33400     0.00000   -30.33400     0.00000     0.00000     0.00000   ; intrpol.bsd.on C6H6
             ;propers treated as RBs in GROMACS to use combine multiple AMBER torsions per quartet (from ffamber99bon.itp)
@@ -1978,6 +1988,11 @@ a        """
 ; treated as RBs in GROMACS to use combine multiple AMBER torsions per quartet
 ; i   j   k   l func   C0        C1        C2        C3        C4        C5
 """
+
+        headProDihAlphaGamma = """; treated as usual propers in GROMACS since Phase angle diff from 0 or 180 degrees
+; i   j   k   l func  phase     kd      pn
+"""
+
         headImpDih = \
 """
 [ dihedrals ] ; impropers
@@ -2334,13 +2349,9 @@ a        """
             a2 = dih[0][1].atomName
             a3 = dih[0][2].atomName
             a4 = dih[0][3].atomName
-            #id1 = self.atoms.index(dih[0][0]) + 1
             id1 = dih[0][0].id
-            #id2 = self.atoms.index(dih[0][1]) + 1
             id2 = dih[0][1].id
-            #id3 = self.atoms.index(dih[0][2]) + 1
             id3 = dih[0][2].id
-            #id4 = self.atoms.index(dih[0][3]) + 1
             id4 = dih[0][3].id
             oat1 = id2oplsATDict[id1]
             oat2 = id2oplsATDict[id2]
@@ -2368,6 +2379,39 @@ a        """
                 itpText += temp
                 oitpText.append(headProDih)
                 oitpText += otemp
+
+        # for properDihedralsAlphaGamma
+        temp = []
+        otemp = []
+        for dih in self.properDihedralsAlphaGamma:
+            a1 = dih[0][0].atomName
+            a2 = dih[0][1].atomName
+            a3 = dih[0][2].atomName
+            a4 = dih[0][3].atomName
+            id1 = dih[0][0].id
+            id2 = dih[0][1].id
+            id3 = dih[0][2].id
+            id4 = dih[0][3].id
+            ph = dih[1] # phase already in degree
+            kd = dih[2] * cal #kPhi PK
+            pn = dih[3] #.period
+            line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
+                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+            oline = "%3i %3i %3i %3i %3i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
+                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+            temp.append(line)
+            otemp.append(oline)
+        temp.sort()
+        otemp.sort()
+        if temp:
+            if amb2gmx:
+                topText.append(headProDihAlphaGamma)
+                topText += temp
+            else:
+                itpText.append(headProDihAlphaGamma)
+                itpText += temp
+                oitpText.append(headProDihAlphaGamma)
+                oitpText += otemp
         self.printDebug("GMX proper dihedrals done")
 
         self.printDebug("improperDihedrals %i" % len(self.improperDihedrals))
@@ -2378,13 +2422,9 @@ a        """
             a2 = dih.atoms[1].atomName
             a3 = dih.atoms[2].atomName
             a4 = dih.atoms[3].atomName
-            #id1 = self.atoms.index(dih.atoms[0]) + 1
             id1 = dih.atoms[0].id
-            #id2 = self.atoms.index(dih.atoms[1]) + 1
             id2 = dih.atoms[1].id
-            #id3 = self.atoms.index(dih.atoms[2]) + 1
             id3 = dih.atoms[2].id
-            #id4 = self.atoms.index(dih.atoms[3]) + 1
             id4 = dih.atoms[3].id
             kd = dih.kPhi * cal
             pn = dih.period

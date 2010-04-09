@@ -1,5 +1,4 @@
 = ACPYPI =
-$Id$
 
 A tool based in Python to use Antechamber to generate topologies for chemical
 compounds and to interface with others python applications like CCPN or ARIA.
@@ -13,8 +12,8 @@ Field (GAFF) and should be used only with compatible forcefields like AMBER and
 its variant.
 
 Several flavours of AMBER FF are ported already for GROMACS (see ffamber:
-http://chemistry.csulb.edu/ffamber/) as well as to XPLOR/CNS (see xplor-nih:
-http://amber.scripps.edu/xplor-nih.html) and CHARMM.
+http://ffamber.cnsm.csulb.edu/) as well as to XPLOR/CNS (see xplor-nih:
+http://ambermd.org/xplor-nih.html) and CHARMM.
 
 This code is released under GNU General Public License V3.
 
@@ -42,9 +41,8 @@ For Antechamber, please cite:
 
 If you use this code, I am glad if you cite:
 
-BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
-Dynamics Simulations Applied to the Study of Subtypes of HIV-1 Protease.
-Cell Biochemistry and Biophysics, 44, 395�404, 2006.
+SOUSA DA SILVA, A. W.; VRANKEN, W. F.; LAUE, E. D. ACPYPI - AnteChamber
+PYthon Parser Interface. Manuscript to be submitted.
 
 Alan Wilter S. da Silva, D.Sc. - CCPN Research Associate
 Department of Biochemistry, University of Cambridge.
@@ -118,7 +116,7 @@ om-mpirun -n 2 mdrun_mpi -v -deffnm md
 vmd md.gro md.trr
 }}}
 
-== To Emulate _[http://chemistry.csulb.edu/ffamber/tools.html amb2gmx.pl]_ ==
+== To Emulate _[http://ffamber.cnsm.csulb.edu/tools.html amb2gmx.pl]_ ==
 
 For any given *prmtop* and *inpcrd* files (outputs from AMBER LEaP), type:
 
