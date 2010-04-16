@@ -24,14 +24,14 @@ sed s/PRO\ A\ \ \ 1/NPROA\ \ \ 1/g Protein.pdb | sed s/PRO\ B\ \ \ 1/NPROB\ \ \ 
 # Process with pdb2gmx and define water
 pdb2gmx -ff amber99sb -f ProteinAmber.pdb -o Protein2.pdb -p Protein.top -water spce -ignh
 
-# Generate Ligand topology file with acpypi (GAFF)
-acpypi -i Ligand.pdb
+# Generate Ligand topology file with acpype (GAFF)
+acpype -i Ligand.pdb
 
 # Merge Protein2.pdb + updated Ligand_NEW.pdb -> Complex.pdb
-grep -h ATOM Protein2.pdb Ligand.acpypi/Ligand_NEW.pdb >| Complex.pdb
+grep -h ATOM Protein2.pdb Ligand.acpype/Ligand_NEW.pdb >| Complex.pdb
 
 # Edit Protein.top -> Complex.top
-\cp Ligand.acpypi/Ligand_GMX.itp Ligand.itp
+\cp Ligand.acpype/Ligand_GMX.itp Ligand.itp
 \cp Protein.top Complex.top
 # See NB(1) below
 cat Complex.top | sed '/\#include\ \"ffamber99sb\.itp\"/a\
@@ -41,8 +41,8 @@ echo "Ligand   1" >> Complex2.top
 \mv Complex2.top Complex.top
 
 echo "\n#=#=# CHECK parm99gaffff99SBparmbsc0File" >> diff_out.log
-# Generate Ligand topology file with acpypi (AMBERbsc0)
-acpypi -i Ligand.pdb -a amber -b Ligand_Amber -c gas
+# Generate Ligand topology file with acpype (AMBERbsc0)
+acpype -i Ligand.pdb -a amber -b Ligand_Amber -c gas
 diff -w /tmp/parm99gaffff99SBparmbsc0.dat ../../ffamber_additions/parm99bsc0SBgaff.dat >> diff_out.log
 
 echo "\n#=#=# CHECK Ligand.itp" >> diff_out.log
@@ -135,8 +135,8 @@ cat << EOF >| leap.in
 verbosity 1
 source leaprc.ff99SB
 source leaprc.gaff
-loadoff Ligand.acpypi/Ligand_AC.lib
-loadamberparams Ligand.acpypi/Ligand_AC.frcmod
+loadoff Ligand.acpype/Ligand_AC.lib
+loadamberparams Ligand.acpype/Ligand_AC.frcmod
 complex = loadpdb ComplexAmber.pdb
 solvatebox complex TIP3PBOX 10.0
 addions complex Na+ 23
@@ -148,7 +148,7 @@ EOF
 tleap -f leap.in >| leap.out
 
 # convert AMBER to GROMACS
-acpypi -p ComplexAmber.prmtop -x ComplexAmber.inpcrd
+acpype -p ComplexAmber.prmtop -x ComplexAmber.inpcrd
 
 echo "\n#=#=# CHECK ComplexAmber_GMX.top & ComplexAmber_GMX.gro" >> diff_out.log
 diff ComplexAmber_GMX.top ../Data/ComplexAmber_GMX.top >> diff_out.log

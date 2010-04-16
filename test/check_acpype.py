@@ -173,7 +173,7 @@ def checkTopOplsVsAmber(res):
 
     agRes = parseTopFile(file('ag%s.top' % res).readlines())
     ogRes = parseTopFile(file('og%s.top' % res).readlines())
-#    mRes = parseTopFile(file('g%s.acpypi/g%s_GMX.itp' % (res,res)).readlines())
+#    mRes = parseTopFile(file('g%s.acpype/g%s_GMX.itp' % (res,res)).readlines())
 
 #    flags = ['pairs', 'bonds', 'angles', 'dihedrals'], ['dihedraltypes', 'angletypes', 'bondtypes']
 
@@ -196,8 +196,8 @@ def roundAllFloats(lista,l):
         nlista.append(tt)
     return nlista
 
-def checkTopAcpypi(res, ff):
-    '''Compare acpypi gmx itp against amber or opls pdb2gmx results'''
+def checkTopAcpype(res, ff):
+    '''Compare acpype gmx itp against amber or opls pdb2gmx results'''
     global amber2oplsDict, ac2opls
     def addParam(l,item):
         dict = {2:'bondtypes', 3:'angletypes', 4:'dihedraltypes'}
@@ -258,7 +258,7 @@ def checkTopAcpypi(res, ff):
     agRes = parseTopFile(file('ag%s.top' % (res)).readlines())
     ogRes = parseTopFile(file('og%s.top' % (res)).readlines())
     #ffgRes = parseTopFile(file('%sg%s.top' % (ff,res)).readlines())
-    acRes = parseTopFile(file('%sg%s.acpypi/%sg%s_GMX.itp' % (ff,res,ff,res)).readlines())
+    acRes = parseTopFile(file('%sg%s.acpype/%sg%s_GMX.itp' % (ff,res,ff,res)).readlines())
     if ff == 'a':
         ffNb = aNb
         ffBon = aBon
@@ -298,7 +298,7 @@ def checkTopAcpypi(res, ff):
         else:
             amber2oplsDict[acDictAtom[k]] = set([ffDictAtom[k]])
 
-    # to build a dict acpypi atom types (amber or gaff) to [[opls_code],[opls_mass]]
+    # to build a dict acpype atom types (amber or gaff) to [[opls_code],[opls_mass]]
     #ac2opls
     if ff == 'o':
         for item in acRes[0]['atoms']:
@@ -443,7 +443,7 @@ def parseOut(out):
                 print line
         count += 1
 
-def fixRes4Acpypi(fpdb):
+def fixRes4Acpype(fpdb):
     code = fpdb[2]
     fLines = file(fpdb).readlines()
     famb = open(fpdb,'w')
@@ -456,7 +456,7 @@ def fixRes4Acpypi(fpdb):
 if __name__ == '__main__':
 
     '''order: (pymol) AAA.pdb -f-> oAAA.pdb --> (pdb2gmx) ogAAA.pdb -f->
-         -f-> aogAAA.pdb --> (pdb2gmx) agAAA.pdb -f-> acpypi
+         -f-> aogAAA.pdb --> (pdb2gmx) agAAA.pdb -f-> acpype
     '''
     global amber2oplsDict, a2oD, ac2opls
     amber2oplsDict = {}
@@ -468,7 +468,7 @@ if __name__ == '__main__':
     aBon = parseTopFile(file(gmxTopDir+'/gromacs/top/ffamber99sbbon.itp').readlines())
     oBon = parseTopFile(file(gmxTopDir+'/gromacs/top/ffoplsaabon.itp').readlines())
 
-    tmpDir = '/tmp/testAcpypi'
+    tmpDir = '/tmp/testAcpype'
     tmpFile = 'tempScript.py'
     gmxbin = os.path.dirname(commands.getoutput("which grompp"))
     acbin = os.path.dirname(commands.getoutput("which antechamber"))
@@ -512,27 +512,27 @@ if __name__ == '__main__':
             out = commands.getstatusoutput(cmd)
             #parseOut(out[1])
 
-            # acpypi on agpdb file
-            fixRes4Acpypi(agpdb)
+            # acpype on agpdb file
+            fixRes4Acpype(agpdb)
             ffType = 'amber' # gaff
             cType = 'gas' # bcc
-            cmd = "acpypi -dfi %s -c %s -a %s" % (agpdb, cType, ffType)
-            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
+            cmd = "acpype -dfi %s -c %s -a %s" % (agpdb, cType, ffType)
+            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpype failed to get correct charge
             out = commands.getstatusoutput(cmd)
             #parseOut(out[1])
-            print "Compare ACPYPI x GMX AMBER99SB topol & param"
-            checkTopAcpypi(res, 'a')
+            print "Compare ACPYPE x GMX AMBER99SB topol & param"
+            checkTopAcpype(res, 'a')
 
-            # acpypi on ogpdb file
-            fixRes4Acpypi(ogpdb)
+            # acpype on ogpdb file
+            fixRes4Acpype(ogpdb)
             ffType = 'amber' #'amber' # gaff
             cType = 'gas' # bcc
-            cmd = "acpypi -dfi %s -c %s -a %s" % (ogpdb, cType, ffType)
-            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpypi failed to get correct charge
+            cmd = "acpype -dfi %s -c %s -a %s" % (ogpdb, cType, ffType)
+            if res == 'JJJ' and cType == 'bcc': cmd += ' -n 1' # acpype failed to get correct charge
             out = commands.getstatusoutput(cmd)
             #parseOut(out[1])
-            print "Compare ACPYPI x GMX OPLS/AA only topol"
-            checkTopAcpypi(res, 'o')
+            print "Compare ACPYPE x GMX OPLS/AA only topol"
+            checkTopAcpype(res, 'o')
 
             if out[0] :
                 print "pdb2gmx for %s FAILED... aborting." % res
@@ -540,8 +540,8 @@ if __name__ == '__main__':
                 #sys.exit(1)
             #break
     os.system('rm -f %s/\#* posre.itp tempScript.py' % tmpDir)
-    os.system("find . -name 'ag*GMX*.itp' | xargs grep -v 'created by acpypi on' > standard_ag_itp.txt")
-    os.system("find . -name 'og*GMX*.itp' | xargs grep -v 'created by acpypi on' > standard_og_itp.txt")
+    os.system("find . -name 'ag*GMX*.itp' | xargs grep -v 'created by acpype on' > standard_ag_itp.txt")
+    os.system("find . -name 'og*GMX*.itp' | xargs grep -v 'created by acpype on' > standard_og_itp.txt")
     #print ac2opls
     tmp = {}
     for k,v in ac2opls.items():

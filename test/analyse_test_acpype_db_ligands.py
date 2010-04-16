@@ -3,7 +3,7 @@ from commands import getoutput
 
 # Gmm with 200 atoms, biggest OK
 
-# usage: ./analyse_test_acpypi_db_ligands.py (opt: n=10 or "['001','Rca']")
+# usage: ./analyse_test_acpype_db_ligands.py (opt: n=10 or "['001','Rca']")
 
 # semi-QM = mopac (AT 1.2) or sqm (AT 1.3)
 
@@ -55,7 +55,7 @@ groupResults = [
                 ['0 E, 5 W, ET , WT _0_2_4_5_7']],
                ["missing parameters, irregular bonds, maybe wrong atomtype and atoms in close contact", "Mols have missing parameters, irregular bonds, maybe wrong atomtype and atoms in close contact",
                 ['0 E, 5 W, ET , WT _0_4_5_6_7']],
-               ["no 'tmp', acpypi did nothing at all", "Mols have no 'tmp'",
+               ["no 'tmp', acpype did nothing at all", "Mols have no 'tmp'",
                 ['1 E, 0 W, ET _7, WT ']],
                ["atoms with same coordinates", "Mols have duplicated coordinates",
                 ['1 E, 0 W, ET _1, WT ']],
@@ -289,7 +289,7 @@ def analyseFile(mol, structure, file):
             else:
                 #execTime[mol] = [{structure:line[:-1].split(':')[1]}]
                 execTime[mol] = {structure:line[:-1].split(':')[1]}
-    # to compare charges from acpypi out with input mol2
+    # to compare charges from acpype out with input mol2
         if "==> ... charge set to" in line:
             guessChargeValue = int(line.split('to')[1])
             _flagChargeType = 'Y'
@@ -309,7 +309,7 @@ def analyseFile(mol, structure, file):
                 compareCharges.add("%s_%i_%i" % (mol,mol2Charge, guessChargeValue))
             else:
                 compareChargesOK.add("%s_%i" % (mol, mol2Charge))
-            # this excpetion should happen only if acpypi early aborted for both outs
+            # this excpetion should happen only if acpype early aborted for both outs
             #if mol not in `compareChargesOK.union(compareCharges)`:
             if mol not in `compareChargesOK` and mol not in `compareCharges`:
                 print "!!!! Unable to compare. Failed to guess charge for", mol, structure
@@ -547,11 +547,11 @@ for molDir in ccpCodes:
             else:
                 pdbMol2 = True
                 totalPdbMol2Count += 1
-        elif ".ideal.acpypi/sqm.out" in file:
+        elif ".ideal.acpype/sqm.out" in file:
             content = open(file, 'r').read()
             if "No convergence in SCF after" in content:
                 SCFfailedList.append("%s_%s" % (molDir, 'ideal'))
-        elif ".pdb.acpypi/sqm.out" in file:
+        elif ".pdb.acpype/sqm.out" in file:
             content = open(file, 'r').read()
             if "No convergence in SCF after" in content:
                 SCFfailedList.append("%s_%s" % (molDir, 'pdb'))
@@ -667,9 +667,9 @@ if atomicDetailed:
             print "# %s #" % molLabel
             print out,"\n"
 
-# mols with MOL2 charge different from ACPYPI guessed charge
+# mols with MOL2 charge different from ACPYPE guessed charge
 if compareCharges:
-    print "\n>>> Mols with MOL2 charge different from ACPYPI guessed charge <<<\n"
+    print "\n>>> Mols with MOL2 charge different from ACPYPE guessed charge <<<\n"
     lCC = list(compareCharges)
     lCC.sort()
     print len(lCC), lCC

@@ -1,5 +1,5 @@
 from shutil import rmtree
-from acpypi import elapsedTime, header, ACTopol
+from acpype import elapsedTime, header, ACTopol
 import time
 import traceback
 import sys
@@ -180,16 +180,16 @@ def addMolTop(cnsTopPath, molTopPath):
     print "%s added to %s" % (molName, cnsTopPath)
     return True
 
-class AcpypiForCcpnProject:
+class AcpypeForCcpnProject:
     '''
         Class to take a Ccpn project, check if it has an
-        unusual chem comp and call ACPYPI API to generate
-        a folder with acpypi results
+        unusual chem comp and call ACPYPE API to generate
+        a folder with acpype results
         usage:
-        acpypiProject = AcpypiForCcpnProject(ccpnProject)
-        acpypiProject.run(kw**)
-        acpypiDictFilesList = acpypiProject.acpypiDictFiles
-        returns a dict with list of the files inside chem chomp acpypi folder
+        acpypeProject = AcpypeForCcpnProject(ccpnProject)
+        acpypeProject.run(kw**)
+        acpypeDictFilesList = acpypeProject.acpypeDictFiles
+        returns a dict with list of the files inside chem chomp acpype folder
         or None
     '''
 
@@ -197,7 +197,7 @@ class AcpypiForCcpnProject:
 
         self.project = project
         self.heteroMols = None
-        self.acpypiDictFiles = None
+        self.acpypeDictFiles = None
 
     def getHeteroMols(self):
         '''Return a list [] of chains obj'''
@@ -211,11 +211,11 @@ class AcpypiForCcpnProject:
                 if numRes == 1:
                     numberAtoms = [len(x.atoms) for x in chain.residues][0]
                     if numberAtoms > maxNumberAtoms:
-                        print "molecule with %i (> %i) atoms; skipped by acpypi" % (numberAtoms, maxNumberAtoms)
+                        print "molecule with %i (> %i) atoms; skipped by acpype" % (numberAtoms, maxNumberAtoms)
                     else:
                         other.append(chain)
                 else:
-                    print "molType 'other', chain %s with %i residues; skipped by acpypi" % (chain, numRes)
+                    print "molType 'other', chain %s with %i residues; skipped by acpype" % (chain, numRes)
         self.heteroMols = other
         return other
 
@@ -233,10 +233,10 @@ class AcpypiForCcpnProject:
             other = self.getHeteroMols()
 
         if not other:
-            print "WARN: no molecules entitled for ACPYPI"
+            print "WARN: no molecules entitled for ACPYPE"
             return None
 
-        acpypiDict = {}
+        acpypeDict = {}
 
         for chain in other:
             if chargeVal == None and not guessCharge:
@@ -245,14 +245,14 @@ class AcpypiForCcpnProject:
             res = chain.findFirstResidue()
             resName = res.ccpCode.upper()
             if chargeVal == None:
-                print "Running ACPYPI for '%s : %s' and trying to guess net charge" % (resName, chain.molecule.name)
+                print "Running ACPYPE for '%s : %s' and trying to guess net charge" % (resName, chain.molecule.name)
             else:
-                print "Running ACPYPI for '%s : %s' with charge '%s'" % (resName, chain.molecule.name, chargeVal)
+                print "Running ACPYPE for '%s : %s' with charge '%s'" % (resName, chain.molecule.name, chargeVal)
             random.seed()
             d = [random.choice(string.letters) for x in xrange(10)]
             randString = "".join(d)
             randString = 'test'
-            dirTemp = '/tmp/ccpn2acpypi_%s' % randString
+            dirTemp = '/tmp/ccpn2acpype_%s' % randString
             if not os.path.exists(dirTemp):
                 os.mkdir(dirTemp)
             resPdbTempFile = os.path.join(dirTemp, '%s.pdb' % resName)
@@ -283,20 +283,20 @@ class AcpypiForCcpnProject:
                 if not molecule.acExe:
                     molecule.printError("no 'antechamber' executable... aborting!")
                     hint1 = "HINT1: is 'AMBERHOME' or 'ACHOME' environment variable set?"
-                    hint2 = "HINT2: is 'antechamber' in your $PATH?\n    What 'which antechamber' in your terminal says?\n    'alias' doesn't work for ACPYPI."
+                    hint2 = "HINT2: is 'antechamber' in your $PATH?\n    What 'which antechamber' in your terminal says?\n    'alias' doesn't work for ACPYPE."
                     molecule.printMess(hint1)
                     molecule.printMess(hint2)
                     sys.exit(1)
 
                 molecule.createACTopol()
                 molecule.createMolTopol()
-                acpypiFailed = False
+                acpypeFailed = False
             except:
                 _exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-                print "ACPYPI FAILED: %s" % exceptionValue
+                print "ACPYPE FAILED: %s" % exceptionValue
                 if debug:
                     traceback.print_tb(exceptionTraceback, file=sys.stdout)
-                acpypiFailed = True
+                acpypeFailed = True
 
             execTime = int(round(time.time() - t0))
             if execTime == 0:
@@ -306,11 +306,11 @@ class AcpypiForCcpnProject:
             try: rmtree(molecule.tmpDir)
             except: pass
             print "Total time of execution: %s" % msg
-            if not acpypiFailed:
-                acpypiDict[resName] = [x for x in dirWalk(os.path.join(dirTemp,'%s.acpypi' % resName))]
+            if not acpypeFailed:
+                acpypeDict[resName] = [x for x in dirWalk(os.path.join(dirTemp,'%s.acpype' % resName))]
             else:
-                acpypiDict[resName] = []
+                acpypeDict[resName] = []
 #                sys.exit(1)
 
             os.chdir(origCwd)
-            self.acpypiDictFiles = acpypiDict
+            self.acpypeDictFiles = acpypeDict

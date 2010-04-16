@@ -1,4 +1,4 @@
-; ComplexAmber_GMX.top created by acpypi (Rev: 285) on Mon Mar 22 22:45:48 2010
+; ComplexAmber_GMX.top created by acpype (Rev: 310) on Fri Apr 16 11:16:11 2010
 
 [ defaults ]
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ

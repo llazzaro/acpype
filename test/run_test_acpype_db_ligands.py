@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# usage: ./run_test_acpypi_db_ligands.py (opt: n=10 or "['001','Rca']")
+# usage: ./run_test_acpype_db_ligands.py (opt: n=10 or "['001','Rca']")
 
 import sys, os, time
 
@@ -142,13 +142,13 @@ if __name__ == '__main__':
             if ccvName[-5:] == '.mol2' and not ccvName.count("bcc_gaff"):
                 chemCompVarFiles.append(os.path.join(curDir,'other',ccpCode,ccvName))
 
-    runConversionJobs(chemCompVarFiles,'acpypi')
+    runConversionJobs(chemCompVarFiles,'acpype')
     execTime = int(round(time.time() - t0))
     msg = elapsedTime(execTime)
     print "Total time of execution: %s" % msg
     print "ALL DONE"
 
-# nohup ./run_test_acpypi_db_ligands.py &
+# nohup ./run_test_acpype_db_ligands.py &
 # grep started nohup.out | wc -l ; grep finished nohup.out | wc -l # 17405 17405
 # grep -r "FAILED: semi-QM taking" other/*
 # grep -r "invalid" other/*
