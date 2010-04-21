@@ -247,7 +247,7 @@ USAGE = \
 """
     acpype -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc. or
     acpype -p _prmtop_ -x _inpcrd_ [-d]
-    -i    input file name with either extension '.pdb', '.mol2', '.mdl' or '.mol' (mandatory if -p and -x not set)
+    -i    input file name with either extension '.pdb', '.mdl' or '.mol2' (mandatory if -p and -x not set)
     -p    amber prmtop file name (always used with -x)
     -x    amber inpcrd file name (always used with -p)
     -c    charge method: gas, bcc (default), user (user's charges in mol2 file)
@@ -2919,7 +2919,7 @@ class ACTopol(AbstractTopol):
         self.parmchkExe = getoutput('which parmchk') or ''
         self.babelExe = getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
-            if self.ext != '.mol2' and self.ext != '.mdl' and self.ext != '.mol':
+            if self.ext != '.mol2' and self.ext != '.mdl': # and self.ext != '.mol':
                 self.printError("no 'babel' executable; you need it if input is PDB")
                 self.printError("otherwise use only MOL2 or MDL file as input ... aborting!")
                 sys.exit(1)
