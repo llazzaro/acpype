@@ -1,4 +1,4 @@
-Remarks Ligand_CNS.top created by acpype (Rev: 310) on Fri Apr 16 10:58:23 2010
+Remarks Ligand_CNS.top created by acpype (Rev: 314) on Tue Apr 27 11:51:58 2010
 
 set echo=false end
 
@@ -69,7 +69,7 @@ ATOM H5    TYPE= h1_   CHARGE=   0.0601 END
 ATOM H6    TYPE= h1_   CHARGE=   0.0810 END
 ATOM H201  TYPE= h1_   CHARGE=   0.0855 END
 ATOM H202  TYPE= h1_   CHARGE=   0.0536 END
-ATOM H22   TYPE= ha_   CHARGE=   0.1399 END
+ATOM H22   TYPE= ha_   CHARGE=   0.1400 END
 ATOM H23   TYPE= ha_   CHARGE=   0.1289 END
 ATOM H25   TYPE= ha_   CHARGE=   0.1372 END
 ATOM H26   TYPE= ha_   CHARGE=   0.1411 END

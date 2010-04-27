@@ -1,4 +1,4 @@
-Remarks Ligand_CNS.par created by acpype (Rev: 310) on Fri Apr 16 10:58:23 2010
+Remarks Ligand_CNS.par created by acpype (Rev: 314) on Tue Apr 27 11:51:58 2010
 
 set echo=false end
 
@@ -27,17 +27,17 @@ ANGLe   oh_   c3_   h1_     51.0   109.88
 ANGLe   h1_   c3_   h1_     39.2   109.55
 ANGLe   hc_   c3_   hc_     39.4   108.35
 ANGLe    c_    n_   c3_     63.9   121.35
-ANGLe   c3_   c3_   ca_     62.5   114.61
-ANGLe   c3_    n_   c3_     64.0   112.62
+ANGLe   c3_   c3_   ca_     63.2   112.09
+ANGLe   c3_    n_   c3_     63.1   115.56
 ANGLe   c3_   c3_   oh_     67.7   109.43
 ANGLe   c3_   c3_   c3_     63.2   110.63
-ANGLe   c3_   c3_    n_     65.9   112.13
+ANGLe   c3_   c3_    n_     65.8   112.13
 ANGLe   c3_   ca_   ca_     63.8   120.63
 ANGLe   ca_   ca_   ca_     67.2   119.97
-ANGLe   ca_   c3_    n_     66.1   113.14
-ANGLe   ca_   c3_   oh_     67.2   112.97
+ANGLe   ca_   c3_    n_     66.3   112.43
+ANGLe   ca_   c3_   oh_     67.9   110.55
 ANGLe    n_    c_    o_     75.8   122.03
-ANGLe    n_    c_    n_     75.4   111.70
+ANGLe    n_    c_    n_     74.8   113.38
 
 { Proper Dihedrals: aType1 aType2 aType3 aType4 kt period phase }
 DIHEdral   oh_   c3_   c3_   h1_  MULT 2   0.250    1     0.00
