@@ -1,4 +1,4 @@
-; Ligand_GMX_OPLS.itp created by acpype (Rev: 314) on Tue Apr 27 11:51:58 2010
+; Ligand_GMX_OPLS.itp created by acpype (Rev: 314) on Mon May 10 14:18:19 2010
 
 ; For OPLS atomtypes manual fine tuning
 ; AC_at:OPLS_at:OPLScode: Possible_Aternatives (see ffoplsaa.atp and ffoplsaanb.itp)
@@ -19,86 +19,86 @@
 
 [ atoms ]
 ;   nr  type  resi  res  atom  cgnr     charge      mass       ; qtot   bond_type
-     1 opls_235     1   DMP    C1    1     0.793659     12.01100 ; qtot  0.794  C   
-     2 opls_135     1   DMP    C3    2     0.066203     12.01100 ; qtot  0.860  CT  
-     3 opls_135     1   DMP    C4    3     0.101407     12.01100 ; qtot  0.961  CT  
-     4 opls_135     1   DMP    C5    4     0.134220     12.01100 ; qtot  1.095  CT  
-     5 opls_135     1   DMP    C6    5     0.129641     12.01100 ; qtot  1.225  CT  
-     6 opls_135     1   DMP   C20    6     0.111643     12.01100 ; qtot  1.337  CT  
-     7 opls_145     1   DMP   C21    7    -0.090336     12.01100 ; qtot  1.246  CA  
-     8 opls_145     1   DMP   C22    8    -0.121352     12.01100 ; qtot  1.125  CA  
-     9 opls_145     1   DMP   C23    9    -0.130736     12.01100 ; qtot  0.994  CA  
-    10 opls_145     1   DMP   C24   10    -0.121286     12.01100 ; qtot  0.873  CA  
-    11 opls_145     1   DMP   C25   11    -0.115692     12.01100 ; qtot  0.757  CA  
-    12 opls_145     1   DMP   C26   12    -0.110946     12.01100 ; qtot  0.646  CA  
+     1 opls_235     1   DMP    C1    1     0.793663     12.01100 ; qtot  0.794  C   
+     2 opls_135     1   DMP    C3    2     0.066211     12.01100 ; qtot  0.860  CT  
+     3 opls_135     1   DMP    C4    3     0.101405     12.01100 ; qtot  0.961  CT  
+     4 opls_135     1   DMP    C5    4     0.134224     12.01100 ; qtot  1.096  CT  
+     5 opls_135     1   DMP    C6    5     0.129642     12.01100 ; qtot  1.225  CT  
+     6 opls_135     1   DMP   C20    6     0.111642     12.01100 ; qtot  1.337  CT  
+     7 opls_145     1   DMP   C21    7    -0.090332     12.01100 ; qtot  1.246  CA  
+     8 opls_145     1   DMP   C22    8    -0.121358     12.01100 ; qtot  1.125  CA  
+     9 opls_145     1   DMP   C23    9    -0.130735     12.01100 ; qtot  0.994  CA  
+    10 opls_145     1   DMP   C24   10    -0.121287     12.01100 ; qtot  0.873  CA  
+    11 opls_145     1   DMP   C25   11    -0.115687     12.01100 ; qtot  0.757  CA  
+    12 opls_145     1   DMP   C26   12    -0.110943     12.01100 ; qtot  0.646  CA  
     13 opls_135     1   DMP   C27   13     0.172038     12.01100 ; qtot  0.818  CT  
     14 opls_135     1   DMP   C30   14    -0.070300     12.01100 ; qtot  0.748  CT  
-    15 opls_145     1   DMP   C31   15    -0.090150     12.01100 ; qtot  0.658  CA  
-    16 opls_145     1   DMP   C32   16    -0.128908     12.01100 ; qtot  0.529  CA  
-    17 opls_145     1   DMP   C33   17    -0.128707     12.01100 ; qtot  0.400  CA  
-    18 opls_145     1   DMP   C34   18    -0.130955     12.01100 ; qtot  0.269  CA  
-    19 opls_145     1   DMP   C35   19    -0.132254     12.01100 ; qtot  0.137  CA  
-    20 opls_145     1   DMP   C36   20    -0.129090     12.01100 ; qtot  0.008  CA  
-    21 opls_135     1   DMP   C60   21    -0.055665     12.01100 ; qtot -0.048  CT  
-    22 opls_145     1   DMP   C61   22    -0.081145     12.01100 ; qtot -0.129  CA  
-    23 opls_145     1   DMP   C62   23    -0.122976     12.01100 ; qtot -0.252  CA  
-    24 opls_145     1   DMP   C63   24    -0.128671     12.01100 ; qtot -0.380  CA  
-    25 opls_145     1   DMP   C64   25    -0.131727     12.01100 ; qtot -0.512  CA  
-    26 opls_145     1   DMP   C65   26    -0.129918     12.01100 ; qtot -0.642  CA  
-    27 opls_145     1   DMP   C66   27    -0.133052     12.01100 ; qtot -0.775  CA  
-    28 opls_135     1   DMP   C70   28     0.140174     12.01100 ; qtot -0.635  CT  
-    29 opls_145     1   DMP   C71   29    -0.108943     12.01100 ; qtot -0.744  CA  
-    30 opls_145     1   DMP   C72   30    -0.116815     12.01100 ; qtot -0.861  CA  
-    31 opls_145     1   DMP   C73   31    -0.130497     12.01100 ; qtot -0.991  CA  
-    32 opls_145     1   DMP   C74   32    -0.120851     12.01100 ; qtot -1.112  CA  
-    33 opls_145     1   DMP   C75   33    -0.112629     12.01100 ; qtot -1.225  CA  
-    34 opls_145     1   DMP   C76   34    -0.114928     12.01100 ; qtot -1.340  CA  
+    15 opls_145     1   DMP   C31   15    -0.090153     12.01100 ; qtot  0.658  CA  
+    16 opls_145     1   DMP   C32   16    -0.128907     12.01100 ; qtot  0.529  CA  
+    17 opls_145     1   DMP   C33   17    -0.128705     12.01100 ; qtot  0.400  CA  
+    18 opls_145     1   DMP   C34   18    -0.130954     12.01100 ; qtot  0.269  CA  
+    19 opls_145     1   DMP   C35   19    -0.132255     12.01100 ; qtot  0.137  CA  
+    20 opls_145     1   DMP   C36   20    -0.129092     12.01100 ; qtot  0.008  CA  
+    21 opls_135     1   DMP   C60   21    -0.055672     12.01100 ; qtot -0.048  CT  
+    22 opls_145     1   DMP   C61   22    -0.081137     12.01100 ; qtot -0.129  CA  
+    23 opls_145     1   DMP   C62   23    -0.122978     12.01100 ; qtot -0.252  CA  
+    24 opls_145     1   DMP   C63   24    -0.128668     12.01100 ; qtot -0.380  CA  
+    25 opls_145     1   DMP   C64   25    -0.131728     12.01100 ; qtot -0.512  CA  
+    26 opls_145     1   DMP   C65   26    -0.129916     12.01100 ; qtot -0.642  CA  
+    27 opls_145     1   DMP   C66   27    -0.133055     12.01100 ; qtot -0.775  CA  
+    28 opls_135     1   DMP   C70   28     0.140172     12.01100 ; qtot -0.635  CT  
+    29 opls_145     1   DMP   C71   29    -0.108941     12.01100 ; qtot -0.744  CA  
+    30 opls_145     1   DMP   C72   30    -0.116814     12.01100 ; qtot -0.861  CA  
+    31 opls_145     1   DMP   C73   31    -0.130498     12.01100 ; qtot -0.991  CA  
+    32 opls_145     1   DMP   C74   32    -0.120847     12.01100 ; qtot -1.112  CA  
+    33 opls_145     1   DMP   C75   33    -0.112632     12.01100 ; qtot -1.225  CA  
+    34 opls_145     1   DMP   C76   34    -0.114923     12.01100 ; qtot -1.340  CA  
     35 opls_135     1   DMP   C77   35     0.172393     12.01100 ; qtot -1.167  CT  
-    36 opls_237     1   DMP    N2   36    -0.438810     14.00670 ; qtot -1.606  N   
-    37 opls_237     1   DMP    N7   37    -0.456784     14.00670 ; qtot -2.063  N   
-    38 opls_236     1   DMP    O1   38    -0.683638     15.99940 ; qtot -2.746  O   
+    36 opls_237     1   DMP    N2   36    -0.438819     14.00670 ; qtot -1.606  N   
+    37 opls_237     1   DMP    N7   37    -0.456781     14.00670 ; qtot -2.063  N   
+    38 opls_236     1   DMP    O1   38    -0.683641     15.99940 ; qtot -2.746  O   
     39 opls_154     1   DMP    O4   39    -0.611779     15.99940 ; qtot -3.358  OH  
-    40 opls_154     1   DMP    O5   40    -0.605818     15.99940 ; qtot -3.964  OH  
-    41 opls_154     1   DMP   O27   41    -0.592243     15.99940 ; qtot -4.556  OH  
+    40 opls_154     1   DMP    O5   40    -0.605816     15.99940 ; qtot -3.964  OH  
+    41 opls_154     1   DMP   O27   41    -0.592242     15.99940 ; qtot -4.556  OH  
     42 opls_154     1   DMP   O77   42    -0.592931     15.99940 ; qtot -5.149  OH  
-    43 opls_140     1   DMP    H3   43     0.071061      1.00800 ; qtot -5.078  HC  
-    44 opls_140     1   DMP    H4   44     0.064557      1.00800 ; qtot -5.014  HC  
+    43 opls_140     1   DMP    H3   43     0.071055      1.00800 ; qtot -5.078  HC  
+    44 opls_140     1   DMP    H4   44     0.064560      1.00800 ; qtot -5.014  HC  
     45 opls_140     1   DMP    H5   45     0.060101      1.00800 ; qtot -4.953  HC  
-    46 opls_140     1   DMP    H6   46     0.080953      1.00800 ; qtot -4.872  HC  
-    47 opls_140     1   DMP  H201   47     0.085503      1.00800 ; qtot -4.787  HC  
-    48 opls_140     1   DMP  H202   48     0.053551      1.00800 ; qtot -4.733  HC  
-    49 opls_146     1   DMP   H22   49     0.139952      1.00800 ; qtot -4.593  HA  
-    50 opls_146     1   DMP   H23   50     0.128869      1.00800 ; qtot -4.465  HA  
-    51 opls_146     1   DMP   H25   51     0.137231      1.00800 ; qtot -4.327  HA  
-    52 opls_146     1   DMP   H26   52     0.141075      1.00800 ; qtot -4.186  HA  
-    53 opls_140     1   DMP  H271   53     0.072704      1.00800 ; qtot -4.114  HC  
-    54 opls_140     1   DMP  H272   54     0.033914      1.00800 ; qtot -4.080  HC  
-    55 opls_140     1   DMP  H301   55     0.065505      1.00800 ; qtot -4.014  HC  
-    56 opls_140     1   DMP  H302   56     0.077171      1.00800 ; qtot -3.937  HC  
-    57 opls_146     1   DMP   H32   57     0.153789      1.00800 ; qtot -3.783  HA  
-    58 opls_146     1   DMP   H33   58     0.134983      1.00800 ; qtot -3.648  HA  
+    46 opls_140     1   DMP    H6   46     0.080951      1.00800 ; qtot -4.872  HC  
+    47 opls_140     1   DMP  H201   47     0.085511      1.00800 ; qtot -4.787  HC  
+    48 opls_140     1   DMP  H202   48     0.053550      1.00800 ; qtot -4.733  HC  
+    49 opls_146     1   DMP   H22   49     0.139947      1.00800 ; qtot -4.593  HA  
+    50 opls_146     1   DMP   H23   50     0.128868      1.00800 ; qtot -4.465  HA  
+    51 opls_146     1   DMP   H25   51     0.137232      1.00800 ; qtot -4.327  HA  
+    52 opls_146     1   DMP   H26   52     0.141071      1.00800 ; qtot -4.186  HA  
+    53 opls_140     1   DMP  H271   53     0.072705      1.00800 ; qtot -4.114  HC  
+    54 opls_140     1   DMP  H272   54     0.033913      1.00800 ; qtot -4.080  HC  
+    55 opls_140     1   DMP  H301   55     0.065503      1.00800 ; qtot -4.014  HC  
+    56 opls_140     1   DMP  H302   56     0.077170      1.00800 ; qtot -3.937  HC  
+    57 opls_146     1   DMP   H32   57     0.153794      1.00800 ; qtot -3.783  HA  
+    58 opls_146     1   DMP   H33   58     0.134984      1.00800 ; qtot -3.648  HA  
     59 opls_146     1   DMP   H34   59     0.131639      1.00800 ; qtot -3.517  HA  
     60 opls_146     1   DMP   H35   60     0.131042      1.00800 ; qtot -3.386  HA  
-    61 opls_146     1   DMP   H36   61     0.130085      1.00800 ; qtot -3.255  HA  
-    62 opls_140     1   DMP  H601   62     0.064920      1.00800 ; qtot -3.191  HC  
-    63 opls_140     1   DMP  H602   63     0.077864      1.00800 ; qtot -3.113  HC  
-    64 opls_146     1   DMP   H62   64     0.132569      1.00800 ; qtot -2.980  HA  
+    61 opls_146     1   DMP   H36   61     0.130083      1.00800 ; qtot -3.255  HA  
+    62 opls_140     1   DMP  H601   62     0.064923      1.00800 ; qtot -3.191  HC  
+    63 opls_140     1   DMP  H602   63     0.077868      1.00800 ; qtot -3.113  HC  
+    64 opls_146     1   DMP   H62   64     0.132563      1.00800 ; qtot -2.980  HA  
     65 opls_146     1   DMP   H63   65     0.131918      1.00800 ; qtot -2.848  HA  
-    66 opls_146     1   DMP   H64   66     0.131275      1.00800 ; qtot -2.717  HA  
+    66 opls_146     1   DMP   H64   66     0.131276      1.00800 ; qtot -2.717  HA  
     67 opls_146     1   DMP   H65   67     0.131033      1.00800 ; qtot -2.586  HA  
-    68 opls_146     1   DMP   H66   68     0.136270      1.00800 ; qtot -2.450  HA  
-    69 opls_140     1   DMP  H701   69     0.094186      1.00800 ; qtot -2.355  HC  
-    70 opls_140     1   DMP  H702   70     0.061531      1.00800 ; qtot -2.294  HC  
-    71 opls_146     1   DMP   H72   71     0.133711      1.00800 ; qtot -2.160  HA  
-    72 opls_146     1   DMP   H73   72     0.128537      1.00800 ; qtot -2.032  HA  
-    73 opls_146     1   DMP   H75   73     0.138135      1.00800 ; qtot -1.894  HA  
-    74 opls_146     1   DMP   H76   74     0.151601      1.00800 ; qtot -1.742  HA  
+    68 opls_146     1   DMP   H66   68     0.136266      1.00800 ; qtot -2.450  HA  
+    69 opls_140     1   DMP  H701   69     0.094189      1.00800 ; qtot -2.355  HC  
+    70 opls_140     1   DMP  H702   70     0.061529      1.00800 ; qtot -2.294  HC  
+    71 opls_146     1   DMP   H72   71     0.133710      1.00800 ; qtot -2.160  HA  
+    72 opls_146     1   DMP   H73   72     0.128535      1.00800 ; qtot -2.032  HA  
+    73 opls_146     1   DMP   H75   73     0.138133      1.00800 ; qtot -1.894  HA  
+    74 opls_146     1   DMP   H76   74     0.151598      1.00800 ; qtot -1.742  HA  
     75 opls_140     1   DMP  H771   75     0.071931      1.00800 ; qtot -1.670  HC  
-    76 opls_140     1   DMP  H772   76     0.032490      1.00800 ; qtot -1.637  HC  
-    77 opls_155     1   DMP   HO4   77     0.413124      1.00800 ; qtot -1.224  HO  
-    78 opls_155     1   DMP   HO5   78     0.425942      1.00800 ; qtot -0.798  HO  
-    79 opls_155     1   DMP  HO27   79     0.398763      1.00800 ; qtot -0.400  HO  
-    80 opls_155     1   DMP  HO77   80     0.399665      1.00800 ; qtot  0.000  HO  
+    76 opls_140     1   DMP  H772   76     0.032491      1.00800 ; qtot -1.637  HC  
+    77 opls_155     1   DMP   HO4   77     0.413122      1.00800 ; qtot -1.224  HO  
+    78 opls_155     1   DMP   HO5   78     0.425941      1.00800 ; qtot -0.798  HO  
+    79 opls_155     1   DMP  HO27   79     0.398762      1.00800 ; qtot -0.400  HO  
+    80 opls_155     1   DMP  HO77   80     0.399665      1.00800 ; qtot -0.000  HO  
 
 [ bonds ]
 ;   ai     aj funct   r             k
