@@ -177,7 +177,7 @@ oplsCode2AtomTypeDict = {}
 for k,v in dictOplsAtomType2OplsGmxCode.items():
     for code in v:
         oplsCode2AtomTypeDict[code] = k
-#        if oplsCode2AtomTypeDict.has_key(code):
+#        if code in oplsCode2AtomTypeDict.keys():
 #            oplsCode2AtomTypeDict[code].append(k)
 #        else:
 #            oplsCode2AtomTypeDict[code] = [k]
@@ -186,7 +186,7 @@ for k,v in dictOplsAtomType2OplsGmxCode.items():
 dictAtomTypeAmb2OplsGmxCode = {'H1':['140','1.00800'],'HP':['140','1.00800'],'H2':['140','1.00800']}
 dictOplsMass = {'SY2': ['32.06000'], 'Zn2+': ['65.37000'], 'CQ': ['12.01100'], 'CP': ['12.01100'], 'Nd3+': ['144.24000'], 'Br-': ['79.90400'], 'Cu2+': ['63.54600'], 'Br': ['79.90400'], 'H': ['1.00800'], 'P': ['30.97376'], 'Sr2+': ['87.62000'], 'ON': ['15.99940'], 'OL': ['0.00000'], 'OH': ['15.99940'], 'OY': ['15.99940'], 'OW': ['15.99940'], 'OU': ['15.99940'], 'OS': ['15.99940'], 'Am3+': ['243.06000'], 'HS': ['1.00800'], 'HW': ['1.00800'], 'HO': ['1.00800'], 'HC': ['1.00800'], 'HA': ['1.00800'], 'O2': ['15.99940'], 'Ca2+': ['40.08000'], 'Th4+': ['232.04000'], 'He': ['4.00260'], 'C': ['12.01100'], 'Cs+': ['132.90540'], 'O': ['15.99940'], 'Gd3+': ['157.25000'], 'S': ['32.06000'], 'P+': ['30.97376'], 'La3+': ['138.91000'], 'H3': ['1.00800'], 'H4': ['1.00800'], 'MNH2': ['0.00000'], 'MW': ['0.00000'], 'NB': ['14.00670'], 'K+': ['39.09830'], 'Ne': ['20.17970'], 'Rb+': ['85.46780'], 'C+': ['12.01100'], 'C*': ['12.01100'], 'NO': ['14.00670'], 'CT_4': ['12.01100'], 'NA': ['14.00670'], 'C!': ['12.01100'], 'NC': ['14.00670'], 'NZ': ['14.00670'], 'CT_2': ['12.01100'], 'CT_3': ['12.01100'], 'NY': ['14.00670'], 'C9': ['14.02700'], 'C8': ['13.01900'], 'C=': ['12.01100'], 'Yb3+': ['173.04000'], 'C3': ['15.03500', '12.01100'], 'C2': ['14.02700'], 'C7': ['12.01100'], 'C4': ['16.04300'], 'CK': ['12.01100'], 'Cl-': ['35.45300'], 'N*': ['14.00670'], 'CH': ['13.01900'], 'CO': ['12.01100'], 'CN': ['12.01100'], 'CM': ['12.01100'], 'F': ['18.99840'], 'CC': ['12.01100'], 'CB': ['12.01100'], 'CA': ['12.01100'], 'CG': ['12.01100'], 'CF': ['12.01100'], 'N': ['14.00670'], 'CZ': ['12.01100'], 'CY': ['12.01100'], 'CX': ['12.01100'], 'Ac3+': ['227.03000'], 'CS': ['12.01100'], 'CR': ['12.01100'], 'N2': ['14.00670'], 'N3': ['14.00670'], 'CW': ['12.01100'], 'CV': ['12.01100'], 'CU': ['12.01100'], 'CT': ['12.01100'], 'SZ': ['32.06000'], 'SY': ['32.06000'], 'Cl': ['35.45300'], 'NT': ['14.00670'], 'O_2': ['15.99940'], 'Xe': ['131.29300'], 'SI': ['28.08000'], 'SH': ['32.06000'], 'Eu3+': ['151.96000'], 'F-': ['18.99840'], 'MNH3': ['0.00000'], 'H5': ['1.00800'], 'C_3': ['12.01100'], 'C_2': ['12.01100'], 'I-': ['126.90450'], 'LP': ['0.00000'], 'I': ['126.90450'], 'Na+': ['22.98977'], 'Li+': ['6.94100'], 'U': ['0.00000'], 'MCH3A': ['0.00000'], 'MCH3B': ['0.00000'], 'CD': ['13.01900', '12.01100'], 'O_3': ['15.99940'], 'Kr': ['83.79800'], 'Fe2+': ['55.84700'], 'Ar': ['39.94800'], 'Mg2+': ['24.30500'], 'Ba2+': ['137.33000']}
 for ambKey in dictAmbAtomType2AmbGmxCode.keys():
-    if dictOplsAtomType2OplsGmxCode.has_key(ambKey):
+    if ambKey in dictOplsAtomType2OplsGmxCode.keys():
         dictAtomTypeAmb2OplsGmxCode[ambKey] = dictOplsAtomType2OplsGmxCode[ambKey]+list(dictOplsMass[ambKey])
 
 # learnt from 22 residues test.
@@ -427,7 +427,7 @@ def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separa
     # for each time piece, grab the value and remaining seconds, and add it to
     # the time string
     for suffix, length in parts:
-        value = seconds / length
+        value = seconds // length
         if value > 0:
             seconds = seconds % length
             time.append('%s%s' % (str(value),
@@ -446,7 +446,7 @@ def splitBlock(dat):
     count = 0
     for line in dat:
         line = line.rstrip()
-        if dict.has_key(count):
+        if count in dict.keys():
             dict[count].append(line)
         else:
             dict[count] = [line]
@@ -470,7 +470,7 @@ def parseFrcmod(lista):
             continue
         elif line:
             key = line.replace(' -','-').replace('- ','-').split()[0]
-            if dd.has_key(key):
+            if key in dd.keys():
                 if not dd[key].count(line):
                     dd[key].append(line)
             else:
@@ -702,7 +702,7 @@ class AbstractTopol:
                 residues.add(line[17:20])
                 at = line[0:17]
                 cs = line[30:54]
-                if coords.has_key(cs):
+                if cs in coords.keys():
                     coords[cs].append(at)
                 else:
                     coords[cs] = [at]
@@ -1432,8 +1432,8 @@ a        """
         bondCodeList = bondCodeHList + bondCodeNonHList
         bonds = []
         for i in xrange(0, len(bondCodeList), 3):
-            idAtom1 = bondCodeList[i] / 3 # remember python starts with id 0
-            idAtom2 = bondCodeList[i+1] / 3
+            idAtom1 = bondCodeList[i] // 3 # remember python starts with id 0
+            idAtom2 = bondCodeList[i+1] // 3
             bondTypeId = bondCodeList[i+2] - 1
             atom1 = self.atoms[idAtom1]
             atom2 = self.atoms[idAtom2]
@@ -1454,9 +1454,9 @@ a        """
         angleCodeList = angleCodeHList + angleCodeNonHList
         angles = []
         for i in xrange(0, len(angleCodeList), 4):
-            idAtom1 = angleCodeList[i] / 3 # remember python starts with id 0
-            idAtom2 = angleCodeList[i+1] / 3
-            idAtom3 = angleCodeList[i+2] / 3
+            idAtom1 = angleCodeList[i] // 3 # remember python starts with id 0
+            idAtom2 = angleCodeList[i+1] // 3
+            idAtom3 = angleCodeList[i+2] // 3
             angleTypeId = angleCodeList[i+3] - 1
             atom1 = self.atoms[idAtom1]
             atom2 = self.atoms[idAtom2]
@@ -1487,12 +1487,12 @@ a        """
         #atomPairs = []
         atomPairs = set()
         for i in xrange(0, len(dihCodeList), 5):
-            idAtom1 = dihCodeList[i] / 3 # remember python starts with id 0
-            idAtom2 = dihCodeList[i+1] / 3
+            idAtom1 = dihCodeList[i] // 3 # remember python starts with id 0
+            idAtom2 = dihCodeList[i+1] // 3
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
             # in amber are to be ignored; if id4 < 0, dihedral is improper
-            idAtom3raw = dihCodeList[i+2] / 3 # can be negative -> exclude from 1-4vdw
-            idAtom4raw = dihCodeList[i+3] / 3 # can be negative -> Improper
+            idAtom3raw = dihCodeList[i+2] // 3 # can be negative -> exclude from 1-4vdw
+            idAtom4raw = dihCodeList[i+3] // 3 # can be negative -> Improper
             idAtom3 = abs(idAtom3raw)
             idAtom4 = abs(idAtom4raw)
             dihTypeId = dihCodeList[i+4] - 1
@@ -2170,7 +2170,7 @@ a        """
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
             (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
             " ; %4.2f  %1.4f\n" % (r0, epAmber)
-            oline = "; %s:%s:opls_%s: %s\n" % (aTypeName,aTypeNameOpls,oaCode[0],`oaCode[1:]`)
+            oline = "; %s:%s:opls_%s: %s\n" % (aTypeName,aTypeNameOpls,oaCode[0],repr(oaCode[1:]))
             #tmpFile.write(line)
             temp.append(line)
             otemp.append(oline)
