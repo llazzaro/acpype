@@ -263,6 +263,8 @@ USAGE = \
     -e    engine: tleap (default) or sleap (not fully matured)
     -b    a basename for the project (folder and output files)
     -s    max time (in sec) tolerance for mopac, default is 10 hours
+    -y    start ipython interpreter
+    -h    this help
 
     output: assuming 'root' is the basename of either the top input file,
             the 3-letter residue name or user defined (-b option)
@@ -335,7 +337,7 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hftdi:c:n:m:o:a:q:e:k:x:p:b:s:'
+    options = 'hyftdi:c:n:m:o:a:q:e:k:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
@@ -3119,9 +3121,11 @@ if __name__ == '__main__':
     fs = False
     dg = False
     tt = False
+    ip = False
     if '-f' in argsDict.keys(): fs = True
     if '-d' in argsDict.keys(): dg = True
     if '-t' in argsDict.keys(): tt = True
+    if '-y' in argsDict.keys(): ip = True
 
     try:
         if amb2gmx:
@@ -3158,9 +3162,18 @@ if __name__ == '__main__':
         msg = "less than a second"
     else:
         msg = elapsedTime(execTime)
+    print "Total time of execution: %s" % msg
+
+    if ip:
+        from IPython.Shell import IPShellEmbed
+        ipshell = IPShellEmbed(['-prompt_in1','ACPYPE \#> '],
+                                banner='--------Dropping to IPython--------',
+                                exit_msg='--------Leaving IPython--------'
+                              )
+        ipshell()
+
     try: rmtree(molecule.tmpDir)
     except: pass
-    print "Total time of execution: %s" % msg
     if acpypeFailed: sys.exit(1)
 
 
