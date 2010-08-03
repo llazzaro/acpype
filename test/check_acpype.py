@@ -185,6 +185,7 @@ def checkTopOplsVsAmber(res):
         print "!!!!!!", res
 
 def roundAllFloats(lista,l):
+    """Round to 3 decimals"""
     nlista = []
     for ii in lista:
         tt = ii[:l+1]

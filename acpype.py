@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 """
     This code is released under GNU General Public License V3.
 
@@ -26,11 +28,14 @@
 
     If you use this code, I am glad if you cite:
 
+    SOUSA DA SILVA, A. W.; VRANKEN, W. F.; LAUE, E. D.
+    ACPYPE - AnteChamber PYthon Parser interfacE. Manuscript to be submitted.
+
     BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
     Dynamics Simulations Applied to the Study of Subtypes of HIV-1 Protease.
     Cell Biochemistry and Biophysics, 44, 395-404, 2006.
 
-    Alan Wilter S. da Silva, D.Sc. - CCPN Research Associate
+    Alan Wilter Sousa da Silva, D.Sc. - CCPN Research Associate
     Department of Biochemistry, University of Cambridge.
     80 Tennis Court Road, Cambridge CB2 1GA, UK.
     >>http://www.bio.cam.ac.uk/~awd28<<
@@ -38,15 +43,15 @@
     alanwilter _at_ gmail _dot_ com
 """
 svnId = '$Id$'
-try: svnRev,svnDate,svnTime = svnId.split()[2:5]
-except: svnRev,svnDate,svnTime = '0','0','0'
-tag ="%s %s Rev: %s" % (svnDate, svnTime, svnRev)
+try: svnRev, svnDate, svnTime = svnId.split()[2:5]
+except: svnRev, svnDate, svnTime = '0', '0', '0'
+tag = "%s %s Rev: %s" % (svnDate, svnTime, svnRev)
 
 lineHeader = \
 '''
 | ACPYPE: AnteChamber PYthon Parser interfacE v. %s (c) 2008-2009 AWSdS |
 ''' % tag
-frameLine = (len(lineHeader) -2) * '='
+frameLine = (len(lineHeader) - 2) * '='
 header = '%s%s%s' % (frameLine, lineHeader, frameLine)
 
 #    TODO:
@@ -54,7 +59,7 @@ header = '%s%s%s' % (frameLine, lineHeader, frameLine)
 #        Howto build topology for a modified amino acid
 #        CYANA topology files
 
-from commands import getoutput
+#from commands import getoutput
 from datetime import datetime
 from shutil import copy2
 from shutil import rmtree
@@ -64,8 +69,9 @@ import time
 import getopt
 import math
 import os
-import cPickle as pickle
-import string
+#import cPickle as pickle
+import pickle
+#import string
 import sys
 import subprocess as sub
 
@@ -89,92 +95,92 @@ qConv = 18.222281775 #18.2223
 radPi = 57.295780 # 180/Pi
 maxDist = 3.0
 minDist = 0.5
-maxDist2 = maxDist**2 #squared Ang.
-minDist2 = minDist**2 #squared Ang.
+maxDist2 = maxDist ** 2 #squared Ang.
+minDist2 = minDist ** 2 #squared Ang.
 
 dictAmbAtomType2AmbGmxCode = \
-{'BR':'1','C':'2','CA':'3','CB':'4','CC':'5','CK':'6','CM':'7','CN':'8','CQ':'9',
- 'CR':'10','CT':'11','CV':'12','CW':'13','C*':'14','Ca':'15','F':'16','H':'17',
- 'HC':'18','H1':'19','H2':'20','H3':'21','HA':'22','H4':'23','H5':'24','HO':'25',
- 'HS':'26','HW':'27','HP':'28','I':'29','Cl':'30','Na':'31','IB':'32','Mg':'33',
- 'N':'34','NA':'35','NB':'36','NC':'37','N2':'38','N3':'39','N*':'40','O':'41',
- 'OW':'42','OH':'43','OS':'44','O2':'45','P':'46','S':'47','SH':'48','CU':'49',
- 'FE':'50','K':'51','Rb':'52','Cs':'53','Li':'56','Zn':'57','Sr':'58','Ba':'59',
- 'MCH3A':'MCH3A','MCH3B':'MCH3B','MNH2':'MNH2','MNH3':'MNH3','MW':'MW'}
+{'BR':'1', 'C':'2', 'CA':'3', 'CB':'4', 'CC':'5', 'CK':'6', 'CM':'7', 'CN':'8', 'CQ':'9',
+ 'CR':'10', 'CT':'11', 'CV':'12', 'CW':'13', 'C*':'14', 'Ca':'15', 'F':'16', 'H':'17',
+ 'HC':'18', 'H1':'19', 'H2':'20', 'H3':'21', 'HA':'22', 'H4':'23', 'H5':'24', 'HO':'25',
+ 'HS':'26', 'HW':'27', 'HP':'28', 'I':'29', 'Cl':'30', 'Na':'31', 'IB':'32', 'Mg':'33',
+ 'N':'34', 'NA':'35', 'NB':'36', 'NC':'37', 'N2':'38', 'N3':'39', 'N*':'40', 'O':'41',
+ 'OW':'42', 'OH':'43', 'OS':'44', 'O2':'45', 'P':'46', 'S':'47', 'SH':'48', 'CU':'49',
+ 'FE':'50', 'K':'51', 'Rb':'52', 'Cs':'53', 'Li':'56', 'Zn':'57', 'Sr':'58', 'Ba':'59',
+ 'MCH3A':'MCH3A', 'MCH3B':'MCH3B', 'MNH2':'MNH2', 'MNH3':'MNH3', 'MW':'MW'}
 
 dictOplsAtomType2OplsGmxCode = \
-{'Ac3+':['697'],'Am3+':['699'],'Ar':['Ar','097'],'Ba2+':['414'],
- 'Br':['722','730'],'Br-':['402'],
- 'CT':['064','076','122','135','136','137','138','139','148','149','152','157','158','159','161','173','174','175','181','182','183','184','206','207','208','209','210','211','212','213','214','215','216','217','218','219','220','223','224','225','229','230','242','243','244','256','257','258','259','273','274','275','276','291','292','293','294','297','305','306','307','308','331','371','373','375','391','396','421','431','443','448','453','455','458','461','468','476','482','484','486','490','491','492','498','499','505','515','516','645','670','671','672','673','674','675','676','677','678','679','680','681','701','725','747','748','755','756','757','758','762','764','765','766','774','775','776','782','783','903','904','905','906','907','908','912','913','914','915','942','943','944','945','951','957','959','960','961','962','963','964'],
- 'CA':['053','145','147','166','199','221','228','260','263','266','302','312','315','317','336','351','362','380','457','460','463','472','488','521','522','523','528','532','533','538','539','551','582','590','591','592','593','604','605','606','607','608','609','610','611','612','625','644','647','648','649','650','651','652','714','716','718','720','724','727','729','731','735','736','737','738','739','742','752','768','916','917','918'],
- 'C3':['007','010','036','039','063','065','067','068','069','070','080','088','090','092','096','106','107','109','126','132','415','418','425','429'],
- 'C':['001','017','026','058','095','131','231','234','235','247','252','267','320','322','334','366','378','470','471','772','952'],
- 'C2':['005','009','015','016','019','022','027','028','031','034','037','056','057','061','071','081','089','091','093','110'],
- 'CT_2':['223B','224B','225B','246','283','284','285','292B','293B','295','298','299','906B','912B'],
- 'CM':['141','142','143','227','323','324','337','338','381','382','517','518','708'],
- 'CW':['508','514','543','552','561','567','575','583','588','637'],
- 'CB':['050','349','350','364','365','501','595','623','624'],
- 'CH':['006','008','014','025','029','030','060','073'],
- 'CZ':['261','423','754','925','927','928','929','931'],
- 'CO':['189','191','193','195','197','198'],
- 'C_2':['232','233','277','280','465'],
- 'CR':['506','509','558','572','634'],
- 'CQ':['347','531','621','642'],
- 'CV':['507','560','574','636'],
- 'CY':['711','712','713','733'],
- 'CS':['544','568','589'],
- 'CK':['353','627'],'CN':['502','594'],'CP':['043','048'],'CU':['550','581'],
- 'CT_3':['245','296'],'C=':['150','178'],'CD':['011','075'],
- 'C4':['066'],'C7':['077'],'C8':['074'],'C9':['072'],'CX':['510'],
- 'C!':['145B'],'C*':['500'],'C+':['700'],'C_3':['271'],
- 'CC':['045'],'CF':['044'],'CG':['049'],'CT_4':['160'],
+{'Ac3+':['697'], 'Am3+':['699'], 'Ar':['Ar', '097'], 'Ba2+':['414'],
+ 'Br':['722', '730'], 'Br-':['402'],
+ 'CT':['064', '076', '122', '135', '136', '137', '138', '139', '148', '149', '152', '157', '158', '159', '161', '173', '174', '175', '181', '182', '183', '184', '206', '207', '208', '209', '210', '211', '212', '213', '214', '215', '216', '217', '218', '219', '220', '223', '224', '225', '229', '230', '242', '243', '244', '256', '257', '258', '259', '273', '274', '275', '276', '291', '292', '293', '294', '297', '305', '306', '307', '308', '331', '371', '373', '375', '391', '396', '421', '431', '443', '448', '453', '455', '458', '461', '468', '476', '482', '484', '486', '490', '491', '492', '498', '499', '505', '515', '516', '645', '670', '671', '672', '673', '674', '675', '676', '677', '678', '679', '680', '681', '701', '725', '747', '748', '755', '756', '757', '758', '762', '764', '765', '766', '774', '775', '776', '782', '783', '903', '904', '905', '906', '907', '908', '912', '913', '914', '915', '942', '943', '944', '945', '951', '957', '959', '960', '961', '962', '963', '964'],
+ 'CA':['053', '145', '147', '166', '199', '221', '228', '260', '263', '266', '302', '312', '315', '317', '336', '351', '362', '380', '457', '460', '463', '472', '488', '521', '522', '523', '528', '532', '533', '538', '539', '551', '582', '590', '591', '592', '593', '604', '605', '606', '607', '608', '609', '610', '611', '612', '625', '644', '647', '648', '649', '650', '651', '652', '714', '716', '718', '720', '724', '727', '729', '731', '735', '736', '737', '738', '739', '742', '752', '768', '916', '917', '918'],
+ 'C3':['007', '010', '036', '039', '063', '065', '067', '068', '069', '070', '080', '088', '090', '092', '096', '106', '107', '109', '126', '132', '415', '418', '425', '429'],
+ 'C':['001', '017', '026', '058', '095', '131', '231', '234', '235', '247', '252', '267', '320', '322', '334', '366', '378', '470', '471', '772', '952'],
+ 'C2':['005', '009', '015', '016', '019', '022', '027', '028', '031', '034', '037', '056', '057', '061', '071', '081', '089', '091', '093', '110'],
+ 'CT_2':['223B', '224B', '225B', '246', '283', '284', '285', '292B', '293B', '295', '298', '299', '906B', '912B'],
+ 'CM':['141', '142', '143', '227', '323', '324', '337', '338', '381', '382', '517', '518', '708'],
+ 'CW':['508', '514', '543', '552', '561', '567', '575', '583', '588', '637'],
+ 'CB':['050', '349', '350', '364', '365', '501', '595', '623', '624'],
+ 'CH':['006', '008', '014', '025', '029', '030', '060', '073'],
+ 'CZ':['261', '423', '754', '925', '927', '928', '929', '931'],
+ 'CO':['189', '191', '193', '195', '197', '198'],
+ 'C_2':['232', '233', '277', '280', '465'],
+ 'CR':['506', '509', '558', '572', '634'],
+ 'CQ':['347', '531', '621', '642'],
+ 'CV':['507', '560', '574', '636'],
+ 'CY':['711', '712', '713', '733'],
+ 'CS':['544', '568', '589'],
+ 'CK':['353', '627'], 'CN':['502', '594'], 'CP':['043', '048'], 'CU':['550', '581'],
+ 'CT_3':['245', '296'], 'C=':['150', '178'], 'CD':['011', '075'],
+ 'C4':['066'], 'C7':['077'], 'C8':['074'], 'C9':['072'], 'CX':['510'],
+ 'C!':['145B'], 'C*':['500'], 'C+':['700'], 'C_3':['271'],
+ 'CC':['045'], 'CF':['044'], 'CG':['049'], 'CT_4':['160'],
  'Ca2+':['412'],
- 'Cl':['123','151','226','264'],
- 'Cl-':['401','709'],
- 'Cs+':['410'],'Cu2+':['Cu2+'],'Eu3+':['705'],
- 'F':['164','719','721','726','728','786','956','965'],
- 'F-':['400'],'Fe2+':['Fe2+'],'Gd3+':['706'],
- 'HA':['146','316','318','389','524','525','526','529','534','535','536','540','541','546','547','554','555','556','563','564','565','569','570','576','577','578','584','585','586','597','598','599','600','601','602','613','614','615','616','617','618','619','629','630','631','638','639','640','643','653','654','655','656','715','717','740','741','746'],
- 'HC':['140','144','153','156','165','176','185','190','192','194','196','255','279','282','329','330','332','344','372','374','376','392','416','419','422','426','430','432','444','449','454','456','459','462','469','477','483','485','487','702','710','759','763','777','778','779','784','911','926','930','950','958'],
- 'H':['004','013','041','047','128','240','241','250','254','314','325','327','339','342','343','357','358','360','367','369','383','385','387','388','428','479','481','504','513','545','553','562','596','632','744','745','909','910'],
- 'H3':['021','052','055','104','105','289','290','301','304','310','941','955'],
- 'HO':['024','079','155','163','168','170','172','188','270','435'],
- 'HS':['033','086','087','204','205'],
- 'HW':['112','114','117','119','796'],
- 'H4':['345','390'],'H5':['355','359'],
- 'He':['130'],'I':['732'],'I-':['403'],'K+':['408'],'Kr':['098'],
- 'LP':['433','797'],'La3+':['703'],'Li+':['404','406'],
- 'MCH3A':['MCH3A'],'MCH3B':['MCH3B'],'MNH2':['MNH2'],'MNH3':['MNH3'],
- 'MW':['MW','115'],'Mg2+':['411'],
- 'NA':['040','046','319','321','333','354','361','377','379','503','512','542','548','557','587','628'],
- 'NC':['311','335','346','348','363','520','527','530','537','603','620','622','641','646'],
- 'N':['003','012','094','237','238','239','249','251','265','478','480','787'],
- 'N3':['020','101','102','103','286','287','288','309','427','940','953'],
- 'N2':['051','054','300','303','313','341','356','368','386','743'],
- 'NB':['042','352','511','549','559','573','580','626','635'],
- 'N*':['319B','333B','354B','377B'],
- 'NT':['127','900','901','902'],
- 'NZ':['262','424','750','753'],
- 'NO':['760','767'],'NY':['749','751'],
- 'Na+':['405','407'],'Nd3+':['704'],'Ne':['129'],
- 'OS':['062','108','179','180','186','395','442','447','452','467','473','566','571','579','773'],
- 'O':['002','059','236','248','253','326','328','340','370','384','771','788'],
- 'OH':['023','078','154','162','167','169','171','187','268','420','434'],
- 'O2':['018','125','272','394','441','446','451','954'],
- 'OW':['111','113','116','118','795'],
- 'O_2':['278','281','466'],
- 'OY':['475','494','497'],
- 'OL':['120'],'ON':['761'],'OU':['437'],'O_3':['269'],
- 'P':['393','440','445','450','785'],
- 'P+':['781'],'Rb+':['409'],
- 'S':['035','038','084','085','124','202','203','222','633'],
- 'SH':['032','082','083','200','201','417','734'],
- 'SI':['SI'],'SY':['474'],'SY2':['493'],'SZ':['496'],'Sr2+':['413'],
- 'Th4+':['698'],'U':['436'],'Xe':['099'],'Yb3+':['707'],'Zn2+':['Zn2+']}
+ 'Cl':['123', '151', '226', '264'],
+ 'Cl-':['401', '709'],
+ 'Cs+':['410'], 'Cu2+':['Cu2+'], 'Eu3+':['705'],
+ 'F':['164', '719', '721', '726', '728', '786', '956', '965'],
+ 'F-':['400'], 'Fe2+':['Fe2+'], 'Gd3+':['706'],
+ 'HA':['146', '316', '318', '389', '524', '525', '526', '529', '534', '535', '536', '540', '541', '546', '547', '554', '555', '556', '563', '564', '565', '569', '570', '576', '577', '578', '584', '585', '586', '597', '598', '599', '600', '601', '602', '613', '614', '615', '616', '617', '618', '619', '629', '630', '631', '638', '639', '640', '643', '653', '654', '655', '656', '715', '717', '740', '741', '746'],
+ 'HC':['140', '144', '153', '156', '165', '176', '185', '190', '192', '194', '196', '255', '279', '282', '329', '330', '332', '344', '372', '374', '376', '392', '416', '419', '422', '426', '430', '432', '444', '449', '454', '456', '459', '462', '469', '477', '483', '485', '487', '702', '710', '759', '763', '777', '778', '779', '784', '911', '926', '930', '950', '958'],
+ 'H':['004', '013', '041', '047', '128', '240', '241', '250', '254', '314', '325', '327', '339', '342', '343', '357', '358', '360', '367', '369', '383', '385', '387', '388', '428', '479', '481', '504', '513', '545', '553', '562', '596', '632', '744', '745', '909', '910'],
+ 'H3':['021', '052', '055', '104', '105', '289', '290', '301', '304', '310', '941', '955'],
+ 'HO':['024', '079', '155', '163', '168', '170', '172', '188', '270', '435'],
+ 'HS':['033', '086', '087', '204', '205'],
+ 'HW':['112', '114', '117', '119', '796'],
+ 'H4':['345', '390'], 'H5':['355', '359'],
+ 'He':['130'], 'I':['732'], 'I-':['403'], 'K+':['408'], 'Kr':['098'],
+ 'LP':['433', '797'], 'La3+':['703'], 'Li+':['404', '406'],
+ 'MCH3A':['MCH3A'], 'MCH3B':['MCH3B'], 'MNH2':['MNH2'], 'MNH3':['MNH3'],
+ 'MW':['MW', '115'], 'Mg2+':['411'],
+ 'NA':['040', '046', '319', '321', '333', '354', '361', '377', '379', '503', '512', '542', '548', '557', '587', '628'],
+ 'NC':['311', '335', '346', '348', '363', '520', '527', '530', '537', '603', '620', '622', '641', '646'],
+ 'N':['003', '012', '094', '237', '238', '239', '249', '251', '265', '478', '480', '787'],
+ 'N3':['020', '101', '102', '103', '286', '287', '288', '309', '427', '940', '953'],
+ 'N2':['051', '054', '300', '303', '313', '341', '356', '368', '386', '743'],
+ 'NB':['042', '352', '511', '549', '559', '573', '580', '626', '635'],
+ 'N*':['319B', '333B', '354B', '377B'],
+ 'NT':['127', '900', '901', '902'],
+ 'NZ':['262', '424', '750', '753'],
+ 'NO':['760', '767'], 'NY':['749', '751'],
+ 'Na+':['405', '407'], 'Nd3+':['704'], 'Ne':['129'],
+ 'OS':['062', '108', '179', '180', '186', '395', '442', '447', '452', '467', '473', '566', '571', '579', '773'],
+ 'O':['002', '059', '236', '248', '253', '326', '328', '340', '370', '384', '771', '788'],
+ 'OH':['023', '078', '154', '162', '167', '169', '171', '187', '268', '420', '434'],
+ 'O2':['018', '125', '272', '394', '441', '446', '451', '954'],
+ 'OW':['111', '113', '116', '118', '795'],
+ 'O_2':['278', '281', '466'],
+ 'OY':['475', '494', '497'],
+ 'OL':['120'], 'ON':['761'], 'OU':['437'], 'O_3':['269'],
+ 'P':['393', '440', '445', '450', '785'],
+ 'P+':['781'], 'Rb+':['409'],
+ 'S':['035', '038', '084', '085', '124', '202', '203', '222', '633'],
+ 'SH':['032', '082', '083', '200', '201', '417', '734'],
+ 'SI':['SI'], 'SY':['474'], 'SY2':['493'], 'SZ':['496'], 'Sr2+':['413'],
+ 'Th4+':['698'], 'U':['436'], 'Xe':['099'], 'Yb3+':['707'], 'Zn2+':['Zn2+']}
 
 # reverse dictOplsAtomType2OplsGmxCode
 oplsCode2AtomTypeDict = {}
-for k,v in dictOplsAtomType2OplsGmxCode.items():
+for k, v in list(dictOplsAtomType2OplsGmxCode.items()):
     for code in v:
         oplsCode2AtomTypeDict[code] = k
 #        if code in oplsCode2AtomTypeDict.keys():
@@ -183,11 +189,11 @@ for k,v in dictOplsAtomType2OplsGmxCode.items():
 #            oplsCode2AtomTypeDict[code] = [k]
 
 # Cross dictAmbAtomType2AmbGmxCode with dictOplsAtomType2OplsGmxCode & add H1,HP,H2
-dictAtomTypeAmb2OplsGmxCode = {'H1':['140','1.00800'],'HP':['140','1.00800'],'H2':['140','1.00800']}
+dictAtomTypeAmb2OplsGmxCode = {'H1':['140', '1.00800'], 'HP':['140', '1.00800'], 'H2':['140', '1.00800']}
 dictOplsMass = {'SY2': ['32.06000'], 'Zn2+': ['65.37000'], 'CQ': ['12.01100'], 'CP': ['12.01100'], 'Nd3+': ['144.24000'], 'Br-': ['79.90400'], 'Cu2+': ['63.54600'], 'Br': ['79.90400'], 'H': ['1.00800'], 'P': ['30.97376'], 'Sr2+': ['87.62000'], 'ON': ['15.99940'], 'OL': ['0.00000'], 'OH': ['15.99940'], 'OY': ['15.99940'], 'OW': ['15.99940'], 'OU': ['15.99940'], 'OS': ['15.99940'], 'Am3+': ['243.06000'], 'HS': ['1.00800'], 'HW': ['1.00800'], 'HO': ['1.00800'], 'HC': ['1.00800'], 'HA': ['1.00800'], 'O2': ['15.99940'], 'Ca2+': ['40.08000'], 'Th4+': ['232.04000'], 'He': ['4.00260'], 'C': ['12.01100'], 'Cs+': ['132.90540'], 'O': ['15.99940'], 'Gd3+': ['157.25000'], 'S': ['32.06000'], 'P+': ['30.97376'], 'La3+': ['138.91000'], 'H3': ['1.00800'], 'H4': ['1.00800'], 'MNH2': ['0.00000'], 'MW': ['0.00000'], 'NB': ['14.00670'], 'K+': ['39.09830'], 'Ne': ['20.17970'], 'Rb+': ['85.46780'], 'C+': ['12.01100'], 'C*': ['12.01100'], 'NO': ['14.00670'], 'CT_4': ['12.01100'], 'NA': ['14.00670'], 'C!': ['12.01100'], 'NC': ['14.00670'], 'NZ': ['14.00670'], 'CT_2': ['12.01100'], 'CT_3': ['12.01100'], 'NY': ['14.00670'], 'C9': ['14.02700'], 'C8': ['13.01900'], 'C=': ['12.01100'], 'Yb3+': ['173.04000'], 'C3': ['15.03500', '12.01100'], 'C2': ['14.02700'], 'C7': ['12.01100'], 'C4': ['16.04300'], 'CK': ['12.01100'], 'Cl-': ['35.45300'], 'N*': ['14.00670'], 'CH': ['13.01900'], 'CO': ['12.01100'], 'CN': ['12.01100'], 'CM': ['12.01100'], 'F': ['18.99840'], 'CC': ['12.01100'], 'CB': ['12.01100'], 'CA': ['12.01100'], 'CG': ['12.01100'], 'CF': ['12.01100'], 'N': ['14.00670'], 'CZ': ['12.01100'], 'CY': ['12.01100'], 'CX': ['12.01100'], 'Ac3+': ['227.03000'], 'CS': ['12.01100'], 'CR': ['12.01100'], 'N2': ['14.00670'], 'N3': ['14.00670'], 'CW': ['12.01100'], 'CV': ['12.01100'], 'CU': ['12.01100'], 'CT': ['12.01100'], 'SZ': ['32.06000'], 'SY': ['32.06000'], 'Cl': ['35.45300'], 'NT': ['14.00670'], 'O_2': ['15.99940'], 'Xe': ['131.29300'], 'SI': ['28.08000'], 'SH': ['32.06000'], 'Eu3+': ['151.96000'], 'F-': ['18.99840'], 'MNH3': ['0.00000'], 'H5': ['1.00800'], 'C_3': ['12.01100'], 'C_2': ['12.01100'], 'I-': ['126.90450'], 'LP': ['0.00000'], 'I': ['126.90450'], 'Na+': ['22.98977'], 'Li+': ['6.94100'], 'U': ['0.00000'], 'MCH3A': ['0.00000'], 'MCH3B': ['0.00000'], 'CD': ['13.01900', '12.01100'], 'O_3': ['15.99940'], 'Kr': ['83.79800'], 'Fe2+': ['55.84700'], 'Ar': ['39.94800'], 'Mg2+': ['24.30500'], 'Ba2+': ['137.33000']}
-for ambKey in dictAmbAtomType2AmbGmxCode.keys():
-    if ambKey in dictOplsAtomType2OplsGmxCode.keys():
-        dictAtomTypeAmb2OplsGmxCode[ambKey] = dictOplsAtomType2OplsGmxCode[ambKey]+list(dictOplsMass[ambKey])
+for ambKey in list(dictAmbAtomType2AmbGmxCode.keys()):
+    if ambKey in list(dictOplsAtomType2OplsGmxCode.keys()):
+        dictAtomTypeAmb2OplsGmxCode[ambKey] = dictOplsAtomType2OplsGmxCode[ambKey] + list(dictOplsMass[ambKey])
 
 # learnt from 22 residues test.
 dictAtomTypeAmb2OplsGmxCode = {'HS': ['204', '1.008'], 'HP': ['140', '1.008'], 'HO': ['155', '168', '1.008'], 'HC': ['140', '1.008'], 'HA': ['146', '1.008'], 'O2': ['272', '15.9994'], 'C*': ['500', '12.011'], 'NA': ['503', '512', '14.0067'], 'NB': ['511', '14.0067'], 'CB': ['501', '12.011'], 'C': ['235', '271', '12.011'], 'CN': ['502', '12.011'], 'CM': ['302', '12.011'], 'CC': ['507', '508', '510', '12.011'], 'H': ['240', '241', '290', '301', '304', '310', '504', '513', '1.008'], 'CA': ['145', '166', '12.011'], 'O': ['236', '15.9994'], 'N': ['237', '238', '239', '14.0067'], 'S': ['202', '32.06'], 'CR': ['506', '509', '12.011'], 'N2': ['300', '303', '14.0067'], 'N3': ['287', '309', '14.0067'], 'CW': ['508', '510', '514', '12.011'], 'CV': ['507', '12.011'], 'CT': ['135', '136', '137', '149', '157', '158', '206', '209', '210', '223B', '224B', '245', '246', '274', '283', '284', '285', '292', '292B', '293B', '296', '307', '308', '505', '12.011'], 'OH': ['154', '167', '15.9994'], 'H1': ['140', '1.008'], 'H4': ['146', '1.008'], 'H5': ['146', '1.008'], 'SH': ['200', '32.06']}
@@ -209,14 +215,14 @@ atomTypeAmber2oplsDict = {'HS': ['HS'], 'HP': ['HC'], 'HO': ['HO'], 'HC': ['HC']
 a2oD = {'amber99_2': ['opls_235', 'opls_271'],
         'amber99_3': ['opls_302', 'opls_145'],
         'amber99_5': ['opls_507', 'opls_508', 'opls_510'],
-        'amber99_11': ['opls_209','opls_158','opls_283','opls_223B','opls_293B',
-                       'opls_284','opls_292B','opls_274','opls_136','opls_135',
-                       'opls_292','opls_157','opls_206','opls_137','opls_505',
-                       'opls_224B','opls_307','opls_308','opls_210','opls_149'],
+        'amber99_11': ['opls_209', 'opls_158', 'opls_283', 'opls_223B', 'opls_293B',
+                       'opls_284', 'opls_292B', 'opls_274', 'opls_136', 'opls_135',
+                       'opls_292', 'opls_157', 'opls_206', 'opls_137', 'opls_505',
+                       'opls_224B', 'opls_307', 'opls_308', 'opls_210', 'opls_149'],
         'amber99_13': ['opls_514'],
         'amber99_14': ['opls_500'],
-        'amber99_17': ['opls_504','opls_241','opls_240','opls_290','opls_301',
-                       'opls_310','opls_304','opls_513'],
+        'amber99_17': ['opls_504', 'opls_241', 'opls_240', 'opls_290', 'opls_301',
+                       'opls_310', 'opls_304', 'opls_513'],
         'amber99_18': ['opls_140'],
         'amber99_19': ['opls_140'],
         'amber99_22': ['opls_146'],
@@ -239,7 +245,7 @@ a2oD = {'amber99_2': ['opls_235', 'opls_271'],
 global pid
 pid = 0
 
-head = "%s created by acpype (Rev: "+svnRev+") on %s\n"
+head = "%s created by acpype (Rev: " + svnRev + ") on %s\n"
 
 date = datetime.now().ctime()
 
@@ -262,7 +268,7 @@ USAGE = \
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
     -b    a basename for the project (folder and output files)
-    -s    max time (in sec) tolerance for mopac, default is 10 hours
+    -s    max time (in sec) tolerance for sqm/mopac, default is 10 hours
     -y    start ipython interpreter
     -h    this help
 
@@ -315,14 +321,16 @@ quit
 
 def invalidArgs(text = None, usage = True):
 
-    if usage: print USAGE
+    if usage: print(USAGE)
     if text:
-        print 'ERROR: ' + text
+        print('ERROR: ' + text)
     sys.exit(1)
 
-verNum = string.split(sys.version)[0]
-version = string.split(verNum, ".")
-if map(int, version) < [2, 4, 0]:
+#verNum = string.split(sys.version)[0]
+verNum = sys.version.split()[0]
+version = verNum.split('.') #string.split(verNum, ".")
+verList = list(map(int, version))
+if verList < [2, 4, 0]:
     invalidArgs(text = "Python version %s\n       Sorry, you need python 2.4 or higher" % verNum, usage = False)
 
 try:
@@ -343,13 +351,13 @@ def parseArgs(args):
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
-    qList = ['mopac','sqm','divcon']
+    qList = ['mopac', 'sqm', 'divcon']
 
     if '-h' in args:
         invalidArgs()
     try:
         opt_list, args = getopt.getopt(args, options) #, long_options)
-    except Exception, msg:
+    except Exception as msg:
         invalidArgs("FAILED: %s" % msg)
 
     d = {}
@@ -366,34 +374,34 @@ def parseArgs(args):
     if not d and not args:
         invalidArgs("missing parameters")
 
-    if '-c' in d.keys():
+    if '-c' in list(d.keys()):
         if d['-c'] not in ctList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-c'], str(ctList)))
 
-    if '-a' in d.keys():
+    if '-a' in list(d.keys()):
         if d['-a'] not in atList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-a'], str(atList)))
 
-    if '-o' in d.keys():
+    if '-o' in list(d.keys()):
         if d['-o'] not in tpList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-o'], str(tpList)))
 
-    if '-e' in d.keys():
+    if '-e' in list(d.keys()):
         if d['-e'] not in enList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-e'], str(enList)))
 
-    if '-q' in d.keys():
+    if '-q' in list(d.keys()):
         if d['-q'] not in qList:
             invalidArgs("'%s' not valid, has to be one of %s" % (d['-q'], str(qList)))
 
-    if not '-i' in d.keys():
+    if not '-i' in list(d.keys()):
         amb2gmx = True
-        if not '-p' in d.keys() or not '-x' in d.keys():
+        if not '-p' in list(d.keys()) or not '-x' in list(d.keys()):
             invalidArgs("missing input files")
 
-    if '-i' in d.keys() and '-p' in d.keys():
+    if '-i' in list(d.keys()) and '-p' in list(d.keys()):
         invalidArgs("either '-i' or ('-p', '-x'), but not both")
-    elif '-i' in d.keys() and '-x' in d.keys():
+    elif '-i' in list(d.keys()) and '-x' in list(d.keys()):
         invalidArgs("either '-i' or ('-p', '-x'), but not both")
 
     if amb2gmx:
@@ -403,13 +411,13 @@ def parseArgs(args):
         invalidArgs("input file '%s' doesn't exist" % d['-i'])
 
     if args:
-        invalidArgs("argument not recognised: %s" %str(args))
+        invalidArgs("argument not recognised: %s" % str(args))
 
     d['amb2gmx'] = amb2gmx
 
     return d
 
-def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separator=' '):
+def elapsedTime(seconds, suffixes = ['y', 'w', 'd', 'h', 'm', 's'], add_s = False, separator = ' '):
     """
     Takes an amount of seconds and turns it into a human-readable amount of time.
     """
@@ -448,7 +456,7 @@ def splitBlock(dat):
     count = 0
     for line in dat:
         line = line.rstrip()
-        if count in dict.keys():
+        if count in list(dict.keys()):
             dict[count].append(line)
         else:
             dict[count] = [line]
@@ -457,7 +465,7 @@ def splitBlock(dat):
     return dict
 
 def getParCode(line):
-    key = line.replace(' -','-').replace('- ','-').split()[0]
+    key = line.replace(' -', '-').replace('- ', '-').split()[0]
     return key
 
 def parseFrcmod(lista):
@@ -471,14 +479,14 @@ def parseFrcmod(lista):
             dd = {}
             continue
         elif line:
-            key = line.replace(' -','-').replace('- ','-').split()[0]
-            if key in dd.keys():
+            key = line.replace(' -', '-').replace('- ', '-').split()[0]
+            if key in list(dd.keys()):
                 if not dd[key].count(line):
                     dd[key].append(line)
             else:
                 dd[key] = [line]
-            dict[head]= dd
-    for k in dict.keys():
+            dict[head] = dd
+    for k in list(dict.keys()):
         if not dict[k]: dict.pop(k)
     return dict
 
@@ -489,9 +497,9 @@ def parmMerge(fdat1, fdat2, frcmod = False):
         name2 = os.path.basename(fdat2).split('.')[1]
     else:
         name2 = os.path.basename(fdat2).split('.dat')[0]
-    mname = '/tmp/'+name1+name2+'.dat'
-    mdatFile = open(mname,'w')
-    mdat = ['merged %s %s' % (name1,name2)]
+    mname = '/tmp/' + name1 + name2 + '.dat'
+    mdatFile = open(mname, 'w')
+    mdat = ['merged %s %s' % (name1, name2)]
 
     #if os.path.exists(mname): return mname
     dat1 = splitBlock(file(fdat1).readlines())
@@ -499,12 +507,12 @@ def parmMerge(fdat1, fdat2, frcmod = False):
     if frcmod:
         dHeads = {'MASS':0, 'BOND':1, 'ANGL':2, 'DIHE':3, 'IMPR':4, 'HBON':5, 'NONB':7}
         dat2 = parseFrcmod(file(fdat2).readlines()) # dict
-        for k in dat2.keys():
-            for parEntry in dat2[k].keys():
+        for k in list(dat2.keys()):
+            for parEntry in list(dat2[k].keys()):
                 idFirst = None
                 for line in dat1[dHeads[k]][:]:
                     if line:
-                        key = line.replace(' -','-').replace('- ','-').split()[0]
+                        key = line.replace(' -', '-').replace('- ', '-').split()[0]
                         if key == parEntry:
                             if not idFirst: idFirst = dat1[dHeads[k]].index(line)
                             dat1[dHeads[k]].remove(line)
@@ -512,20 +520,20 @@ def parmMerge(fdat1, fdat2, frcmod = False):
                 rev.reverse()
                 if idFirst == None: idFirst = 0
                 for ll in rev:
-                    if dHeads[k] in [0,1,7]: # MASS has title in index 0 and so BOND, NONB
-                        dat1[dHeads[k]].insert(idFirst+1,ll)
+                    if dHeads[k] in [0, 1, 7]: # MASS has title in index 0 and so BOND, NONB
+                        dat1[dHeads[k]].insert(idFirst + 1, ll)
                     else:
-                        dat1[dHeads[k]].insert(idFirst,ll)
+                        dat1[dHeads[k]].insert(idFirst, ll)
         dat1[0][0] = mdat[0]
-        for k in dat1.keys():
+        for k in list(dat1.keys()):
             for line in dat1[k]:
-                mdatFile.write(line+'\n')
+                mdatFile.write(line + '\n')
         return mname
 
     dat2 = splitBlock(file(fdat2).readlines())
-    for k in dat1.keys()[:8]:
+    for k in list(dat1.keys())[:8]:
         if k == 0:
-            lines = dat1[k][1:-1]+dat2[k][1:-1]+['']
+            lines = dat1[k][1:-1] + dat2[k][1:-1] + ['']
             for line in lines:
                 mdat.append(line)
         if k == 1:
@@ -543,30 +551,36 @@ def parmMerge(fdat1, fdat2, frcmod = False):
             for item in l1 + l2:
                 line += item.strip() + ' '
             mdat.append(line)
-            lines = dat1[k][id1:-1]+dat2[k][id2:-1]+['']
+            lines = dat1[k][id1:-1] + dat2[k][id2:-1] + ['']
             for line in lines:
                 mdat.append(line)
-        if k in [2,3,4,5,6]: # angles, p dih, imp dih
-            lines = dat1[k][:-1]+dat2[k][:-1]+['']
+        if k in [2, 3, 4, 5, 6]: # angles, p dih, imp dih
+            lines = dat1[k][:-1] + dat2[k][:-1] + ['']
             for line in lines:
                 mdat.append(line)
         if k == 7:
-            lines = dat1[k][:-1]+dat2[k][1:-1]+['']
+            lines = dat1[k][:-1] + dat2[k][1:-1] + ['']
             for line in lines:
                 mdat.append(line)
-    for k in dat1.keys()[8:]:
+    for k in list(dat1.keys())[8:]:
         for line in dat1[k]:
             mdat.append(line)
-    for k in dat2.keys()[9:]:
+    for k in list(dat2.keys())[9:]:
         for line in dat2[k]:
             mdat.append(line)
     for line in mdat:
-        mdatFile.write(line+'\n')
+        mdatFile.write(line + '\n')
     mdatFile.close()
 
     return mname
 
-class AbstractTopol:
+def _getoutput(cmd):
+    '''to simulate commands.getoutput in order to work with python 2.6 up to 3.x'''
+    out = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE).communicate()[0][:-1]
+    o = str(out.decode())
+    return o
+
+class AbstractTopol(object):
     """
         Super class to build topologies
     """
@@ -576,21 +590,21 @@ class AbstractTopol:
 
     def printDebug(self, text = ''):
         if self.debug:
-            print 'DEBUG: %s' % text
+            print('DEBUG: %s' % text)
 
     def printWarn(self, text = ''):
-        print 'WARNING: %s' % text
+        print('WARNING: %s' % text)
 
     def printError(self, text = ''):
-        print 'ERROR: %s' % text
+        print('ERROR: %s' % text)
 
     def printMess(self, text = ''):
-        print '==> %s' % text
+        print('==> %s' % text)
 
     def printQuoted(self, text = ''):
-        print 10 * '+' + 'start_quote' + 59 * '+'
-        print text
-        print 10 * '+' + 'end_quote' + 61 * '+'
+        print(10 * '+' + 'start_quote' + 59 * '+')
+        print(text)
+        print(10 * '+' + 'end_quote' + 61 * '+')
 
     def guessCharge(self):
         """
@@ -623,9 +637,9 @@ class AbstractTopol:
                 cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                       self.baseName)
                 self.printDebug("guessCharge: " + cmd)
-                out = getoutput(cmd)
+                out = _getoutput(cmd)
                 self.printDebug(out)
-                mol2FileForGuessCharge = os.path.abspath(self.baseName+".mol2")
+                mol2FileForGuessCharge = os.path.abspath(self.baseName + ".mol2")
                 in_mol = 'mol2'
             else:
                 in_mol = self.ext[1:]
@@ -637,15 +651,15 @@ class AbstractTopol:
             if self.debug:
                 self.printMess("Debugging...")
                 cmd = cmd.replace('-pf y', '-pf n')
-                print cmd
+                print(cmd)
 
-            log = getoutput(cmd)
+            log = _getoutput(cmd)
             #print log
             m = log.splitlines()
             if len(m) > 5:
                 try:
                     n = m[-1].split()
-                    charge = float(n[14].replace('(','').replace(')',''))
+                    charge = float(n[14].replace('(', '').replace(')', ''))
                 except:
                     error = True
             elif len(m) == 0:
@@ -687,7 +701,7 @@ class AbstractTopol:
             cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
                                     (self.acExe, self.inputFile, exten)
             self.printDebug(cmd)
-            out = getoutput(cmd)
+            out = _getoutput(cmd)
             if not out.isspace():
                 self.printDebug(out)
             try:
@@ -704,7 +718,7 @@ class AbstractTopol:
                 residues.add(line[17:20])
                 at = line[0:17]
                 cs = line[30:54]
-                if cs in coords.keys():
+                if cs in list(coords.keys()):
                     coords[cs].append(at)
                 else:
                     coords[cs] = [at]
@@ -716,11 +730,11 @@ class AbstractTopol:
             sys.exit(1)
 
         dups = ""
-        short = ""
-        long = ""
+        shortd = ""
+        longd = ""
         longSet = set()
         id = 0
-        items = coords.items()
+        items = list(coords.items())
         l = len(items)
         for item in items:
             id += 1
@@ -731,33 +745,33 @@ class AbstractTopol:
 #        for i in xrange(0,len(data),f):
 #            fdata += (data[i:i+f])+' '
 
-            for id2 in xrange(id,l):
+            for id2 in range(id, l):
                 item2 = items[id2]
-                c1 = map(float,[item[0][i:i+8] for i in xrange(0,24,8)])
-                c2 = map(float,[item2[0][i:i+8] for i in xrange(0,24,8)])
-                dist2 = self.distance(c1,c2)
+                c1 = list(map(float, [item[0][i:i + 8] for i in range(0, 24, 8)]))
+                c2 = list(map(float, [item2[0][i:i + 8] for i in range(0, 24, 8)]))
+                dist2 = self.distance(c1, c2)
                 if dist2 < minDist2:
                     dist = math.sqrt(dist2)
-                    short += "%8.5f       %s %s\n" % (dist, item[1], item2[1])
+                    shortd += "%8.5f       %s %s\n" % (dist, item[1], item2[1])
                 if dist2 < maxDist2: # and not longOK:
                     longSet.add(str(item[1]))
                     longSet.add(str(item2[1]))
             if str(item[1]) not in longSet and l > 1:
-                long += "%s\n" % item[1]
+                longd += "%s\n" % item[1]
 
         if dups:
             self.printError("Atoms with same coordinates in '%s'!" % self.inputFile)
             self.printQuoted(dups[:-1])
             exit = True
 
-        if short:
+        if shortd:
             self.printError("Atoms TOO close (< %s Ang.)" % minDist)
-            self.printQuoted("Dist (Ang.)    Atoms\n" + short[:-1])
+            self.printQuoted("Dist (Ang.)    Atoms\n" + shortd[:-1])
             exit = True
 
-        if long:
+        if longd:
             self.printError("Atoms TOO alone (> %s Ang.)" % maxDist)
-            self.printQuoted(long[:-1])
+            self.printQuoted(longd[:-1])
             exit = True
 
         if exit:
@@ -772,24 +786,24 @@ class AbstractTopol:
         newresname = resname
 
         # To avoid resname likes: 001 (all numbers), 1e2 (sci number), ADD : reserved terms for leap
-        leapWords = ['_cmd_options_','_types_','add','addAtomTypes','addIons',
-                     'addIons2','addPath','addPdbAtomMap','addPdbResMap','alias',
-                     'alignAxes','bond','bondByDistance','center','charge',
-                     'check','clearPdbAtomMap','clearPdbResMap','clearVariables',
-                     'combine','copy','createAtom','createParmset','createResidue',
-                     'createUnit','crossLink','debugOff','debugOn','debugStatus',
-                     'deleteBond','deleteOffLibEntry','deleteRestraint','desc',
-                     'deSelect','displayPdbAtomMap','displayPdbResMap','edit',
-                     'flip','groupSelectedAtoms','help','impose','list','listOff',
-                     'loadAmberParams','loadAmberPrep','loadMol2','loadOff',
-                     'loadPdb','loadPdbUsingSeq','logFile','matchVariables',
-                     'measureGeom','quit','relax','remove','restrainAngle',
-                     'restrainBond','restrainTorsion','saveAmberParm',
-                     'saveAmberParmPert','saveAmberParmPol','saveAmberParmPolPert',
-                     'saveAmberPrep','saveMol2','saveOff','saveOffParm','savePdb',
-                     'scaleCharges','select','sequence','set','setBox','solvateBox',
-                     'solvateCap','solvateDontClip','solvateOct','solvateShell',
-                     'source','transform','translate','verbosity','zMatrix']
+        leapWords = ['_cmd_options_', '_types_', 'add', 'addAtomTypes', 'addIons',
+                     'addIons2', 'addPath', 'addPdbAtomMap', 'addPdbResMap', 'alias',
+                     'alignAxes', 'bond', 'bondByDistance', 'center', 'charge',
+                     'check', 'clearPdbAtomMap', 'clearPdbResMap', 'clearVariables',
+                     'combine', 'copy', 'createAtom', 'createParmset', 'createResidue',
+                     'createUnit', 'crossLink', 'debugOff', 'debugOn', 'debugStatus',
+                     'deleteBond', 'deleteOffLibEntry', 'deleteRestraint', 'desc',
+                     'deSelect', 'displayPdbAtomMap', 'displayPdbResMap', 'edit',
+                     'flip', 'groupSelectedAtoms', 'help', 'impose', 'list', 'listOff',
+                     'loadAmberParams', 'loadAmberPrep', 'loadMol2', 'loadOff',
+                     'loadPdb', 'loadPdbUsingSeq', 'logFile', 'matchVariables',
+                     'measureGeom', 'quit', 'relax', 'remove', 'restrainAngle',
+                     'restrainBond', 'restrainTorsion', 'saveAmberParm',
+                     'saveAmberParmPert', 'saveAmberParmPol', 'saveAmberParmPolPert',
+                     'saveAmberPrep', 'saveMol2', 'saveOff', 'saveOffParm', 'savePdb',
+                     'scaleCharges', 'select', 'sequence', 'set', 'setBox', 'solvateBox',
+                     'solvateCap', 'solvateDontClip', 'solvateOct', 'solvateShell',
+                     'source', 'transform', 'translate', 'verbosity', 'zMatrix']
         isLeapWord = False
         for word in leapWords:
             if resname.upper().startswith(word.upper()):
@@ -817,8 +831,8 @@ class AbstractTopol:
 
     def distance(self, c1, c2):
         #print c1, c2
-        dist2 = (c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[0] - c2[0])**2 + \
-                (c1[2] - c2[2])**2
+        dist2 = (c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[0] - c2[0]) ** 2 + \
+                (c1[2] - c2[2]) ** 2
         #dist2 = math.sqrt(dist2)
         return dist2
 
@@ -835,14 +849,14 @@ class AbstractTopol:
 
         self.printDebug(cmd)
 
-        log = getoutput(cmd)
+        log = _getoutput(cmd)
 
         if log.isspace():
             tmpFile = open('tmp.crg', 'r')
             tmpData = tmpFile.readlines()
             for line in tmpData:
                 ll += line.split()
-            charge = sum(map(float,ll))
+            charge = sum(map(float, ll))
         elif self.debug:
             self.printQuoted(log)
 
@@ -949,12 +963,12 @@ a        """
         else:
             try: os.remove(self.acMol2FileName)
             except: pass
-            p = sub.Popen(cmd, shell=True, stderr = sub.STDOUT, stdout = sub.PIPE)
-            pid = p.pid
             signal.signal(signal.SIGALRM, self.signal_handler)
             signal.alarm(self.timeTol)
+            p = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE)
+            pid = p.pid
 
-            out = p.stdout.read()
+            out = str(p.communicate()[0].decode()) #p.stdout.read()
             self.acLog = out
 
         if os.path.exists(self.acMol2FileName):
@@ -969,15 +983,18 @@ a        """
         self.printDebug("PID: %s, PIDS: %s" % (pid, pids))
         self.printMess("Timed out! Process %s killed, max exec time (%ss) exceeded" \
                         % (pids, self.timeTol))
-        os.system('kill -15 %s' % pids)
+        #os.system('kill -15 %s' % pids)
+        for i in pids.split():
+            os.kill(int(i), 15)
         raise Exception("Semi-QM taking too long to finish... aborting!")
 
-    def job_pids_family(self,jpid):
+    def job_pids_family(self, jpid):
         '''INTERNAL: Return all job processes (PIDs)'''
         pid = repr(jpid)
         dict_pids = {}
         pids = [pid]
-        out = getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
+        cmd = "ps -A -o uid,pid,ppid|grep %i" % os.getuid()
+        out = _getoutput(cmd).split('\n') #getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
         for item in out:
             vec = item.split()
             dict_pids[vec[2]] = vec[1]
@@ -987,10 +1004,10 @@ a        """
                 pids.append(pid)
             except KeyError:
                 break
-        return string.join(pids)
+        return ' '.join(pids)
 
     def delOutputFiles(self):
-        delFiles = ['mopac.in', 'tleap.in','sleap.in', 'fixbo.log',
+        delFiles = ['mopac.in', 'tleap.in', 'sleap.in', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp', 'fragment.mol2',
                     self.tmpDir] #, 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
         self.printMess("Removing temporary files...")
@@ -1029,7 +1046,7 @@ a        """
 
         sleapScpt = SLEAP_TEMPLATE % self.acParDict
 
-        fp = open('sleap.in','w')
+        fp = open('sleap.in', 'w')
         fp.write(sleapScpt)
         fp.close()
 
@@ -1043,12 +1060,12 @@ a        """
             self.printMess("Executing Sleap...")
             self.printDebug(cmd)
 
-            p = sub.Popen(cmd, shell=True, stderr = sub.STDOUT, stdout = sub.PIPE)
+            p = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE)
             pid = p.pid
             signal.signal(signal.SIGALRM, self.signal_handler)
             signal.alarm(self.timeTol)
 
-            out = p.stdout.read()
+            out = str(p.communicate()[0].decode()) #p.stdout.read()
 
             self.sleapLog = out
             self.checkLeapLog(self.sleapLog)
@@ -1087,7 +1104,7 @@ a        """
 
         tleapScpt = TLEAP_TEMPLATE % self.acParDict
 
-        fp = open('tleap.in','w')
+        fp = open('tleap.in', 'w')
         fp.write(tleapScpt)
         fp.close()
 
@@ -1100,7 +1117,7 @@ a        """
             except: pass
             self.printMess("Executing Tleap...")
             self.printDebug(cmd)
-            self.tleapLog = getoutput(cmd)
+            self.tleapLog = _getoutput(cmd)
             self.checkLeapLog(self.tleapLog)
 
         if self.checkXyzAndTopFiles():
@@ -1128,9 +1145,9 @@ a        """
         '''locate a file pertinent to $AMBERHOME/dat/leap/parm/'''
         amberhome = os.environ.get('AMBERHOME')
         if amberhome:
-            aFileF = os.path.join(amberhome,'dat/leap/parm',aFile)
+            aFileF = os.path.join(amberhome, 'dat/leap/parm', aFile)
             if os.path.exists(aFileF): return aFileF
-        aFileF = os.path.join(os.path.dirname(self.acExe),'../dat/leap/parm',aFile)
+        aFileF = os.path.join(os.path.dirname(self.acExe), '../dat/leap/parm', aFile)
         if os.path.exists(aFileF): return aFileF
         return None
 
@@ -1145,14 +1162,14 @@ a        """
             gaffFile = self.locateDat('gaff.dat')
             frcmodff99SB = self.locateDat('frcmod.ff99SB')
             frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
-            parm99gaffFile = parmMerge(parm99file,gaffFile)
-            parm99gaffff99SBFile = parmMerge(parm99gaffFile,frcmodff99SB, frcmod = True)
+            parm99gaffFile = parmMerge(parm99file, gaffFile)
+            parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod = True)
             #parm99gaffFile = '/Users/alan/workspace/acpype/ffamber_additions/parm99SBgaff.dat'
-            parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile,frcmodparmbsc0, frcmod = True)
+            parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
             #parm99gaffff99SBparmbsc0File = '/Users/alan/workspace/acpype/ffamber_additions/parm99bsc0SBgaff.dat'
             cmd += ' -p %s' % parm99gaffff99SBparmbsc0File
 
-        self.parmchkLog = getoutput(cmd)
+        self.parmchkLog = _getoutput(cmd)
 
         self.printDebug(cmd)
 
@@ -1160,7 +1177,7 @@ a        """
             check = self.checkFrcmod()
             if check:
                 self.printWarn("Couldn't determine all parameters:")
-                self.printMess("From file '%s'\n" % self.acFrcmodFileName+check)
+                self.printMess("From file '%s'\n" % self.acFrcmodFileName + check)
             else:
                 self.printMess("* Parmchk OK *")
         else:
@@ -1188,9 +1205,9 @@ a        """
         cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
                                                   self.baseName)
         self.printDebug(cmd)
-        self.babelLog = getoutput(cmd)
+        self.babelLog = _getoutput(cmd)
         self.ext = '.mol2'
-        self.inputFile = self.baseName+self.ext
+        self.inputFile = self.baseName + self.ext
         self.acParDict['ext'] = 'mol2'
         if os.path.exists(self.inputFile):
             self.printMess("* Babel OK *")
@@ -1226,7 +1243,7 @@ a        """
                 if self.extOld == '.pdb':
                     self.printMess("... trying Sleap")
                     self.ext = self.extOld
-                    self.inputFile = self.baseName+self.ext
+                    self.inputFile = self.baseName + self.ext
                     if self.execSleap():
                         self.printError("Sleap failed")
         if not self.debug:
@@ -1251,19 +1268,29 @@ a        """
         """
             To restore:
                 from acpype import *
-                import cPickle as pickle
-                o = pickle.load(open('DDD.pkl'))
+                #import cPickle as pickle
+                import pickle
+                o = pickle.load(open('DDD.pkl','rb'))
                 NB: It fails to restore with ipython in Mac (Linux OK)
         """
-        pklFile = self.baseName+".pkl"
+        pklFile = self.baseName + ".pkl"
+        dumpFlag = False
         if not os.path.exists(pklFile):
-            self.printMess("Writing pickle file %s" % pklFile)
-            pickle.dump(self, open(pklFile,"w"))
+            mess = "Writing pickle file %s" % pklFile
+            dumpFlag = True
         elif self.force:
-            self.printMess("Overwriting pickle file %s" % pklFile)
-            pickle.dump(self, open(pklFile,"w"))
+            mess = "Overwriting pickle file %s" % pklFile
+            dumpFlag = True
         else:
-            self.printMess("Pickle file %s already present... doing nothing" % pklFile)
+            mess = "Pickle file %s already present... doing nothing" % pklFile
+        self.printDebug("Python Version %s" % verList)
+        self.printMess(mess)
+        if dumpFlag:
+            with open(pklFile, "wb") as f:
+                if verList[0] == 3:
+                    pickle.dump(self, f, protocol = 2, fix_imports = True)
+                else:
+                    pickle.dump(self, f, protocol = 2)
 
     def getFlagData(self, flag):
         """
@@ -1292,12 +1319,12 @@ a        """
                     continue
                 data += line
         # data need format
-        sdata = [data[i:i+f].strip() for i in xrange(0,len(data),f)]
+        sdata = [data[i:i + f].strip() for i in range(0, len(data), f)]
         if '+' and '.' in data: # it's a float
-            ndata = map(float, sdata)
+            ndata = list(map(float, sdata))
         elif flag != 'RESIDUE_LABEL':
             try: # try if it's integer
-                ndata = map(int, sdata)
+                ndata = list(map(int, sdata))
             except: # it's string
                 ndata = sdata
         else:
@@ -1310,7 +1337,7 @@ a        """
             Returns a list.
         """
         residueLabel = self.getFlagData('RESIDUE_LABEL')
-        residueLabel = map(str, residueLabel)
+        residueLabel = list(map(str, residueLabel))
         if residueLabel[0] != residueLabel[0].upper():
             self.printWarn("residue label '%s' in '%s' is not all UPPERCASE" %
                            (residueLabel[0], self.inputFile))
@@ -1329,11 +1356,11 @@ a        """
             line = rawLine[:-1]
             data += line
         l = len(data)
-        ndata = map(float,[data[i:i+12] for i in xrange(0,l,12)])
+        ndata = list(map(float, [data[i:i + 12] for i in range(0, l, 12)]))
 
         gdata = []
-        for i in xrange(0, len(ndata), 3):
-            gdata.append([ndata[i], ndata[i+1], ndata[i+2]])
+        for i in range(0, len(ndata), 3):
+            gdata.append([ndata[i], ndata[i + 1], ndata[i + 2]])
 
         self.printDebug("getCoords done")
 
@@ -1433,10 +1460,10 @@ a        """
         bondCodeNonHList = self.getFlagData('BONDS_WITHOUT_HYDROGEN')
         bondCodeList = bondCodeHList + bondCodeNonHList
         bonds = []
-        for i in xrange(0, len(bondCodeList), 3):
+        for i in range(0, len(bondCodeList), 3):
             idAtom1 = bondCodeList[i] // 3 # remember python starts with id 0
-            idAtom2 = bondCodeList[i+1] // 3
-            bondTypeId = bondCodeList[i+2] - 1
+            idAtom2 = bondCodeList[i + 1] // 3
+            bondTypeId = bondCodeList[i + 2] - 1
             atom1 = self.atoms[idAtom1]
             atom2 = self.atoms[idAtom2]
             kb = uniqKbList[bondTypeId]
@@ -1455,11 +1482,11 @@ a        """
         angleCodeNonHList = self.getFlagData('ANGLES_WITHOUT_HYDROGEN')
         angleCodeList = angleCodeHList + angleCodeNonHList
         angles = []
-        for i in xrange(0, len(angleCodeList), 4):
+        for i in range(0, len(angleCodeList), 4):
             idAtom1 = angleCodeList[i] // 3 # remember python starts with id 0
-            idAtom2 = angleCodeList[i+1] // 3
-            idAtom3 = angleCodeList[i+2] // 3
-            angleTypeId = angleCodeList[i+3] - 1
+            idAtom2 = angleCodeList[i + 1] // 3
+            idAtom3 = angleCodeList[i + 2] // 3
+            angleTypeId = angleCodeList[i + 3] - 1
             atom1 = self.atoms[idAtom1]
             atom2 = self.atoms[idAtom2]
             atom3 = self.atoms[idAtom3]
@@ -1488,16 +1515,16 @@ a        """
         condProperDih = [] # list of dihedrals condensed by the same quartet
         #atomPairs = []
         atomPairs = set()
-        for i in xrange(0, len(dihCodeList), 5):
+        for i in range(0, len(dihCodeList), 5):
             idAtom1 = dihCodeList[i] // 3 # remember python starts with id 0
-            idAtom2 = dihCodeList[i+1] // 3
+            idAtom2 = dihCodeList[i + 1] // 3
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
             # in amber are to be ignored; if id4 < 0, dihedral is improper
-            idAtom3raw = dihCodeList[i+2] // 3 # can be negative -> exclude from 1-4vdw
-            idAtom4raw = dihCodeList[i+3] // 3 # can be negative -> Improper
+            idAtom3raw = dihCodeList[i + 2] // 3 # can be negative -> exclude from 1-4vdw
+            idAtom4raw = dihCodeList[i + 3] // 3 # can be negative -> Improper
             idAtom3 = abs(idAtom3raw)
             idAtom4 = abs(idAtom4raw)
-            dihTypeId = dihCodeList[i+4] - 1
+            dihTypeId = dihCodeList[i + 4] - 1
             atom1 = self.atoms[idAtom1]
             atom2 = self.atoms[idAtom2]
             atom3 = self.atoms[idAtom3]
@@ -1563,7 +1590,7 @@ a        """
             if temp == [0]:
                 excludedAtomsList.append([])
             else:
-                excludedAtomsList.append([atoms[a-1] for a in temp])
+                excludedAtomsList.append([atoms[a - 1] for a in temp])
             interval += number
         self.excludedAtoms = excludedAtomsList
         self.printDebug("getExcludedAtoms")
@@ -1579,7 +1606,7 @@ a        """
         limIds = []
         #self.printDebug(chargeList)
         total = sum(chargeList)
-        totalConverted = total/qConv
+        totalConverted = total / qConv
         self.printDebug('charge to be balanced: total %13.10f' % (totalConverted))
         maxVal = max(chargeList[:FirstNonSoluteId])
         minVal = min(chargeList[:FirstNonSoluteId])
@@ -1588,7 +1615,7 @@ a        """
         nLims = chargeList.count(lim)
         #limId = chargeList.index(lim)
         diff = totalConverted - round(totalConverted)
-        fix = lim - diff*qConv/nLims
+        fix = lim - diff * qConv / nLims
         id = 0
         for c in chargeList:
             if c == lim:
@@ -1610,7 +1637,7 @@ a        """
         ntypes = max(uniqAtomTypeIdList)
         #id = 0
         #for atName in self._atomTypeNameList:
-        for id in xrange(len(self._atomTypeNameList)):
+        for id in range(len(self._atomTypeNameList)):
             #id = self._atomTypeNameList.index(atName)
             atomTypeId = uniqAtomTypeIdList[id]
             index = ntypes * (atomTypeId - 1) + atomTypeId
@@ -1649,7 +1676,7 @@ a        """
                 kPhi = dih.kPhi # in rad
                 phaseRaw = dih.phase * radPi # in degree
                 phase = int(phaseRaw) # in degree
-                if phase in [0,180]:
+                if phase in [0, 180]:
                     if kPhi > 0: V[period] = 2 * kPhi * cal
                     if period == 1:
                         C[0] += 0.5 * V[period]
@@ -1682,8 +1709,8 @@ a        """
                 else:
                     properDihedralsAlphaGamma.append([item[0].atoms, phaseRaw, kPhi, period])
                     #print phaseRaw, kPhi, period
-            if phase in [0,180]:
-                properDihedralsCoefRB.append([item[0].atoms,C])
+            if phase in [0, 180]:
+                properDihedralsCoefRB.append([item[0].atoms, C])
 
         #print properDihedralsCoefRB
         #print properDihedralsAlphaGamma
@@ -1711,7 +1738,7 @@ a        """
         if self.debug:
             cmd = cmd.replace('-pf y', '-pf n')
             self.printDebug(cmd)
-        _log = getoutput(cmd)
+        _log = _getoutput(cmd)
 
     def writePdb(self, file):
         """
@@ -1724,7 +1751,7 @@ a        """
         #TODO: assuming only one residue ('1')
         pdbFile = open(file, 'w')
         fbase = os.path.basename(file)
-        pdbFile.write("REMARK "+ head % (fbase, date))
+        pdbFile.write("REMARK " + head % (fbase, date))
         id = 1
         for atom in self.atoms:
             #id = self.atoms.index(atom) + 1
@@ -1742,7 +1769,7 @@ a        """
             y = atom.coords[1]
             z = atom.coords[2]
             line = "%-6s%5d %4s %3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
-            ('ATOM', id, aName, rName, 1, 4*' ', x, y, z, 1.0, 0.0, 10*' ', s)
+            ('ATOM', id, aName, rName, 1, 4 * ' ', x, y, z, 1.0, 0.0, 10 * ' ', s)
             pdbFile.write(line)
             id += 1
         pdbFile.write('END\n')
@@ -1879,7 +1906,7 @@ a        """
                 if at.ACOEF is atUpper.ACOEF and at.BCOEF is at.BCOEF:
                     delAtomTypes.append(atName)
                 else:
-                    newAtName = atName+'_'
+                    newAtName = atName + '_'
                     modAtomTypes.append(atName)
                     atomType = AtomType(newAtName, at.mass, at.ACOEF, at.BCOEF)
                     atomTypesGromacs.append(atomType)
@@ -1917,10 +1944,10 @@ a        """
         itpText = []
         oitpText = []
         otopText = []
-        top = self.baseName+'_GMX.top'
-        itp = self.baseName+'_GMX.itp'
-        otop = self.baseName+'_GMX_OPLS.top'
-        oitp = self.baseName+'_GMX_OPLS.itp'
+        top = self.baseName + '_GMX.top'
+        itp = self.baseName + '_GMX.itp'
+        otop = self.baseName + '_GMX_OPLS.top'
+        oitp = self.baseName + '_GMX_OPLS.itp'
 
         headDefault = \
 """
@@ -2150,17 +2177,17 @@ a        """
         otemp = []
         for aType in self.atomTypesGromacs:
             aTypeName = aType.atomTypeName
-            oaCode = d2opls.get(aTypeName,['x','0'])[:-1]
-            aTypeNameOpls = oplsCode2AtomTypeDict.get(oaCode[0],'x')
+            oaCode = d2opls.get(aTypeName, ['x', '0'])[:-1]
+            aTypeNameOpls = oplsCode2AtomTypeDict.get(oaCode[0], 'x')
             A = aType.ACOEF
             B = aType.BCOEF
             # one cannot infer sigma or epsilon for B = 0, assuming 0 for them
             if B == 0.0:
                 sigma, epsilon, r0, epAmber = 0, 0, 0, 0
             else:
-                r0 = 0.5 * math.pow((2*A/B), (1.0/6))
-                epAmber = 0.25 * B*B/A
-                sigma = 0.1 * math.pow((A/B), (1.0/6))
+                r0 = 0.5 * math.pow((2 * A / B), (1.0 / 6))
+                epAmber = 0.25 * B * B / A
+                sigma = 0.1 * math.pow((A / B), (1.0 / 6))
                 epsilon = cal * epAmber
             if aTypeName == 'OW':
                 if A == 629362.166 and B == 625.267765:
@@ -2172,7 +2199,7 @@ a        """
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
             (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
             " ; %4.2f  %1.4f\n" % (r0, epAmber)
-            oline = "; %s:%s:opls_%s: %s\n" % (aTypeName,aTypeNameOpls,oaCode[0],repr(oaCode[1:]))
+            oline = "; %s:%s:opls_%s: %s\n" % (aTypeName, aTypeNameOpls, oaCode[0], repr(oaCode[1:]))
             #tmpFile.write(line)
             temp.append(line)
             otemp.append(oline)
@@ -2180,11 +2207,11 @@ a        """
             topText.append(headAtomtypes)
             topText += temp
             nWat = self.residueLabel.count('WAT')
-            for ion in ionsDict.keys():
+            for ion in list(ionsDict.keys()):
                 nIon = self.residueLabel.count(ion)
                 if nIon > 0:
                     idIon = self.residueLabel.index(ion)
-                    ionsSorted.append((idIon,nIon,ion))
+                    ionsSorted.append((idIon, nIon, ion))
             ionsSorted.sort()
         else:
             itpText.append(headAtomtypes)
@@ -2216,15 +2243,15 @@ a        """
         for atom in self.atomsGromacs:
             resid = atom.resid
             resname = self.residueLabel[resid]
-            if resname in ionsDict.keys() + ['WAT' ]:
+            if resname in list(ionsDict.keys()) + ['WAT' ]:
                 break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
-            oItem = d2opls.get(aType,['x',0])
-            oplsAtName = oplsCode2AtomTypeDict.get(oItem[0],'x')
+            oItem = d2opls.get(aType, ['x', 0])
+            oplsAtName = oplsCode2AtomTypeDict.get(oItem[0], 'x')
             id = atom.id
             id2oplsATDict[id] = oplsAtName
-            oaCode = 'opls_'+oItem[0]
+            oaCode = 'opls_' + oItem[0]
             charge = atom.charge
             mass = atom.mass
             omass = float(oItem[-1])
@@ -2361,11 +2388,11 @@ a        """
             oat4 = id2oplsATDict[id4]
             c0, c1, c2, c3, c4, c5 = dih[1]
             line = \
-            "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
+            "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
             (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
             + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
             oline = \
-            "%3i %3i %3i %3i %3i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" %\
+            "%3i %3i %3i %3i %3i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
             (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
             + " ; %6s-%6s-%6s-%6s    %4s-%4s-%4s-%4s\n" % (a1, a2, a3, a4, oat1, oat2, oat3, oat4)
             temp.append(line)
@@ -2490,7 +2517,7 @@ a        """
     def writeGroFile(self):
         #print "Writing GROMACS GRO file\n"
         self.printDebug("writing GRO file")
-        gro = self.baseName+'_GMX.gro'
+        gro = self.baseName + '_GMX.gro'
         gmxDir = os.path.abspath('.')
         groFileName = os.path.join(gmxDir, gro)
         groFile = open(groFileName, 'w')
@@ -2501,7 +2528,7 @@ a        """
             coords = [c * 0.1 for c in atom.coords]
             resid = atom.resid
             line = "%5d%-4s%6s%5d%8.3f%8.3f%8.3f\n" % \
-                   (resid+1, self.residueLabel[resid], atom.atomName,
+                   (resid + 1, self.residueLabel[resid], atom.atomName,
                     count, coords[0], coords[1], coords[2])
             count += 1
             groFile.write(line)
@@ -2515,7 +2542,7 @@ a        """
             if vX == 90.0:
                 self.printDebug("PBC triclinic")
                 text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
-            elif round(vX,2) == 109.47:
+            elif round(vX, 2) == 109.47:
                 self.printDebug("PBC octahedron")
                 f1 = 0.471405 # 1/3 * sqrt(2)
                 f2 = 0.333333 * boxX
@@ -2523,7 +2550,7 @@ a        """
                 v33 = boxZ * f1 * 1.73205 # f1 * sqrt(3)
                 v21 = v31 = v32 = 0.0
                 v12 = f2
-                v13 = - f2
+                v13 = -f2
                 v23 = f1 * boxX
                 text = "%11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f\n" % \
                    (boxX, v22, v33, v21, v31, v12, v32, v13, v23)
@@ -2588,13 +2615,13 @@ pbc                      = no
 
     def writeCnsTopolFiles(self):
         autoAngleFlag = True
-        autoDihFlag   = True
+        autoDihFlag = True
         cnsDir = os.path.abspath('.')
 
-        pdb = self.baseName+'_NEW.pdb'
-        par = self.baseName+'_CNS.par'
-        top = self.baseName+'_CNS.top'
-        inp = self.baseName+'_CNS.inp'
+        pdb = self.baseName + '_NEW.pdb'
+        par = self.baseName + '_CNS.par'
+        top = self.baseName + '_CNS.top'
+        inp = self.baseName + '_CNS.inp'
 
         pdbFileName = os.path.join(cnsDir, pdb)
         parFileName = os.path.join(cnsDir, par)
@@ -2622,8 +2649,8 @@ pbc                      = no
         parFile.write("\n{ Bonds: atomType1 atomType2 kb r0 }\n")
         lineSet = []
         for bond in self.bonds:
-            a1Type = bond.atoms[0].atomType.atomTypeName+'_'
-            a2Type = bond.atoms[1].atomType.atomTypeName+'_'
+            a1Type = bond.atoms[0].atomType.atomTypeName + '_'
+            a2Type = bond.atoms[1].atomType.atomTypeName + '_'
             kb = 1000.0
             if not self.allhdg:
                 kb = bond.kBond
@@ -2639,9 +2666,9 @@ pbc                      = no
         parFile.write("\n{ Angles: aType1 aType2 aType3 kt t0 }\n")
         lineSet = []
         for angle in self.angles:
-            a1 = angle.atoms[0].atomType.atomTypeName+'_'
-            a2 = angle.atoms[1].atomType.atomTypeName+'_'
-            a3 = angle.atoms[2].atomType.atomTypeName+'_'
+            a1 = angle.atoms[0].atomType.atomTypeName + '_'
+            a2 = angle.atoms[1].atomType.atomTypeName + '_'
+            a3 = angle.atoms[2].atomType.atomTypeName + '_'
             kt = 500.0
             if not self.allhdg:
                 kt = angle.kTheta
@@ -2663,10 +2690,10 @@ iod phase }\n")
             for dih in item:
                 #id = item.index(dih)
                 l = len(item)
-                a1 = dih.atoms[0].atomType.atomTypeName+'_'
-                a2 = dih.atoms[1].atomType.atomTypeName+'_'
-                a3 = dih.atoms[2].atomType.atomTypeName+'_'
-                a4 = dih.atoms[3].atomType.atomTypeName+'_'
+                a1 = dih.atoms[0].atomType.atomTypeName + '_'
+                a2 = dih.atoms[1].atomType.atomTypeName + '_'
+                a3 = dih.atoms[2].atomType.atomTypeName + '_'
+                a4 = dih.atoms[3].atomType.atomTypeName + '_'
                 kp = 750.0
                 if not self.allhdg:
                     kp = dih.kPhi
@@ -2677,7 +2704,7 @@ iod phase }\n")
                         line = "DIHEdral %5s %5s %5s %5s  MULT %1i %7.3f %4i %8\
 .2f\n" % (a1, a2, a3, a4, l, kp, p, ph)
                     else:
-                        line = "%s %7.3f %4i %8.2f\n" % (40*" ", kp, p, ph)
+                        line = "%s %7.3f %4i %8.2f\n" % (40 * " ", kp, p, ph)
                 else:
                     line = "DIHEdral %5s %5s %5s %5s %15.3f %4i %8.2f\n" % (a1,
                                                           a2, a3, a4, kp, p, ph)
@@ -2691,10 +2718,10 @@ iod phase }\n")
 eriod phase }\n")
         lineSet = set()
         for idh in self.improperDihedrals:
-            a1 = idh.atoms[0].atomType.atomTypeName+'_'
-            a2 = idh.atoms[1].atomType.atomTypeName+'_'
-            a3 = idh.atoms[2].atomType.atomTypeName+'_'
-            a4 = idh.atoms[3].atomType.atomTypeName+'_'
+            a1 = idh.atoms[0].atomType.atomTypeName + '_'
+            a2 = idh.atoms[1].atomType.atomTypeName + '_'
+            a3 = idh.atoms[2].atomType.atomTypeName + '_'
+            a4 = idh.atoms[3].atomType.atomTypeName + '_'
             kp = 750.0
             if not self.allhdg:
                 kp = idh.kPhi
@@ -2710,13 +2737,13 @@ eriod phase }\n")
         for at in self.atomTypes:
             A = at.ACOEF
             B = at.BCOEF
-            atName = at.atomTypeName+'_'
+            atName = at.atomTypeName + '_'
             if B == 0.0:
                 sigma = epAmber = ep2 = sig2 = 0.0
             else:
-                epAmber = 0.25 * B*B/A
-                ep2 = epAmber/2.0
-                sigma = math.pow((A/B), (1.0/6))
+                epAmber = 0.25 * B * B / A
+                ep2 = epAmber / 2.0
+                sigma = math.pow((A / B), (1.0 / 6))
                 sig2 = sigma
             line = "NONBonded %5s %11.6f %11.6f %11.6f %11.6f\n" % (atName,
                     epAmber, sigma, ep2, sig2)
@@ -2731,7 +2758,7 @@ eriod phase }\n")
 
         topFile.write("\n{ atomType  mass }\n")
         for at in self.atomTypes:
-            atType = at.atomTypeName+'_'
+            atType = at.atomTypeName + '_'
             mass = at.mass
             line = "MASS %-5s %8.3f\n" % (atType, mass)
             topFile.write(line)
@@ -2742,7 +2769,7 @@ eriod phase }\n")
         topFile.write("\n{ atomName  atomType  Charge }\n")
         for at in self.atoms:
             atName = at.atomName
-            atType = at.atomType.atomTypeName+'_'
+            atType = at.atomType.atomTypeName + '_'
             charge = at.charge
             line = "ATOM %-5s TYPE= %-5s CHARGE= %8.4f END\n" % (atName, atType,
                                                                  charge)
@@ -2861,9 +2888,9 @@ stop
         dictInp['CNS_top'] = top
         dictInp['CNS_par'] = par
         dictInp['NEW_pdb'] = pdb
-        dictInp['CNS_min'] = self.baseName+'_NEW_min.pdb'
-        dictInp['CNS_psf'] = self.baseName+'_CNS.psf'
-        dictInp['CNS_ran'] = self.baseName+'_rand.pdb'
+        dictInp['CNS_min'] = self.baseName + '_NEW_min.pdb'
+        dictInp['CNS_psf'] = self.baseName + '_CNS.psf'
+        dictInp['CNS_ran'] = self.baseName + '_rand.pdb'
         line = inpData % dictInp
         inpFile.write(line)
 
@@ -2904,22 +2931,22 @@ class ACTopol(AbstractTopol):
         self.engine = engine
         self.allhdg = allhdg
         self.acExe = ''
-        dirAmber = os.getenv('AMBERHOME',os.getenv('ACHOME'))
+        dirAmber = os.getenv('AMBERHOME', os.getenv('ACHOME'))
         if dirAmber:
-            for ac_bin in ['bin','exe']:
-                ac_path = os.path.join(dirAmber,ac_bin,'antechamber')
+            for ac_bin in ['bin', 'exe']:
+                ac_path = os.path.join(dirAmber, ac_bin, 'antechamber')
                 if os.path.exists(ac_path):
                     self.acExe = ac_path
                     break
         if not self.acExe:
-            self.acExe = getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+            self.acExe = _getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not os.path.exists(self.acExe):
             self.printError("no 'antechamber' executable!")
             return None
-        self.tleapExe = getoutput('which tleap') or ''
-        self.sleapExe = getoutput('which sleap') or ''
-        self.parmchkExe = getoutput('which parmchk') or ''
-        self.babelExe = getoutput('which babel') or ''
+        self.tleapExe = _getoutput('which tleap') or ''
+        self.sleapExe = _getoutput('which sleap') or ''
+        self.parmchkExe = _getoutput('which parmchk') or ''
+        self.babelExe = _getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
             if self.ext != '.mol2' and self.ext != '.mdl': # and self.ext != '.mol':
                 self.printError("no 'babel' executable; you need it if input is PDB")
@@ -2931,8 +2958,8 @@ class ACTopol(AbstractTopol):
         self.acBaseName = acBase
         self.acXyzFileName = acBase + '.inpcrd'
         self.acTopFileName = acBase + '.prmtop'
-        self.acFrcmodFileName = acBase +'.frcmod'
-        self.tmpDir = os.path.join(self.rootDir,'.acpype_tmp_%s' % os.path.basename(base))
+        self.acFrcmodFileName = acBase + '.frcmod'
+        self.tmpDir = os.path.join(self.rootDir, '.acpype_tmp_%s' % os.path.basename(base))
         self.setResNameCheckCoords()
         self.guessCharge()
         acMol2FileName = '%s_%s_%s.mol2' % (base, chargeType, atomType)
@@ -3037,7 +3064,7 @@ class MolTopol(ACTopol):
 #                  'DIHEDRAL_FORCE_CONSTANT', 'DIHEDRAL_PERIODICITY',
 #                  'DIHEDRAL_PHASE', 'AMBER_ATOM_TYPE' )
 
-class Atom:
+class Atom(object):
     """
         Charges in prmtop file has to be divide by 18.2223 to convert to charge
         in units of the electron charge.
@@ -3061,7 +3088,7 @@ class Atom:
         self.charge = charge #/ qConv
         self.coords = coord
 
-class AtomType:
+class AtomType(object):
     """
         AtomType per atom in gaff or amber.
     """
@@ -3071,7 +3098,7 @@ class AtomType:
         self.ACOEF = ACOEF
         self.BCOEF = BCOEF
 
-class Bond:
+class Bond(object):
     """
         attributes: pair of Atoms, spring constant (kcal/mol), dist. eq. (Ang)
     """
@@ -3080,7 +3107,7 @@ class Bond:
         self.kBond = kBond
         self.rEq = rEq
 
-class Angle:
+class Angle(object):
     """
         attributes: 3 Atoms, spring constant (kcal/mol/rad^2), angle eq. (rad)
     """
@@ -3089,7 +3116,7 @@ class Angle:
         self.kTheta = kTheta
         self.thetaEq = thetaEq # rad, to convert to degree: thetaEq * 180/Pi
 
-class Dihedral:
+class Dihedral(object):
     """
         attributes: 4 Atoms, spring constant (kcal/mol), periodicity,
         phase (rad)
@@ -3102,7 +3129,7 @@ class Dihedral:
 
 if __name__ == '__main__':
     t0 = time.time()
-    print header
+    print(header)
     argsDict = parseArgs(sys.argv[1:])
     iF = argsDict.get('-i', None)
     bn = argsDict.get('-b', None)
@@ -3122,21 +3149,21 @@ if __name__ == '__main__':
     dg = False
     tt = False
     ip = False
-    if '-f' in argsDict.keys(): fs = True
-    if '-d' in argsDict.keys(): dg = True
-    if '-t' in argsDict.keys(): tt = True
-    if '-y' in argsDict.keys(): ip = True
+    if '-f' in list(argsDict.keys()): fs = True
+    if '-d' in list(argsDict.keys()): dg = True
+    if '-t' in list(argsDict.keys()): tt = True
+    if '-y' in list(argsDict.keys()): ip = True
 
     try:
         if amb2gmx:
-            print "Converting Amber input files to Gromacs ..."
+            print("Converting Amber input files to Gromacs ...")
             system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg, basename = bn)
             system.printDebug("prmtop and inpcrd files parsed")
             system.writeGromacsTopolFiles(amb2gmx = True)
         else:
             molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                                multiplicity = mt, atomType = at, force = fs,
-                               outTopol = ot, engine = en, allhdg=tt, basename = bn,
+                               outTopol = ot, engine = en, allhdg = tt, basename = bn,
                                timeTol = to, qprog = qq, ekFlag = '''"%s"''' % ek)
 
             if not molecule.acExe:
@@ -3152,9 +3179,9 @@ if __name__ == '__main__':
         acpypeFailed = False
     except:
         exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-        print "ACPYPE FAILED: %s" % exceptionValue
+        print("ACPYPE FAILED: %s" % exceptionValue)
         if dg:
-            traceback.print_tb(exceptionTraceback, file=sys.stdout)
+            traceback.print_tb(exceptionTraceback, file = sys.stdout)
         acpypeFailed = True
 
     execTime = int(round(time.time() - t0))
@@ -3162,18 +3189,17 @@ if __name__ == '__main__':
         msg = "less than a second"
     else:
         msg = elapsedTime(execTime)
-    print "Total time of execution: %s" % msg
+    print("Total time of execution: %s" % msg)
 
     if ip:
         from IPython.Shell import IPShellEmbed
-        ipshell = IPShellEmbed(['-prompt_in1','ACPYPE \#> '],
-                                banner='--------Dropping to IPython--------',
-                                exit_msg='--------Leaving IPython--------'
+        ipshell = IPShellEmbed(['-prompt_in1', 'ACPYPE \#> '],
+                                banner = '--------Dropping to IPython--------',
+                                exit_msg = '--------Leaving IPython--------'
                               )
         ipshell()
 
     try: rmtree(molecule.tmpDir)
     except: pass
     if acpypeFailed: sys.exit(1)
-
 
