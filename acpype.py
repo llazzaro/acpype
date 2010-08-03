@@ -2,6 +2,10 @@
 from __future__ import print_function
 
 """
+    Requirements: Python 2.6 or higher or Python 3.x
+                  Antechamber (from AmberTools preferably)
+                  OpenBabel (optional, but strongly recommended)
+
     This code is released under GNU General Public License V3.
 
           <<<  NO WARRANTY AT ALL!!!  >>>
@@ -79,9 +83,10 @@ import subprocess as sub
 outTopols = ['gmx', 'cns', 'charmm']
 qDict = {'mopac' : 0, 'divcon' : 1, 'sqm': 2}
 
-# Residues that are not solute, to be avoided when balancing charges in amb2gmx mode
-ionOrSolResNameList = ['Cl-', 'Na+', 'K+', 'CIO', 'Cs+', 'IB', 'Li+', 'MG2', 'Rb+',
-                         'WAT', 'MOH', 'NMA']
+# Residues that are not solute, to be avoided when balancing charges in
+# amb2gmx mode
+ionOrSolResNameList = ['Cl-', 'Na+', 'K+', 'CIO', 'Cs+', 'IB', 'Li+', 'MG2',
+                       'Rb+', 'WAT', 'MOH', 'NMA']
 
 leapGaffFile = 'leaprc.gaff'
 leapAmberFile = 'leaprc.ff99bsc0' #'leaprc.ff99SB'
