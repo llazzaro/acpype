@@ -335,8 +335,8 @@ def invalidArgs(text = None, usage = True):
 verNum = sys.version.split()[0]
 version = verNum.split('.') #string.split(verNum, ".")
 verList = list(map(int, version))
-if verList < [2, 4, 0]:
-    invalidArgs(text = "Python version %s\n       Sorry, you need python 2.4 or higher" % verNum, usage = False)
+if verList < [2, 6, 0]:
+    invalidArgs(text = "Python version %s\n       Sorry, you need python 2.6 or higher" % verNum, usage = False)
 
 try:
     set()
@@ -357,6 +357,9 @@ def parseArgs(args):
     tpList = ['all'] + outTopols
     enList = ['sleap', 'tleap']
     qList = ['mopac', 'sqm', 'divcon']
+
+    if '-d' in args:
+        print("Python Version %s" % verList)
 
     if '-h' in args:
         invalidArgs()
@@ -1288,7 +1291,6 @@ a        """
             dumpFlag = True
         else:
             mess = "Pickle file %s already present... doing nothing" % pklFile
-        self.printDebug("Python Version %s" % verList)
         self.printMess(mess)
         if dumpFlag:
             with open(pklFile, "wb") as f:
