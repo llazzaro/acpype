@@ -358,14 +358,9 @@ def parseArgs(args):
     enList = ['sleap', 'tleap']
     qList = ['mopac', 'sqm', 'divcon']
 
-    if '-d' in args:
-        print("Python Version %s" % verList)
-
-    if '-h' in args:
-        invalidArgs()
     try:
         opt_list, args = getopt.getopt(args, options) #, long_options)
-    except Exception as msg:
+    except Exception as msg:  #Python 2.6 or higher
         invalidArgs("FAILED: %s" % msg)
 
     d = {}
@@ -379,8 +374,15 @@ def parseArgs(args):
 
         d[key] = value
 
+    if '-d' in list(d.keys()):
+        text = "Python Version %s" % verNum
+        print('DEBUG: %s' % text)
+
     if not d and not args:
         invalidArgs("missing parameters")
+
+    if '-h' in list(d.keys()):
+        invalidArgs()
 
     if '-c' in list(d.keys()):
         if d['-c'] not in ctList:
@@ -1293,7 +1295,8 @@ a        """
             mess = "Pickle file %s already present... doing nothing" % pklFile
         self.printMess(mess)
         if dumpFlag:
-            with open(pklFile, "wb") as f:
+            with open(pklFile, "wb") as f:  # for python 2.6 or higher
+                #f = open(pklFile, "wb")
                 if verList[0] == 3:
                     pickle.dump(self, f, protocol = 2, fix_imports = True)
                 else:
