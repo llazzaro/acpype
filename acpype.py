@@ -102,6 +102,7 @@ maxDist = 3.0
 minDist = 0.5
 maxDist2 = maxDist ** 2 #squared Ang.
 minDist2 = minDist ** 2 #squared Ang.
+diffTol = 0.01
 
 dictAmbAtomType2AmbGmxCode = \
 {'BR':'1', 'C':'2', 'CA':'3', 'CB':'4', 'CC':'5', 'CK':'6', 'CM':'7', 'CN':'8', 'CQ':'9',
@@ -270,11 +271,13 @@ USAGE = \
     -f    force topologies recalculation anew
     -d    for debugging purposes, keep any temporary file created
     -o    output topologies: all (default), gmx, cns or charmm
+    -r    write GMX dihedrals for GMX 4.5
     -t    write CNS topology with allhdg-like parameters (experimental)
     -e    engine: tleap (default) or sleap (not fully matured)
     -b    a basename for the project (folder and output files)
     -s    max time (in sec) tolerance for sqm/mopac, default is 10 hours
     -y    start ipython interpreter
+    -w    print nothing
     -h    this help
 
     output: assuming 'root' is the basename of either the top input file,
@@ -350,7 +353,7 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hyftdi:c:n:m:o:a:q:e:k:x:p:b:s:'
+    options = 'hyftrdi:c:n:m:o:a:q:e:k:x:w:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
@@ -603,18 +606,22 @@ class AbstractTopol(object):
             print('DEBUG: %s' % text)
 
     def printWarn(self, text = ''):
-        print('WARNING: %s' % text)
+        if self.verbose:
+            print('WARNING: %s' % text)
 
     def printError(self, text = ''):
-        print('ERROR: %s' % text)
+        if self.verbose:
+            print('ERROR: %s' % text)
 
     def printMess(self, text = ''):
-        print('==> %s' % text)
+        if self.verbose:
+            print('==> %s' % text)
 
     def printQuoted(self, text = ''):
-        print(10 * '+' + 'start_quote' + 59 * '+')
-        print(text)
-        print(10 * '+' + 'end_quote' + 61 * '+')
+        if self.verbose:
+            print(10 * '+' + 'start_quote' + 59 * '+')
+            print(text)
+            print(10 * '+' + 'end_quote' + 61 * '+')
 
     def guessCharge(self):
         """
@@ -663,17 +670,16 @@ class AbstractTopol(object):
                 cmd = cmd.replace('-pf y', '-pf n')
                 print(cmd)
 
-            log = _getoutput(cmd)
-            #print log
-            m = log.splitlines()
-            if len(m) > 5:
+            log = _getoutput(cmd).strip()
+
+            if log:
                 try:
-                    n = m[-1].split()
+                    n = log.split()
                     charge = float(n[14].replace('(', '').replace(')', ''))
                 except:
                     error = True
-            elif len(m) == 0:
-                self.printMess("An old version of Antechamber? Still trying to get charge...")
+            elif os.path.exists('tmp'):
+                #self.printMess("An old version of Antechamber? Still trying to get charge...")
                 charge = self.readMol2TotalCharge('tmp')
             else:
                 error = True
@@ -685,10 +691,16 @@ class AbstractTopol(object):
                 self.printMess("Trying with net charge = 0 ...")
 #                self.chargeVal = 0
                 return None
-
-        charge = int(charge)
-        self.chargeVal = str(charge)
-        self.printMess("... charge set to %i" % charge)
+        charge = float(charge)
+        charge2 = int(round(charge))
+        drift = abs(charge2 - charge)
+        self.printDebug("Net charge drift '%3.6f'" % drift)
+        if drift > diffTol:
+            self.printError("Net charge drift '%3.5f' bigger than tolerance '%3.5f'" % (drift, diffTol))
+            if not self.force:
+                sys.exit(1)
+        self.chargeVal = str(charge2)
+        self.printMess("... charge set to %i" % charge2)
         os.chdir(localDir)
 
     def setResNameCheckCoords(self):
@@ -861,13 +873,13 @@ class AbstractTopol(object):
 
         log = _getoutput(cmd)
 
-        if log.isspace():
+        if os.path.exists('tmp.crg'):
             tmpFile = open('tmp.crg', 'r')
             tmpData = tmpFile.readlines()
             for line in tmpData:
                 ll += line.split()
             charge = sum(map(float, ll))
-        elif self.debug:
+        if not log.isspace() and self.debug:
             self.printQuoted(log)
 
         self.printDebug("readMol2TotalCharge: " + str(charge))
@@ -1264,7 +1276,7 @@ a        """
             Create molTop obj
         """
         self.topFileData = open(self.acTopFileName, 'r').readlines()
-        self.molTopol = MolTopol(self)
+        self.molTopol = MolTopol(self, verbose = self.verbose, debug = self.debug, gmx45 = self.gmx45)
         if self.outTopols:
             if 'cns' in self.outTopols:
                 self.molTopol.writeCnsTopolFiles()
@@ -1660,7 +1672,7 @@ a        """
         self.printDebug("getABCOEFs done")
         return ACOEFs, BCOEFs
 
-    def setProperDihedralsCoefRB(self):
+    def setProperDihedralsCoef(self):
         """
             It takes self.condensedProperDihedrals and returns
             self.properDihedralsCoefRB, a reduced list of quartet atoms + RB.
@@ -1678,6 +1690,7 @@ a        """
         """
         properDihedralsCoefRB = []
         properDihedralsAlphaGamma = []
+        properDihedralsGmx45 = []
         for item in self.condensedProperDihedrals:
             V = 6 * [0.0]
             C = 6 * [0.0]
@@ -1687,6 +1700,7 @@ a        """
                 phaseRaw = dih.phase * radPi # in degree
                 phase = int(phaseRaw) # in degree
                 if phase in [0, 180]:
+                    properDihedralsGmx45.append([item[0].atoms, phaseRaw, kPhi, period])
                     if kPhi > 0: V[period] = 2 * kPhi * cal
                     if period == 1:
                         C[0] += 0.5 * V[period]
@@ -1725,10 +1739,11 @@ a        """
         #print properDihedralsCoefRB
         #print properDihedralsAlphaGamma
 
-        self.printDebug("setProperDihedralsCoefRB done")
+        self.printDebug("setProperDihedralsCoef done")
 
         self.properDihedralsCoefRB = properDihedralsCoefRB
         self.properDihedralsAlphaGamma = properDihedralsAlphaGamma
+        self.properDihedralsGmx45 = properDihedralsGmx45
 
     def writeCharmmTopolFiles(self):
 
@@ -2029,6 +2044,13 @@ a        """
 """
 
         headProDihAlphaGamma = """; treated as usual propers in GROMACS since Phase angle diff from 0 or 180 degrees
+; i   j   k   l func  phase     kd      pn
+"""
+
+        headProDihGmx45 = \
+"""
+[ dihedrals ] ; propers
+; for gromacs 4.5 or higher, using funct 9
 ; i   j   k   l func  phase     kd      pn
 """
 
@@ -2379,47 +2401,84 @@ a        """
                 oitpText += otemp
         self.printDebug("GMX angles done")
 
-        self.setProperDihedralsCoefRB()
+        self.setProperDihedralsCoef()
         self.printDebug("properDihedralsCoefRB %i" % len(self.properDihedralsCoefRB))
+        self.printDebug("properDihedralsAlphaGamma %i" % len(self.properDihedralsAlphaGamma))
+        self.printDebug("properDihedralsGmx45 %i" % len(self.properDihedralsGmx45))
         temp = []
         otemp = []
-        for dih in self.properDihedralsCoefRB:
-            a1 = dih[0][0].atomName
-            a2 = dih[0][1].atomName
-            a3 = dih[0][2].atomName
-            a4 = dih[0][3].atomName
-            id1 = dih[0][0].id
-            id2 = dih[0][1].id
-            id3 = dih[0][2].id
-            id4 = dih[0][3].id
-            oat1 = id2oplsATDict[id1]
-            oat2 = id2oplsATDict[id2]
-            oat3 = id2oplsATDict[id3]
-            oat4 = id2oplsATDict[id4]
-            c0, c1, c2, c3, c4, c5 = dih[1]
-            line = \
-            "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
-            (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
-            + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
-            oline = \
-            "%3i %3i %3i %3i %3i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
-            (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
-            + " ; %6s-%6s-%6s-%6s    %4s-%4s-%4s-%4s\n" % (a1, a2, a3, a4, oat1, oat2, oat3, oat4)
-            temp.append(line)
-            otemp.append(oline)
-        temp.sort()
-        otemp.sort()
-        if temp:
-            if amb2gmx:
-                topText.append(headProDih)
-                topText += temp
-            else:
-                itpText.append(headProDih)
-                itpText += temp
-                oitpText.append(headProDih)
-                oitpText += otemp
+        if not self.gmx45:
+            for dih in self.properDihedralsCoefRB:
+                a1 = dih[0][0].atomName
+                a2 = dih[0][1].atomName
+                a3 = dih[0][2].atomName
+                a4 = dih[0][3].atomName
+                id1 = dih[0][0].id
+                id2 = dih[0][1].id
+                id3 = dih[0][2].id
+                id4 = dih[0][3].id
+                oat1 = id2oplsATDict[id1]
+                oat2 = id2oplsATDict[id2]
+                oat3 = id2oplsATDict[id3]
+                oat4 = id2oplsATDict[id4]
+                c0, c1, c2, c3, c4, c5 = dih[1]
+                line = \
+                "%3i %3i %3i %3i %3i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
+                (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
+                + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
+                oline = \
+                "%3i %3i %3i %3i %3i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
+                (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
+                + " ; %6s-%6s-%6s-%6s    %4s-%4s-%4s-%4s\n" % (a1, a2, a3, a4, oat1, oat2, oat3, oat4)
+                temp.append(line)
+                otemp.append(oline)
+            temp.sort()
+            otemp.sort()
+            if temp:
+                if amb2gmx:
+                    topText.append(headProDih)
+                    topText += temp
+                else:
+                    itpText.append(headProDih)
+                    itpText += temp
+                    oitpText.append(headProDih)
+                    oitpText += otemp
+            self.printDebug("GMX proper dihedrals done")
+        else:
+            funct = 9 #9
+            for dih in self.properDihedralsGmx45:
+                a1 = dih[0][0].atomName
+                a2 = dih[0][1].atomName
+                a3 = dih[0][2].atomName
+                a4 = dih[0][3].atomName
+                id1 = dih[0][0].id
+                id2 = dih[0][1].id
+                id3 = dih[0][2].id
+                id4 = dih[0][3].id
+                ph = dih[1] # phase already in degree
+                kd = dih[2] * cal #kPhi PK
+                pn = dih[3] #.period
+                line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
+                                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                oline = "%3i %3i %3i %3i %3i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
+                                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                temp.append(line)
+                otemp.append(oline)
+            temp.sort()
+            otemp.sort()
+            if temp:
+                if amb2gmx:
+                    topText.append(headProDihGmx45)
+                    topText += temp
+                else:
+                    itpText.append(headProDihGmx45)
+                    itpText += temp
+                    oitpText.append(headProDihGmx45)
+                    oitpText += otemp
 
         # for properDihedralsAlphaGamma
+        if self.gmx45: funct = 4 #4
+        else: funct = 1
         temp = []
         otemp = []
         for dih in self.properDihedralsAlphaGamma:
@@ -2435,9 +2494,9 @@ a        """
             kd = dih[2] * cal #kPhi PK
             pn = dih[3] #.period
             line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             oline = "%3i %3i %3i %3i %3i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
@@ -2451,7 +2510,7 @@ a        """
                 itpText += temp
                 oitpText.append(headProDihAlphaGamma)
                 oitpText += otemp
-        self.printDebug("GMX proper dihedrals done")
+        self.printDebug("GMX special proper dihedrals done")
 
         self.printDebug("improperDihedrals %i" % len(self.improperDihedrals))
         temp = []
@@ -2469,9 +2528,9 @@ a        """
             pn = dih.period
             ph = dih.phase * radPi
             line = "%3i %3i %3i %3i %3i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             oline = "%3i %3i %3i %3i %3i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, 1, ph, kd, pn, a1, a2, a3, a4)
+                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
@@ -2912,9 +2971,12 @@ class ACTopol(AbstractTopol):
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-            timeTol = 36000, qprog = 'sqm', ekFlag = None):
+            timeTol = 36000, qprog = 'sqm', ekFlag = None, verbose = True,
+            gmx45 = False):
 
         self.debug = debug
+        self.verbose = verbose
+        self.gmx45 = gmx45
         self.inputFile = os.path.basename(inputFile)
         self.rootDir = os.path.abspath('.')
         self.absInputFile = os.path.abspath(inputFile)
@@ -2927,7 +2989,7 @@ class ACTopol(AbstractTopol):
         self.timeTol = timeTol
         self.printDebug("Max execution time tolerance is %s" % elapsedTime(self.timeTol))
         self.ext = ext
-        if ekFlag == '"None"':
+        if ekFlag == '"None"' or ekFlag == None:
             self.ekFlag = ''
         else:
             self.ekFlag = '-ek %s' % ekFlag
@@ -3022,10 +3084,12 @@ class MolTopol(ACTopol):
         RETURN: molTopol obj or None
     """
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
-                 debug = False, basename = None):
+                 debug = False, basename = None, verbose = True, gmx45 = False):
 
         self.allhdg = False
         self.debug = debug
+        self.gmx45 = gmx45
+        self.verbose = verbose
         self.inputFile = acFileTop
         if acTopolObj:
             if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
@@ -3159,22 +3223,28 @@ if __name__ == '__main__':
     dg = False
     tt = False
     ip = False
+    vb = True
+    gmx45 = False
     if '-f' in list(argsDict.keys()): fs = True
     if '-d' in list(argsDict.keys()): dg = True
     if '-t' in list(argsDict.keys()): tt = True
     if '-y' in list(argsDict.keys()): ip = True
+    if '-w' in list(argsDict.keys()): vb = False
+    if '-r' in list(argsDict.keys()): gmx45 = True
 
     try:
         if amb2gmx:
             print("Converting Amber input files to Gromacs ...")
-            system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg, basename = bn)
+            system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg,
+                              basename = bn, verbose = vb, gmx45 = gmx45)
             system.printDebug("prmtop and inpcrd files parsed")
             system.writeGromacsTopolFiles(amb2gmx = True)
         else:
             molecule = ACTopol(iF, chargeType = cT, chargeVal = cV, debug = dg,
                                multiplicity = mt, atomType = at, force = fs,
                                outTopol = ot, engine = en, allhdg = tt, basename = bn,
-                               timeTol = to, qprog = qq, ekFlag = '''"%s"''' % ek)
+                               timeTol = to, qprog = qq, ekFlag = '''"%s"''' % ek,
+                               verbose = vb, gmx45 = gmx45)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting!")
