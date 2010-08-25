@@ -8,7 +8,7 @@ from subprocess import Popen
 
 numCpu = 20
 
-def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separator=' '):
+def elapsedTime(seconds, suffixes = ['y', 'w', 'd', 'h', 'm', 's'], add_s = False, separator = ' '):
     """
     Takes an amount of seconds and turns it into a human-readable amount of time.
     """
@@ -40,7 +40,7 @@ def elapsedTime(seconds, suffixes=['y','w','d','h','m','s'], add_s=False, separa
 
     return separator.join(time)
 
-def runConversionJobs(chemCompVarFiles,scriptName):
+def runConversionJobs(chemCompVarFiles, scriptName):
 
     _timeStamp = time.strftime("%Y_%m_%d_%H_%M_%S")
 
@@ -62,7 +62,7 @@ def runConversionJobs(chemCompVarFiles,scriptName):
         if len(currentProcesses.keys()) < numCpu:
 
             tempIndex = currentIndex + 1
-            for _i in range(currentIndex,currentIndex + numCpu - len(currentProcesses.keys())):
+            for _i in range(currentIndex, currentIndex + numCpu - len(currentProcesses.keys())):
                 # Don't start a job if it's at the end!
                 if currentChemCompVarFile != endChemCompVarFile:
 
@@ -72,8 +72,8 @@ def runConversionJobs(chemCompVarFiles,scriptName):
                     # TODO: ensure that stdout and stdin OK for this job!! Might want to reroute!!
                     #
 
-                    currentOutFile = chemCompVarFile.replace('.mol2','.out')
-                    jobOut = open(currentOutFile,'w')
+                    currentOutFile = chemCompVarFile.replace('.mol2', '.out')
+                    jobOut = open(currentOutFile, 'w')
 
                     varDir, varFile = os.path.split(chemCompVarFile)
                     os.chdir(varDir)
@@ -136,17 +136,17 @@ if __name__ == '__main__':
         #if ccpCode < 'NA':
         #  continue
 
-        ccvNames = os.listdir(os.path.join('other',ccpCode))
+        ccvNames = os.listdir(os.path.join('other', ccpCode))
 
         for ccvName in  ccvNames:
             if ccvName[-5:] == '.mol2' and not ccvName.count("bcc_gaff"):
-                chemCompVarFiles.append(os.path.join(curDir,'other',ccpCode,ccvName))
+                chemCompVarFiles.append(os.path.join(curDir, 'other', ccpCode, ccvName))
 
-    runConversionJobs(chemCompVarFiles,'acpype')
+    runConversionJobs(chemCompVarFiles, 'acpype')
     execTime = int(round(time.time() - t0))
     msg = elapsedTime(execTime)
-    print "Total time of execution: %s" % msg
-    print "ALL DONE"
+    print("Total time of execution: %s" % msg)
+    print("ALL DONE")
 
 # nohup ./run_test_acpype_db_ligands.py &
 # grep started nohup.out | wc -l ; grep finished nohup.out | wc -l # 17405 17405

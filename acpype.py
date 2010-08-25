@@ -672,17 +672,13 @@ class AbstractTopol(object):
 
             log = _getoutput(cmd).strip()
 
-            if log:
-                try:
-                    n = log.split()
-                    charge = float(n[14].replace('(', '').replace(')', ''))
-                except:
-                    error = True
-            elif os.path.exists('tmp'):
-                #self.printMess("An old version of Antechamber? Still trying to get charge...")
+            if os.path.exists('tmp'):
                 charge = self.readMol2TotalCharge('tmp')
             else:
-                error = True
+                try:
+                    charge = float(log.strip().split('equal to the total charge (')[-1].split(') based on Gasteiger atom type, exit')[0])
+                except:
+                    error = True
 
             if error:
                 self.printError("guessCharge failed")
@@ -1180,16 +1176,22 @@ a        """
                                           self.acFrcmodFileName)
 
         if self.atomType == 'amber':
-            parm99file = self.locateDat('parm99.dat')
             gaffFile = self.locateDat('gaff.dat')
-            frcmodff99SB = self.locateDat('frcmod.ff99SB')
-            frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
-            parm99gaffFile = parmMerge(parm99file, gaffFile)
-            parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod = True)
-            #parm99gaffFile = '/Users/alan/workspace/acpype/ffamber_additions/parm99SBgaff.dat'
-            parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
-            #parm99gaffff99SBparmbsc0File = '/Users/alan/workspace/acpype/ffamber_additions/parm99bsc0SBgaff.dat'
-            cmd += ' -p %s' % parm99gaffff99SBparmbsc0File
+            parm10file = self.locateDat('parm10.dat') # PARM99 + frcmod.ff99SB + frcmod.parmbsc0 in AmberTools 1.4
+            if parm10file:
+                parm10gaffFile = parmMerge(parm10file, gaffFile)
+                cmd += ' -p %s' % parm10gaffFile
+            else:
+                # DEPRECATED
+                parm99file = self.locateDat('parm99.dat')
+                frcmodff99SB = self.locateDat('frcmod.ff99SB')
+                frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
+                parm99gaffFile = parmMerge(parm99file, gaffFile)
+                parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod = True)
+                #parm99gaffFile = '/Users/alan/workspace/acpype/ffamber_additions/parm99SBgaff.dat'
+                parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
+                #parm99gaffff99SBparmbsc0File = '/Users/alan/workspace/acpype/ffamber_additions/parm99bsc0SBgaff.dat'
+                cmd += ' -p %s' % parm99gaffff99SBparmbsc0File
 
         self.parmchkLog = _getoutput(cmd)
 
@@ -1554,6 +1556,7 @@ a        """
             kPhi = uniqKpList[dihTypeId] # already divided by IDIVF
             period = int(uniqPeriodList[dihTypeId]) # integer
             phase = uniqPhaseList[dihTypeId]# angle given in rad in prmtop
+            if phase == kPhi == 0: period = 0
             atoms = [atom1, atom2, atom3, atom4]
             dihedral = Dihedral(atoms, kPhi, period, phase)
             if idAtom4raw > 0:

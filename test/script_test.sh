@@ -6,9 +6,16 @@ mkdir -p temp_test
 
 cd temp_test
 
+pdb2gmx="/sw/bin/pdb2gmx"
+editconf="/sw/bin/editconf"
+genbox="/sw/bin/genbox"
+grompp="/sw/bin/grompp"
+mdrun="/sw/bin/mdrun"
+mrun="" #"${mrun}"
+
 echo "\n#=#=# Test DMP from 1BVG for GROMACS #=#=#\n"
 
-wget -c "http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=1BVG" -O 1BVG.pdb
+wget -c "http://www.pdbe.org/download/1BVG" -O 1BVG.pdb
 grep 'ATOM  ' 1BVG.pdb>| Protein.pdb
 grep 'HETATM' 1BVG.pdb>| Ligand.pdb
 
@@ -22,7 +29,7 @@ sed s/PRO\ A\ \ \ 1/NPROA\ \ \ 1/g Protein.pdb | sed s/PRO\ B\ \ \ 1/NPROB\ \ \ 
 | sed s/HIS\ /HID\ /g | sed s/LYS\ /LYP\ /g | sed s/CYS\ /CYN\ /g >| ProteinAmber.pdb
 
 # Process with pdb2gmx and define water
-pdb2gmx -ff amber99sb -f ProteinAmber.pdb -o Protein2.pdb -p Protein.top -water spce -ignh
+${pdb2gmx} -ff amber99sb -f ProteinAmber.pdb -o Protein2.pdb -p Protein.top -water spce -ignh
 
 # Generate Ligand topology file with acpype (GAFF)
 acpype -i Ligand.pdb
@@ -49,8 +56,8 @@ echo "\n#=#=# CHECK Ligand.itp" >> diff_out.log
 diff Ligand.itp ../Data/Ligand.itp >> diff_out.log
 
 # Setup the box and add water
-editconf -bt triclinic -f Complex.pdb -o Complex.pdb -d 1.0
-genbox -cp Complex.pdb -cs ffamber_tip3p.gro -o Complex_b4ion.pdb -p Complex.top
+${editconf} -bt triclinic -f Complex.pdb -o Complex.pdb -d 1.0
+${genbox} -cp Complex.pdb -cs ffamber_tip3p.gro -o Complex_b4ion.pdb -p Complex.top
 
 # Create em.mdp file
 cat << EOF >| EM.mdp
@@ -105,24 +112,24 @@ optimize_fft             = yes
 EOF
 
 # Setup ions
-grompp -f EM.mdp -c Complex_b4ion.pdb -p Complex.top -o Complex_b4ion.tpr
+${grompp} -f EM.mdp -c Complex_b4ion.pdb -p Complex.top -o Complex_b4ion.tpr
 \cp Complex.top Complex_ion.top
 echo 13| genion -s Complex_b4ion.tpr -o Complex_b4em.pdb -neutral -conc 0.15 -p Complex_ion.top -norandom
 \mv Complex_ion.top Complex.top
 
 # Run minimisaton
-#grompp -f EM.mdp -c Complex_b4em.pdb -p Complex.top -o em.tpr
-#mdrun -v -deffnm em
+#${grompp} -f EM.mdp -c Complex_b4em.pdb -p Complex.top -o em.tpr
+#${mdrun} -v -deffnm em
 
 # Run a short simulation
-#grompp -f MD.mdp -c em.gro -p Complex.top -o md.tpr
-#mdrun -v -deffnm md
+#${grompp} -f MD.mdp -c em.gro -p Complex.top -o md.tpr
+#${mdrun} -v -deffnm md
 
 # or with openmpi, for a dual core
-grompp -f EM.mdp -c Complex_b4em.pdb -p Complex.top -o em.tpr
-om-mpirun -n 2 mdrun -v -deffnm em
-grompp -f MD.mdp -c em.gro -p Complex.top -o md.tpr
-om-mpirun -n 2 mdrun -v -deffnm md
+${grompp} -f EM.mdp -c Complex_b4em.pdb -p Complex.top -o em.tpr
+${mrun} ${mdrun} -v -deffnm em
+${grompp} -f MD.mdp -c em.gro -p Complex.top -o md.tpr
+${mrun} ${mdrun} -v -deffnm md
 # vmd md.gro md.trr
 
 echo "\n#=#=# Test 'amb2gmx' Function on 1BVG #=#=#\n"
@@ -155,10 +162,10 @@ diff ComplexAmber_GMX.top ../Data/ComplexAmber_GMX.top >> diff_out.log
 diff ComplexAmber_GMX.gro ../Data/ComplexAmber_GMX.gro >> diff_out.log
 
 # Run EM and MD
-grompp -f EM.mdp -c ComplexAmber_GMX.gro -p ComplexAmber_GMX.top -o em.tpr
-om-mpirun -n 2 mdrun -v -deffnm em
-grompp -f MD.mdp -c em.gro -p ComplexAmber_GMX.top -o md.tpr
-om-mpirun -n 2 mdrun -v -deffnm md
+${grompp} -f EM.mdp -c ComplexAmber_GMX.gro -p ComplexAmber_GMX.top -o em.tpr
+${mrun} ${mdrun} -v -deffnm em
+${grompp} -f MD.mdp -c em.gro -p ComplexAmber_GMX.top -o md.tpr
+${mrun} ${mdrun} -v -deffnm md
 # vmd md.gro md.trr
 
 echo "############################"
