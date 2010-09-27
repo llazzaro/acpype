@@ -1177,21 +1177,13 @@ a        """
 
         if self.atomType == 'amber':
             gaffFile = self.locateDat('gaff.dat')
-            parm10file = self.locateDat('parm10.dat') # PARM99 + frcmod.ff99SB + frcmod.parmbsc0 in AmberTools 1.4
-            if parm10file:
-                parm10gaffFile = parmMerge(parm10file, gaffFile)
-                cmd += ' -p %s' % parm10gaffFile
-            else:
-                # DEPRECATED
-                parm99file = self.locateDat('parm99.dat')
-                frcmodff99SB = self.locateDat('frcmod.ff99SB')
-                frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
-                parm99gaffFile = parmMerge(parm99file, gaffFile)
-                parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod = True)
-                #parm99gaffFile = '/Users/alan/workspace/acpype/ffamber_additions/parm99SBgaff.dat'
-                parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
-                #parm99gaffff99SBparmbsc0File = '/Users/alan/workspace/acpype/ffamber_additions/parm99bsc0SBgaff.dat'
-                cmd += ' -p %s' % parm99gaffff99SBparmbsc0File
+            parm99file = self.locateDat('parm99.dat')
+            frcmodff99SB = self.locateDat('frcmod.ff99SB')
+            #frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
+            parm99gaffFile = parmMerge(parm99file, gaffFile)
+            parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod = True)
+            #parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
+            #parm10file = self.locateDat('parm10.dat') # PARM99 + frcmod.ff99SB + frcmod.parmbsc0 in AmberTools 1.4
 
             cmd += ' -p %s' % parm99gaffff99SBFile # Ignoring parm10.dat and BSC0
 
