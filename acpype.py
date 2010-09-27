@@ -89,7 +89,7 @@ ionOrSolResNameList = ['Cl-', 'Na+', 'K+', 'CIO', 'Cs+', 'IB', 'Li+', 'MG2',
                        'Rb+', 'WAT', 'MOH', 'NMA']
 
 leapGaffFile = 'leaprc.gaff'
-leapAmberFile = 'leaprc.ff99bsc0' #'leaprc.ff99SB'
+leapAmberFile = 'leaprc.ff99SB' # 'leaprc.ff10' and 'leaprc.ff99bsc0' has extra Atom Types not in parm99.dat
 
 # "qm_theory='AM1', grms_tol=0.0002, maxcyc=999, tight_p_conv=1, scfconv=1.d-10,"
 # "AM1 ANALYT MMOK GEO-OK PRECISE"
@@ -1192,6 +1192,8 @@ a        """
                 parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
                 #parm99gaffff99SBparmbsc0File = '/Users/alan/workspace/acpype/ffamber_additions/parm99bsc0SBgaff.dat'
                 cmd += ' -p %s' % parm99gaffff99SBparmbsc0File
+
+            cmd += ' -p %s' % parm99gaffff99SBFile # Ignoring parm10.dat and BSC0
 
         self.parmchkLog = _getoutput(cmd)
 

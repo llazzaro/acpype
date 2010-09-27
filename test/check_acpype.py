@@ -14,6 +14,10 @@ cType = 'bcc' #'gas'
 doOpls = False
 debug = False
 
+water = ''
+if useGmx45:
+    water = ' -water none'
+
 print('usePymol: %s, useGmx45: %s, ffType: %s, cType: %s, doOpls: %s' % (usePymol, useGmx45, ffType, cType, doOpls))
 
 tmpDir = '/tmp/testAcpype'
@@ -45,7 +49,7 @@ mdrun = gpath + '/bin/mdrun'
 g_energy = '/usr/local/bin/g_energy' #'/sw/bin/g_energy'
 pdb2gmx45 = '/usr/local/bin/pdb2gmx'
 
-amberff = "leaprc.ff10"
+amberff = "leaprc.ff99SB"
 
 genPdbTemplate = \
 '''
@@ -785,6 +789,7 @@ def build_residues_tleap():
     open('mdin', 'w').writelines(mdin)
     seqi = aa_dict.keys()
     for aai in seqi:
+        #if aai != 'H': continue
         aai3 = 3 * aai
         res = aa_dict.get(aai).upper()
         if res in ['ARG']:
@@ -813,7 +818,7 @@ def calcGmxPotEnerDiff(res):
         out = out.split('\n')[-nEner:]
         dictEner = {}
         for item in out:
-            k, v = item.replace(' Dih.', '_Dih.').replace(' (SR)', '_(SR)').split()[:2]
+            k, v = item.replace(' Dih.', '_Dih.').replace(' (SR)', '_(SR)').replace('c En.', 'c_En.').replace(' (bar)', '_(bar)').replace('l E', 'l_E').split()[:2]
             v = eval(v)
             dictEner[k] = v
             if 'Dih.' in k or 'Bell.' in k:
@@ -830,7 +835,7 @@ def calcGmxPotEnerDiff(res):
         return dictEner
 
     os.chdir(tmpDir)
-    nEner = 9
+    nEner = 9 # number of energy entries from g_energy
     tEner = ' '.join([str(x) for x in range(1, nEner + 1)])
     open('SPE.mdp', 'w').writelines(spe_mdp)
     prefix = 'a'
@@ -839,7 +844,12 @@ def calcGmxPotEnerDiff(res):
     cmdDict = {'pdb2gmx':pdb2gmx, 'grompp':grompp, 'mdrun':mdrun, 'res':res,
                'g_energy':g_energy, 'tEner':tEner, 'water':water, 'prefix':prefix}
 
-    # calc Pot Ener for aogXXX.pdb
+    # calc Pot Ener for agaXXX.pdb or aogXXX.pdb
+#    if not useGmx45:
+#        shutil.copy('ag%s.pdb' % res, 'ag_%s.pdb' % res)
+#        createAmberPdb3('ag_%s.pdb' % res)
+#    else:
+#        shutil.copy('ag%s.pdb' % res, 'aga%s.pdb' % res)
     template = '''%(pdb2gmx)s -ff amber99sb -f %(prefix)s%(res)s.pdb -o %(prefix)s%(res)s_.pdb -p %(prefix)s%(res)s.top %(water)s
     %(grompp)s -c %(prefix)s%(res)s_.pdb -p %(prefix)s%(res)s.top -f SPE.mdp -o %(prefix)s%(res)s.tpr
     %(mdrun)s -v -deffnm %(prefix)s%(res)s
@@ -904,12 +914,8 @@ if __name__ == '__main__':
     for resFile in listRes:
         res, ext = os.path.splitext(resFile) # eg. res = 'AAA'
         if len(resFile) == 7 and ext == ".pdb" and resFile[:3].isupper():
-            #if not resFile == 'QQQ.pdb': continue
+            #if not resFile == 'HHH.pdb': continue
             print("\nFile %s : residue %s" % (resFile, aa_dict[res[0]].upper()))
-
-            water = ''
-            if useGmx45:
-                water = ' -water none'
 
             if doOpls:
                 if usePymol:
