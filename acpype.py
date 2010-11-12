@@ -2593,10 +2593,11 @@ a        """
         for atom in self.atoms:
             coords = [c * 0.1 for c in atom.coords]
             resid = atom.resid
-            line = "%5d%-4s%6s%5d%8.3f%8.3f%8.3f\n" % \
+            line = "%5d%5s%5s%5d%8.3f%8.3f%8.3f\n" % \
                    (resid + 1, self.residueLabel[resid], atom.atomName,
                     count, coords[0], coords[1], coords[2])
             count += 1
+            if count == 100000: count = 0
             groFile.write(line)
         if self.pbc:
             boxX = self.pbc[0][0] * 0.1
