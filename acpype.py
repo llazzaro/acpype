@@ -278,6 +278,7 @@ USAGE = \
     -s    max time (in sec) tolerance for sqm/mopac, default is 10 hours
     -y    start ipython interpreter
     -w    print nothing
+    -g    disambiguate lower and uppercase atomtypes in GMX top file
     -h    this help
 
     output: assuming 'root' is the basename of either the top input file,
@@ -353,7 +354,7 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hyftrdi:c:n:m:o:a:q:e:k:x:w:p:b:s:'
+    options = 'hyfgwtrdi:c:n:m:o:a:q:e:k:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
@@ -1272,7 +1273,8 @@ a        """
             Create molTop obj
         """
         self.topFileData = open(self.acTopFileName, 'r').readlines()
-        self.molTopol = MolTopol(self, verbose = self.verbose, debug = self.debug, gmx45 = self.gmx45)
+        self.molTopol = MolTopol(self, verbose = self.verbose, debug = self.debug,
+                                 gmx45 = self.gmx45, disam = self.disam)
         if self.outTopols:
             if 'cns' in self.outTopols:
                 self.molTopol.writeCnsTopolFiles()
@@ -1911,6 +1913,11 @@ a        """
            this routine will append a '_' to lower case atom type.
            E.g.: CA and ca -> CA and ca_
         """
+        if self.disam:
+            self.atomTypesGromacs = self.atomTypes
+            self.atomsGromacs = self.atoms
+            return
+
         atNames = [at.atomTypeName for at in self.atomTypes]
         #print atNames
         delAtomTypes = []
@@ -2970,11 +2977,12 @@ class ACTopol(AbstractTopol):
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
             timeTol = 36000, qprog = 'sqm', ekFlag = None, verbose = True,
-            gmx45 = False):
+            gmx45 = False, disam = False):
 
         self.debug = debug
         self.verbose = verbose
         self.gmx45 = gmx45
+        self.disam = disam
         self.inputFile = os.path.basename(inputFile)
         self.rootDir = os.path.abspath('.')
         self.absInputFile = os.path.abspath(inputFile)
@@ -3082,11 +3090,13 @@ class MolTopol(ACTopol):
         RETURN: molTopol obj or None
     """
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
-                 debug = False, basename = None, verbose = True, gmx45 = False):
+                 debug = False, basename = None, verbose = True, gmx45 = False,
+                 disam = False):
 
         self.allhdg = False
         self.debug = debug
         self.gmx45 = gmx45
+        self.disam = disam
         self.verbose = verbose
         self.inputFile = acFileTop
         if acTopolObj:
@@ -3223,18 +3233,20 @@ if __name__ == '__main__':
     ip = False
     vb = True
     gmx45 = False
+    gg = False
     if '-f' in list(argsDict.keys()): fs = True
     if '-d' in list(argsDict.keys()): dg = True
     if '-t' in list(argsDict.keys()): tt = True
     if '-y' in list(argsDict.keys()): ip = True
     if '-w' in list(argsDict.keys()): vb = False
     if '-r' in list(argsDict.keys()): gmx45 = True
+    if '-g' in list(argsDict.keys()): gg = True
 
     try:
         if amb2gmx:
             print("Converting Amber input files to Gromacs ...")
             system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg,
-                              basename = bn, verbose = vb, gmx45 = gmx45)
+                              basename = bn, verbose = vb, gmx45 = gmx45, disam = gg)
             system.printDebug("prmtop and inpcrd files parsed")
             system.writeGromacsTopolFiles(amb2gmx = True)
         else:
@@ -3242,7 +3254,7 @@ if __name__ == '__main__':
                                multiplicity = mt, atomType = at, force = fs,
                                outTopol = ot, engine = en, allhdg = tt, basename = bn,
                                timeTol = to, qprog = qq, ekFlag = '''"%s"''' % ek,
-                               verbose = vb, gmx45 = gmx45)
+                               verbose = vb, gmx45 = gmx45, disam = gg)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting!")
