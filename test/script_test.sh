@@ -9,6 +9,7 @@ cd temp_test
 pdb2gmx="/sw/bin/pdb2gmx"
 editconf="/sw/bin/editconf"
 genbox="/sw/bin/genbox"
+genion="/sw/bin/genion"
 grompp="/sw/bin/grompp"
 mdrun="/sw/bin/mdrun"
 mrun="" #"${mrun}"
@@ -114,7 +115,7 @@ EOF
 # Setup ions
 ${grompp} -f EM.mdp -c Complex_b4ion.pdb -p Complex.top -o Complex_b4ion.tpr
 \cp Complex.top Complex_ion.top
-echo 13| genion -s Complex_b4ion.tpr -o Complex_b4em.pdb -neutral -conc 0.15 -p Complex_ion.top -norandom
+echo 13| ${genion} -s Complex_b4ion.tpr -o Complex_b4em.pdb -neutral -conc 0.15 -p Complex_ion.top -norandom
 \mv Complex_ion.top Complex.top
 
 # Run minimisaton
