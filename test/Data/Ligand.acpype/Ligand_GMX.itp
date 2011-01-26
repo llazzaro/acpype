@@ -1,4 +1,4 @@
-; Ligand_GMX.itp created by acpype (Rev: 358) on Wed Jan 19 15:42:42 2011
+; Ligand_GMX.itp created by acpype (Rev: 359) on Wed Jan 26 15:24:56 2011
 
 [ atomtypes ]
 ;name   bond_type     mass     charge   ptype   sigma         epsilon       Amb

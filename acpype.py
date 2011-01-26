@@ -279,6 +279,7 @@ USAGE = \
     -y    start ipython interpreter
     -w    print nothing
     -g    disambiguate lower and uppercase atomtypes in GMX top file
+    -u    for 'amb2gmx' mode, does a direct conversion, for any solvent
     -h    this help
 
     output: assuming 'root' is the basename of either the top input file,
@@ -354,7 +355,7 @@ def parseArgs(args):
 
     amb2gmx = False
 
-    options = 'hyfgwtrdi:c:n:m:o:a:q:e:k:x:p:b:s:'
+    options = 'hyfguwtrdi:c:n:m:o:a:q:e:k:x:p:b:s:'
 
     ctList = ['gas', 'bcc', 'user']
     atList = ['gaff', 'amber'] #, 'bcc', 'sybyl']
@@ -423,6 +424,8 @@ def parseArgs(args):
             invalidArgs("input file prmtop and/or inpcrd don't exist")
     elif not os.path.exists(d['-i']):
         invalidArgs("input file '%s' doesn't exist" % d['-i'])
+    elif '-u' in list(d.keys()):
+        invalidArgs("option '-u' valid only with 'amb2gmx' mode")
 
     if args:
         invalidArgs("argument not recognised: %s" % str(args))
@@ -1274,7 +1277,7 @@ a        """
         """
         self.topFileData = open(self.acTopFileName, 'r').readlines()
         self.molTopol = MolTopol(self, verbose = self.verbose, debug = self.debug,
-                                 gmx45 = self.gmx45, disam = self.disam)
+                                 gmx45 = self.gmx45, disam = self.disam, direct = self.direct)
         if self.outTopols:
             if 'cns' in self.outTopols:
                 self.molTopol.writeCnsTopolFiles()
@@ -2279,8 +2282,9 @@ a        """
         for atom in self.atomsGromacs:
             resid = atom.resid
             resname = self.residueLabel[resid]
-            if resname in list(ionsDict.keys()) + ['WAT' ]:
-                break
+            if not self.direct:
+                if resname in list(ionsDict.keys()) + ['WAT' ]:
+                    break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
             oItem = d2opls.get(aType, ['x', 0])
@@ -2323,8 +2327,8 @@ a        """
             a2Name = bond.atoms[1].atomName
             id1 = bond.atoms[0].id
             id2 = bond.atoms[1].id
-            oat1 = id2oplsATDict[id1]
-            oat2 = id2oplsATDict[id2]
+            oat1 = id2oplsATDict.get(id1)
+            oat2 = id2oplsATDict.get(id2)
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
                    bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
             oline = "%6i %6i %3i ; %13.4e %13.4e ; %6s - %-6s %6s - %-6s\n" % \
@@ -2382,9 +2386,9 @@ a        """
             id1 = angle.atoms[0].id
             id2 = angle.atoms[1].id
             id3 = angle.atoms[2].id
-            oat1 = id2oplsATDict[id1]
-            oat2 = id2oplsATDict[id2]
-            oat3 = id2oplsATDict[id3]
+            oat1 = id2oplsATDict.get(id1)
+            oat2 = id2oplsATDict.get(id2)
+            oat3 = id2oplsATDict.get(id3)
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
             id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
             oline = "%6i %6i %6i %6i ; %13.4e %13.4e ; %6s - %-4s - %-6s %4s - %+4s - %-4s\n" % \
@@ -2421,10 +2425,10 @@ a        """
                 id2 = dih[0][1].id
                 id3 = dih[0][2].id
                 id4 = dih[0][3].id
-                oat1 = id2oplsATDict[id1]
-                oat2 = id2oplsATDict[id2]
-                oat3 = id2oplsATDict[id3]
-                oat4 = id2oplsATDict[id4]
+                oat1 = id2oplsATDict.get(id1)
+                oat2 = id2oplsATDict.get(id2)
+                oat3 = id2oplsATDict.get(id3)
+                oat4 = id2oplsATDict.get(id4)
                 c0, c1, c2, c3, c4, c5 = dih[1]
                 line = \
                 "%6i %6i %6i %6i %6i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
@@ -2550,11 +2554,12 @@ a        """
                 oitpText += otemp
         self.printDebug("GMX improper dihedrals done")
 
-        for ion in ionsSorted:
-            topText.append(ionsDict[ion[2]])
+        if not self.direct:
+            for ion in ionsSorted:
+                topText.append(ionsDict[ion[2]])
 
-        if nWat:
-            topText.append(headWater)
+            if nWat:
+                topText.append(headWater)
 
         topText.append(headSystem % (self.baseName))
         topText.append(headMols)
@@ -2565,11 +2570,12 @@ a        """
             topText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
             otopText.append(" %-16s %-6i\n" % (self.baseName, nSolute))
 
-        for ion in ionsSorted:
-            topText.append(" %-16s %-6i\n" % (ion[2].upper(), ion[1]))
+        if not self.direct:
+            for ion in ionsSorted:
+                topText.append(" %-16s %-6i\n" % (ion[2].upper(), ion[1]))
 
-        if nWat:
-            topText.append(" %-16s %-6i\n" % ('WAT', nWat))
+            if nWat:
+                topText.append(" %-16s %-6i\n" % ('WAT', nWat))
 
         gmxDir = os.path.abspath('.')
         topFileName = os.path.join(gmxDir, top)
@@ -2977,12 +2983,13 @@ class ACTopol(AbstractTopol):
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
             timeTol = 36000, qprog = 'sqm', ekFlag = None, verbose = True,
-            gmx45 = False, disam = False):
+            gmx45 = False, disam = False, direct = False):
 
         self.debug = debug
         self.verbose = verbose
         self.gmx45 = gmx45
         self.disam = disam
+        self.direct = direct
         self.inputFile = os.path.basename(inputFile)
         self.rootDir = os.path.abspath('.')
         self.absInputFile = os.path.abspath(inputFile)
@@ -3091,12 +3098,13 @@ class MolTopol(ACTopol):
     """
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
                  debug = False, basename = None, verbose = True, gmx45 = False,
-                 disam = False):
+                 disam = False, direct = False):
 
         self.allhdg = False
         self.debug = debug
         self.gmx45 = gmx45
         self.disam = disam
+        self.direct = direct
         self.verbose = verbose
         self.inputFile = acFileTop
         if acTopolObj:
@@ -3234,6 +3242,7 @@ if __name__ == '__main__':
     vb = True
     gmx45 = False
     gg = False
+    uu = False
     if '-f' in list(argsDict.keys()): fs = True
     if '-d' in list(argsDict.keys()): dg = True
     if '-t' in list(argsDict.keys()): tt = True
@@ -3241,12 +3250,13 @@ if __name__ == '__main__':
     if '-w' in list(argsDict.keys()): vb = False
     if '-r' in list(argsDict.keys()): gmx45 = True
     if '-g' in list(argsDict.keys()): gg = True
-
+    if '-u' in list(argsDict.keys()): uu = True
     try:
         if amb2gmx:
             print("Converting Amber input files to Gromacs ...")
             system = MolTopol(acFileXyz = inpcrd, acFileTop = prmtop, debug = dg,
-                              basename = bn, verbose = vb, gmx45 = gmx45, disam = gg)
+                              basename = bn, verbose = vb, gmx45 = gmx45, disam = gg,
+                              direct = uu)
             system.printDebug("prmtop and inpcrd files parsed")
             system.writeGromacsTopolFiles(amb2gmx = True)
         else:
@@ -3254,7 +3264,7 @@ if __name__ == '__main__':
                                multiplicity = mt, atomType = at, force = fs,
                                outTopol = ot, engine = en, allhdg = tt, basename = bn,
                                timeTol = to, qprog = qq, ekFlag = '''"%s"''' % ek,
-                               verbose = vb, gmx45 = gmx45, disam = gg)
+                               verbose = vb, gmx45 = gmx45, disam = gg, direct = uu)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting!")

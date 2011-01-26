@@ -29,6 +29,8 @@ sed s/PRO\ A\ \ \ 1/NPROA\ \ \ 1/g Protein.pdb | sed s/PRO\ B\ \ \ 1/NPROB\ \ \ 
 | sed s/O\ \ \ CPHE/OC1\ CPHE/g | sed s/OXT\ CPHE/OC2\ CPHE/g \
 | sed s/HIS\ /HID\ /g | sed s/LYS\ /LYP\ /g | sed s/CYS\ /CYN\ /g >| ProteinAmber.pdb
 
+\cp Protein.pdb ProteinAmber.pdb
+
 # Process with pdb2gmx and define water
 ${pdb2gmx} -ff amber99sb -f ProteinAmber.pdb -o Protein2.pdb -p Protein.top -water spce -ignh
 
@@ -41,8 +43,8 @@ grep -h ATOM Protein2.pdb Ligand.acpype/Ligand_NEW.pdb >| Complex.pdb
 # Edit Protein.top -> Complex.top
 \cp Ligand.acpype/Ligand_GMX.itp Ligand.itp
 \cp Protein.top Complex.top
-# See NB(1) below
-cat Complex.top | sed '/\#include\ \"ffamber99sb\.itp\"/a\
+#  '#include "Ligand.itp"' has to be inserted right after ffamber**.itp line and before Protein_*.itp line in Complex.top.
+cat Complex.top | sed '/forcefield\.itp\"/a\
 #include "Ligand.itp"
 ' >| Complex2.top
 echo "Ligand   1" >> Complex2.top
@@ -115,7 +117,7 @@ EOF
 # Setup ions
 ${grompp} -f EM.mdp -c Complex_b4ion.pdb -p Complex.top -o Complex_b4ion.tpr
 \cp Complex.top Complex_ion.top
-echo 13| ${genion} -s Complex_b4ion.tpr -o Complex_b4em.pdb -neutral -conc 0.15 -p Complex_ion.top -norandom
+echo 15| ${genion} -s Complex_b4ion.tpr -o Complex_b4em.pdb -neutral -conc 0.15 -p Complex_ion.top -norandom
 \mv Complex_ion.top Complex.top
 
 # Run minimisaton

@@ -1,4 +1,4 @@
-%VERSION  VERSION_STAMP = V0001.000  DATE = 01/19/11  14:42:30                  
+%VERSION  VERSION_STAMP = V0001.000  DATE = 01/26/11  15:47:09                  
 %FLAG TITLE                                                                     
 %FORMAT(20a4)                                                                   
 Ligand.pdb                                                                      
