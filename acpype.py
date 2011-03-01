@@ -891,7 +891,7 @@ a        """
             self.printQuoted(self.acLog)
             return True
 
-    def signal_handler(self, signum, frame):#, pid = 0):
+    def signal_handler(self, _signum, _frame):#, pid = 0):
         global pid
         pids = self.job_pids_family(pid)
         self.printDebug("PID: %s, PIDS: %s" % (pid, pids))

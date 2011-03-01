@@ -13,7 +13,7 @@ from ccpnmr.format.converters import PdbFormat
 def dirWalk(dir):
     "walk all files for a dir"
     for f in os.listdir(dir):
-        fullpath = os.path.abspath(os.path.join(dir,f))
+        fullpath = os.path.abspath(os.path.join(dir, f))
         if os.path.isdir(fullpath) and not os.path.islink(fullpath):
             for x in dirWalk(fullpath):  # recurse into subdir
                 yield x
@@ -28,7 +28,7 @@ def addMolPep(cnsPepPath, molName):
     txt = "first IONS tail + %s end\nlast IONS head - %s end\n\n" % (molName, molName)
     pepFile = file(cnsPepPath).read()
     if txt in pepFile:
-        print "%s already added to %s" % (molName, cnsPepPath)
+        print("%s already added to %s" % (molName, cnsPepPath))
         return False
     pepFile = pepFile.splitlines(1)
     pepFile.reverse()
@@ -36,13 +36,13 @@ def addMolPep(cnsPepPath, molName):
         if line != '\n':
             if 'SET ECHO' in line.upper():
                 id = pepFile.index(line)
-                pepFile.insert(id+1,txt)
+                pepFile.insert(id + 1, txt)
                 break
     pepFile.reverse()
     nPepFile = open(cnsPepPath, 'w')
     nPepFile.writelines(pepFile)
     nPepFile.close()
-    print "%s added to %s" % (molName, cnsPepPath)
+    print("%s added to %s" % (molName, cnsPepPath))
     return True
 
 def addMolPar(cnsParPath, molParPath):
@@ -53,10 +53,10 @@ def addMolPar(cnsParPath, molParPath):
     def formatLine(line, n):
         items = line.split()
         mult = eval(items[6])
-        if len(items) < len(items) + (mult-1) * 3:
-            for i in range(1,mult):
-                line += molFile[n+i]
-            n += (mult-1)
+        if len(items) < len(items) + (mult - 1) * 3:
+            for i in range(1, mult):
+                line += molFile[n + i]
+            n += (mult - 1)
         return line, n
 
     pars = ['BOND', 'ANGLe', 'DIHEdral', 'IMPRoper', 'NONBonded']
@@ -66,7 +66,7 @@ def addMolPar(cnsParPath, molParPath):
 
     parFile = file(cnsParPath).read()
     if txt in parFile:
-        print "%s already added to %s" % (molName, cnsParPath)
+        print("%s already added to %s" % (molName, cnsParPath))
         return False
 
     molFile = file(molParPath).readlines()
@@ -89,31 +89,31 @@ def addMolPar(cnsParPath, molParPath):
             if 'SET ECHO' in line.upper():
                 id = parList.index(line)
                 break
-    parList.insert(id+1, txt)
+    parList.insert(id + 1, txt)
     for line in molList: # NOTE: Check if pars are there, but using string size, need to be smarter
         if pars[0][:4] in line: # BOND
             parTxt = line[:16]
             revParTxt = reverseParLine(parTxt)
             if parTxt not in parFile and revParTxt not in parFile:
-                parList.insert(id+1,line)
+                parList.insert(id + 1, line)
         if pars[4][:4] in line: # NONB
             if line[:16] not in parFile:
-                parList.insert(id+1,line)
+                parList.insert(id + 1, line)
         if pars[1][:4] in line: # ANGLe
             parTxt = line[:23]
             revParTxt = reverseParLine(parTxt)
             if parTxt not in parFile and revParTxt not in parFile:
-                parList.insert(id+1,line)
+                parList.insert(id + 1, line)
         if pars[2][:4] in line or pars[3][:4] in line: # DIHE and IMPR
             if line[:32] not in parFile:
-                parList.insert(id+1,line)
-    parList.insert(id+1, end)
+                parList.insert(id + 1, line)
+    parList.insert(id + 1, end)
 
     parList.reverse()
     nParFile = open(cnsParPath, 'w')
     nParFile.writelines(parList)
     nParFile.close()
-    print "%s added to %s" % (molName, cnsParPath)
+    print("%s added to %s" % (molName, cnsParPath))
     return True
 
 def reverseParLine(txt):
@@ -139,7 +139,7 @@ def addMolTop(cnsTopPath, molTopPath):
 
     topFile = file(cnsTopPath).read()
     if txt in topFile:
-        print "%s already added to %s" % (molName, cnsTopPath)
+        print("%s already added to %s" % (molName, cnsTopPath))
         return False
 
     molFile = file(molTopPath).readlines()
@@ -163,21 +163,21 @@ def addMolTop(cnsTopPath, molTopPath):
                 break
 
     if ions not in topFile:
-        topList.insert(id+1, ions)
+        topList.insert(id + 1, ions)
 
-    topList.insert(id+1, txt)
+    topList.insert(id + 1, txt)
     for line in molMass:
         if line not in topFile:#NOTE: comparing strings!
-            topList.insert(id+1, line)
+            topList.insert(id + 1, line)
     for line in molTop:
-        topList.insert(id+1, line)
-    topList.insert(id+1, end)
+        topList.insert(id + 1, line)
+    topList.insert(id + 1, end)
 
     topList.reverse()
     nTopFile = open(cnsTopPath, 'w')
     nTopFile.writelines(topList)
     nTopFile.close()
-    print "%s added to %s" % (molName, cnsTopPath)
+    print("%s added to %s" % (molName, cnsTopPath))
     return True
 
 class AcpypeForCcpnProject:
@@ -211,11 +211,11 @@ class AcpypeForCcpnProject:
                 if numRes == 1:
                     numberAtoms = [len(x.atoms) for x in chain.residues][0]
                     if numberAtoms > maxNumberAtoms:
-                        print "molecule with %i (> %i) atoms; skipped by acpype" % (numberAtoms, maxNumberAtoms)
+                        print("molecule with %i (> %i) atoms; skipped by acpype" % (numberAtoms, maxNumberAtoms))
                     else:
                         other.append(chain)
                 else:
-                    print "molType 'other', chain %s with %i residues; skipped by acpype" % (chain, numRes)
+                    print("molType 'other', chain %s with %i residues; skipped by acpype" % (chain, numRes))
         self.heteroMols = other
         return other
 
@@ -233,7 +233,7 @@ class AcpypeForCcpnProject:
             other = self.getHeteroMols()
 
         if not other:
-            print "WARN: no molecules entitled for ACPYPE"
+            print("WARN: no molecules entitled for ACPYPE")
             return None
 
         acpypeDict = {}
@@ -245,9 +245,9 @@ class AcpypeForCcpnProject:
             res = chain.findFirstResidue()
             resName = res.ccpCode.upper()
             if chargeVal == None:
-                print "Running ACPYPE for '%s : %s' and trying to guess net charge" % (resName, chain.molecule.name)
+                print("Running ACPYPE for '%s : %s' and trying to guess net charge" % (resName, chain.molecule.name))
             else:
-                print "Running ACPYPE for '%s : %s' with charge '%s'" % (resName, chain.molecule.name, chargeVal)
+                print("Running ACPYPE for '%s : %s' with charge '%s'" % (resName, chain.molecule.name, chargeVal))
             random.seed()
             d = [random.choice(string.letters) for x in xrange(10)]
             randString = "".join(d)
@@ -271,7 +271,7 @@ class AcpypeForCcpnProject:
             os.chdir(dirTemp)
 
             t0 = time.time()
-            print header
+            print(header)
 
             try:
                 molecule = ACTopol(resPdbTempFile, chargeType = chargeType,
@@ -293,9 +293,9 @@ class AcpypeForCcpnProject:
                 acpypeFailed = False
             except:
                 _exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-                print "ACPYPE FAILED: %s" % exceptionValue
+                print("ACPYPE FAILED: %s" % exceptionValue)
                 if debug:
-                    traceback.print_tb(exceptionTraceback, file=sys.stdout)
+                    traceback.print_tb(exceptionTraceback, file = sys.stdout)
                 acpypeFailed = True
 
             execTime = int(round(time.time() - t0))
@@ -305,9 +305,9 @@ class AcpypeForCcpnProject:
                 msg = elapsedTime(execTime)
             try: rmtree(molecule.tmpDir)
             except: pass
-            print "Total time of execution: %s" % msg
+            print("Total time of execution: %s" % msg)
             if not acpypeFailed:
-                acpypeDict[resName] = [x for x in dirWalk(os.path.join(dirTemp,'%s.acpype' % resName))]
+                acpypeDict[resName] = [x for x in dirWalk(os.path.join(dirTemp, '%s.acpype' % resName))]
             else:
                 acpypeDict[resName] = []
 #                sys.exit(1)
