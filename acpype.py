@@ -1656,37 +1656,41 @@ a        """
                 kPhi = dih.kPhi # in rad
                 phaseRaw = dih.phase * radPi # in degree
                 phase = int(phaseRaw) # in degree
+                if period > 4 and not self.gmx45:
+                    self.printError("Likely trying to convert ILDN to RB, use option '-r' for GMX45")
+                    sys.exit(1)
                 if phase in [0, 180]:
                     properDihedralsGmx45.append([item[0].atoms, phaseRaw, kPhi, period])
-                    if kPhi > 0: V[period] = 2 * kPhi * cal
-                    if period == 1:
-                        C[0] += 0.5 * V[period]
-                        if phase == 0:
-                            C[1] -= 0.5 * V[period]
-                        else:
-                            C[1] += 0.5 * V[period]
-                    elif period == 2:
-                        if phase == 180:
-                            C[0] += V[period]
-                            C[2] -= V[period]
-                        else:
-                            C[2] += V[period]
-                    elif period == 3:
-                        C[0] += 0.5 * V[period]
-                        if phase == 0:
-                            C[1] += 1.5 * V[period]
-                            C[3] -= 2 * V[period]
-                        else:
-                            C[1] -= 1.5 * V[period]
-                            C[3] += 2 * V[period]
-                    elif period == 4:
-                        if phase == 180:
-                            C[2] += 4 * V[period]
-                            C[4] -= 4 * V[period]
-                        else:
-                            C[0] += V[period]
-                            C[2] -= 4 * V[period]
-                            C[4] += 4 * V[period]
+                    if not self.gmx45:
+                        if kPhi > 0: V[period] = 2 * kPhi * cal
+                        if period == 1:
+                            C[0] += 0.5 * V[period]
+                            if phase == 0:
+                                C[1] -= 0.5 * V[period]
+                            else:
+                                C[1] += 0.5 * V[period]
+                        elif period == 2:
+                            if phase == 180:
+                                C[0] += V[period]
+                                C[2] -= V[period]
+                            else:
+                                C[2] += V[period]
+                        elif period == 3:
+                            C[0] += 0.5 * V[period]
+                            if phase == 0:
+                                C[1] += 1.5 * V[period]
+                                C[3] -= 2 * V[period]
+                            else:
+                                C[1] -= 1.5 * V[period]
+                                C[3] += 2 * V[period]
+                        elif period == 4:
+                            if phase == 180:
+                                C[2] += 4 * V[period]
+                                C[4] -= 4 * V[period]
+                            else:
+                                C[0] += V[period]
+                                C[2] -= 4 * V[period]
+                                C[4] += 4 * V[period]
                 else:
                     properDihedralsAlphaGamma.append([item[0].atoms, phaseRaw, kPhi, period])
                     #print phaseRaw, kPhi, period
@@ -3145,6 +3149,7 @@ class Atom(object):
         self.atomName = atomName
         self.atomType = atomType
         self.id = id
+        self.cgnr = id
         self.resid = resid
         self.mass = mass
         self.charge = charge #/ qConv
