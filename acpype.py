@@ -197,8 +197,8 @@ for k, v in list(dictOplsAtomType2OplsGmxCode.items()):
 # Cross dictAmbAtomType2AmbGmxCode with dictOplsAtomType2OplsGmxCode & add H1,HP,H2
 dictAtomTypeAmb2OplsGmxCode = {'H1':['140', '1.00800'], 'HP':['140', '1.00800'], 'H2':['140', '1.00800']}
 dictOplsMass = {'SY2': ['32.06000'], 'Zn2+': ['65.37000'], 'CQ': ['12.01100'], 'CP': ['12.01100'], 'Nd3+': ['144.24000'], 'Br-': ['79.90400'], 'Cu2+': ['63.54600'], 'Br': ['79.90400'], 'H': ['1.00800'], 'P': ['30.97376'], 'Sr2+': ['87.62000'], 'ON': ['15.99940'], 'OL': ['0.00000'], 'OH': ['15.99940'], 'OY': ['15.99940'], 'OW': ['15.99940'], 'OU': ['15.99940'], 'OS': ['15.99940'], 'Am3+': ['243.06000'], 'HS': ['1.00800'], 'HW': ['1.00800'], 'HO': ['1.00800'], 'HC': ['1.00800'], 'HA': ['1.00800'], 'O2': ['15.99940'], 'Ca2+': ['40.08000'], 'Th4+': ['232.04000'], 'He': ['4.00260'], 'C': ['12.01100'], 'Cs+': ['132.90540'], 'O': ['15.99940'], 'Gd3+': ['157.25000'], 'S': ['32.06000'], 'P+': ['30.97376'], 'La3+': ['138.91000'], 'H3': ['1.00800'], 'H4': ['1.00800'], 'MNH2': ['0.00000'], 'MW': ['0.00000'], 'NB': ['14.00670'], 'K+': ['39.09830'], 'Ne': ['20.17970'], 'Rb+': ['85.46780'], 'C+': ['12.01100'], 'C*': ['12.01100'], 'NO': ['14.00670'], 'CT_4': ['12.01100'], 'NA': ['14.00670'], 'C!': ['12.01100'], 'NC': ['14.00670'], 'NZ': ['14.00670'], 'CT_2': ['12.01100'], 'CT_3': ['12.01100'], 'NY': ['14.00670'], 'C9': ['14.02700'], 'C8': ['13.01900'], 'C=': ['12.01100'], 'Yb3+': ['173.04000'], 'C3': ['15.03500', '12.01100'], 'C2': ['14.02700'], 'C7': ['12.01100'], 'C4': ['16.04300'], 'CK': ['12.01100'], 'Cl-': ['35.45300'], 'N*': ['14.00670'], 'CH': ['13.01900'], 'CO': ['12.01100'], 'CN': ['12.01100'], 'CM': ['12.01100'], 'F': ['18.99840'], 'CC': ['12.01100'], 'CB': ['12.01100'], 'CA': ['12.01100'], 'CG': ['12.01100'], 'CF': ['12.01100'], 'N': ['14.00670'], 'CZ': ['12.01100'], 'CY': ['12.01100'], 'CX': ['12.01100'], 'Ac3+': ['227.03000'], 'CS': ['12.01100'], 'CR': ['12.01100'], 'N2': ['14.00670'], 'N3': ['14.00670'], 'CW': ['12.01100'], 'CV': ['12.01100'], 'CU': ['12.01100'], 'CT': ['12.01100'], 'SZ': ['32.06000'], 'SY': ['32.06000'], 'Cl': ['35.45300'], 'NT': ['14.00670'], 'O_2': ['15.99940'], 'Xe': ['131.29300'], 'SI': ['28.08000'], 'SH': ['32.06000'], 'Eu3+': ['151.96000'], 'F-': ['18.99840'], 'MNH3': ['0.00000'], 'H5': ['1.00800'], 'C_3': ['12.01100'], 'C_2': ['12.01100'], 'I-': ['126.90450'], 'LP': ['0.00000'], 'I': ['126.90450'], 'Na+': ['22.98977'], 'Li+': ['6.94100'], 'U': ['0.00000'], 'MCH3A': ['0.00000'], 'MCH3B': ['0.00000'], 'CD': ['13.01900', '12.01100'], 'O_3': ['15.99940'], 'Kr': ['83.79800'], 'Fe2+': ['55.84700'], 'Ar': ['39.94800'], 'Mg2+': ['24.30500'], 'Ba2+': ['137.33000']}
-for ambKey in list(dictAmbAtomType2AmbGmxCode.keys()):
-    if ambKey in list(dictOplsAtomType2OplsGmxCode.keys()):
+for ambKey in dictAmbAtomType2AmbGmxCode:
+    if ambKey in dictOplsAtomType2OplsGmxCode:
         dictAtomTypeAmb2OplsGmxCode[ambKey] = dictOplsAtomType2OplsGmxCode[ambKey] + list(dictOplsMass[ambKey])
 
 # learnt from 22 residues test.
@@ -365,7 +365,7 @@ def splitBlock(dat):
     count = 0
     for line in dat:
         line = line.rstrip()
-        if count in list(dict.keys()):
+        if count in dict:
             dict[count].append(line)
         else:
             dict[count] = [line]
@@ -389,13 +389,13 @@ def parseFrcmod(lista):
             continue
         elif line:
             key = line.replace(' -', '-').replace('- ', '-').split()[0]
-            if key in list(dd.keys()):
+            if key in dd:
                 if not dd[key].count(line):
                     dd[key].append(line)
             else:
                 dd[key] = [line]
             dict[head] = dd
-    for k in list(dict.keys()):
+    for k in dict.keys():
         if not dict[k]: dict.pop(k)
     return dict
 
@@ -416,8 +416,8 @@ def parmMerge(fdat1, fdat2, frcmod = False):
     if frcmod:
         dHeads = {'MASS':0, 'BOND':1, 'ANGL':2, 'DIHE':3, 'IMPR':4, 'HBON':5, 'NONB':7}
         dat2 = parseFrcmod(file(fdat2).readlines()) # dict
-        for k in list(dat2.keys()):
-            for parEntry in list(dat2[k].keys()):
+        for k in dat2:
+            for parEntry in dat2[k]:
                 idFirst = None
                 for line in dat1[dHeads[k]][:]:
                     if line:
@@ -434,13 +434,13 @@ def parmMerge(fdat1, fdat2, frcmod = False):
                     else:
                         dat1[dHeads[k]].insert(idFirst, ll)
         dat1[0][0] = mdat[0]
-        for k in list(dat1.keys()):
+        for k in dat1:
             for line in dat1[k]:
                 mdatFile.write(line + '\n')
         return mname
 
     dat2 = splitBlock(file(fdat2).readlines())
-    for k in list(dat1.keys())[:8]:
+    for k in dat1.keys()[:8]:
         if k == 0:
             lines = dat1[k][1:-1] + dat2[k][1:-1] + ['']
             for line in lines:
@@ -471,10 +471,10 @@ def parmMerge(fdat1, fdat2, frcmod = False):
             lines = dat1[k][:-1] + dat2[k][1:-1] + ['']
             for line in lines:
                 mdat.append(line)
-    for k in list(dat1.keys())[8:]:
+    for k in dat1.keys()[8:]:
         for line in dat1[k]:
             mdat.append(line)
-    for k in list(dat2.keys())[9:]:
+    for k in dat2.keys()[9:]:
         for line in dat2[k]:
             mdat.append(line)
     for line in mdat:
@@ -632,7 +632,7 @@ class AbstractTopol(object):
                 residues.add(line[17:20])
                 at = line[0:17]
                 cs = line[30:54]
-                if cs in list(coords.keys()):
+                if cs in coords:
                     coords[cs].append(at)
                 else:
                     coords[cs] = [at]
@@ -2211,7 +2211,7 @@ a        """
             topText.append(headAtomtypes)
             topText += temp
             nWat = self.residueLabel.count('WAT')
-            for ion in list(ionsDict.keys()):
+            for ion in ionsDict:
                 nIon = self.residueLabel.count(ion)
                 if nIon > 0:
                     idIon = self.residueLabel.index(ion)
@@ -2248,7 +2248,7 @@ a        """
             resid = atom.resid
             resname = self.residueLabel[resid]
             if not self.direct:
-                if resname in list(ionsDict.keys()) + ['WAT' ]:
+                if resname in ionsDict.keys() + ['WAT' ]:
                     break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
@@ -3240,7 +3240,7 @@ if __name__ == '__main__':
                       action = "store",
                       default = 'gaff',
                       dest = 'atom_type',
-                      help = "atom type, can be gaff or amber (AMBER99+SB+bsc0), default is gaff",)
+                      help = "atom type, can be gaff or amber (AMBER99+SB), default is gaff",)
     parser.add_option('-q', '--qprog',
                       type = 'choice',
                       choices = ['mopac', 'sqm', 'divcon'],
