@@ -46,6 +46,7 @@ from __future__ import print_function
 
     alanwilter _at_ gmail _dot_ com
 """
+
 svnId = '$Id$'
 try: svnRev, svnDate, svnTime = svnId.split()[2:5]
 except: svnRev, svnDate, svnTime = '0', '0', '0'
@@ -78,6 +79,7 @@ import pickle
 #import string
 import sys
 import subprocess as sub
+import re
 
 # List of Topology Formats created by acpype so far:
 outTopols = ['gmx', 'cns', 'charmm']
@@ -315,7 +317,7 @@ def invalidArgs(text = None):
     sys.exit(1)
 
 #verNum = string.split(sys.version)[0]
-verNum = sys.version.split()[0]
+verNum = re.sub('[^0-9\.]', '', sys.version.split()[0])
 version = verNum.split('.') #string.split(verNum, ".")
 verList = list(map(int, version))
 if verList < [2, 6, 0]:
