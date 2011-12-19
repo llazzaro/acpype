@@ -32,7 +32,7 @@ from __future__ import print_function
 
     If you use this code, I am glad if you cite:
 
-    SOUSA DA SILVA, A. W.; LAUE, E. D.; VRANKEN, W. F.
+    SOUSA DA SILVA, A. W.; VRANKEN, W. F.
     ACPYPE - AnteChamber PYthon Parser interfacE. Manuscript to be submitted.
 
     BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
