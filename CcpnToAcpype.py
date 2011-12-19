@@ -8,7 +8,7 @@ import string
 import random
 
 from ccpnmr.format.converters import PdbFormat
-#from ccpnmr.format.converters import Mol2Format
+from ccpnmr.format.converters import Mol2Format
 
 def dirWalk(dir):
     "walk all files for a dir"
@@ -223,7 +223,7 @@ class AcpypeForCcpnProject:
     def run(self, chain = None, chargeType = 'bcc', chargeVal = None, guessCharge = False,
         multiplicity = '1', atomType = 'gaff', force = False, basename = None,
         debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-        timeTol = 36000, qprog = 'sqm', ekFlag = None):
+        timeTol = 36000, qprog = 'sqm', ekFlag = None, outType='mol2'):
 
         ccpnProject = self.project
 
@@ -255,17 +255,22 @@ class AcpypeForCcpnProject:
             dirTemp = '/tmp/ccpn2acpype_%s' % randString
             if not os.path.exists(dirTemp):
                 os.mkdir(dirTemp)
-            resPdbTempFile = os.path.join(dirTemp, '%s.pdb' % resName)
-#            resMol2TempFile = '/tmp/%s_%s.mol2' % (resName, randString)
+                
+            if outType == 'mol2':
+              resTempFile = os.path.join(dirTemp, '%s.mol2' % resName)
+            else:
+              resTempFile = os.path.join(dirTemp, '%s.pdb' % resName)
+              
             entry = ccpnProject.currentNmrEntryStore.findFirstEntry()
             strucGen = entry.findFirstStructureGeneration()
             refStructure = strucGen.structureEnsemble.sortedModels()[0]
 
-#            mol2Format = Mol2Format.Mol2Format(ccpnProject)
-#            mol2Format.writeCoordinates(resMol2TempFile, exportChains = [chain], structures = [refStructure], minimalPrompts = True)
-
-            pdbFormat = PdbFormat.PdbFormat(ccpnProject)
-            pdbFormat.writeCoordinates(resPdbTempFile, exportChains = [chain], structures = [refStructure], minimalPrompts = True, forceNamingSystemName = 'XPLOR')
+            if outType == 'mol2':
+              mol2Format = Mol2Format.Mol2Format(ccpnProject)
+              mol2Format.writeChemComp(resTempFile, chemCompVar=chain.findFirstResidue().chemCompVar,coordSystem='pdb', minimalPrompts = True, forceNamingSystemName = 'XPLOR')
+            else:
+              pdbFormat = PdbFormat.PdbFormat(ccpnProject)
+              pdbFormat.writeCoordinates(resTempFile, exportChains = [chain], structures = [refStructure], minimalPrompts = True, forceNamingSystemName = 'XPLOR')
 
             origCwd = os.getcwd()
             os.chdir(dirTemp)
@@ -274,7 +279,7 @@ class AcpypeForCcpnProject:
             print(header)
 
             try:
-                molecule = ACTopol(resPdbTempFile, chargeType = chargeType,
+                molecule = ACTopol(resTempFile, chargeType = chargeType,
                     chargeVal = chargeVal, debug = debug, multiplicity = multiplicity,
                     atomType = atomType, force = force, outTopol = outTopol,
                     engine = engine, allhdg = allhdg, basename = basename,
@@ -292,6 +297,7 @@ class AcpypeForCcpnProject:
                 molecule.createMolTopol()
                 acpypeFailed = False
             except:
+                raise
                 _exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
                 print("ACPYPE FAILED: %s" % exceptionValue)
                 if debug:
@@ -299,12 +305,13 @@ class AcpypeForCcpnProject:
                 acpypeFailed = True
 
             execTime = int(round(time.time() - t0))
+
             if execTime == 0:
                 msg = "less than a second"
             else:
                 msg = elapsedTime(execTime)
             try: rmtree(molecule.tmpDir)
-            except: pass
+            except: raise
             print("Total time of execution: %s" % msg)
             if not acpypeFailed:
                 acpypeDict[resName] = [x for x in dirWalk(os.path.join(dirTemp, '%s.acpype' % resName))]
