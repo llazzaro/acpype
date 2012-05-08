@@ -3033,9 +3033,9 @@ class ACTopol(AbstractTopol):
                     self.printWarn("DIVCON is not installed")
                     self.printWarn("Setting mopac for antechamber")
                     qprog = 'mopac'
-        elif 'amber11' in self.acExe:
+        elif 'amber1' in self.acExe:
             if qprog == 'divcon':
-                self.printWarn("DIVCON is not implemented in AmberTools 1.3 anymore")
+                self.printWarn("DIVCON is not implemented in AmberTools > 1.3 anymore")
                 self.printWarn("Setting sqm for antechamber")
                 qprog = 'sqm'
             elif qprog == 'mopac':
@@ -3378,11 +3378,11 @@ if __name__ == '__main__':
     print("Total time of execution: %s" % msg)
 
     if options.ipython:
-        from IPython.Shell import IPShellEmbed
-        ipshell = IPShellEmbed([' - prompt_in1', 'ACPYPE \#> '],
-                                banner = '--------Dropping to IPython--------',
-                                exit_msg = '--------Leaving IPython--------'
-                              )
+        try:
+            from IPython.Shell import IPShellEmbed #@UnresolvedImport
+        except:
+            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed
+        ipshell = IPShellEmbed()
         ipshell()
 
     try: rmtree(molecule.tmpDir)
