@@ -107,8 +107,6 @@ pymolScript = 'aa_dict = %s' % str(aa_dict) + \
 def build3(object_name, sequence, first_residue = "1"):
     if len(sequence):
         codeNT, code, codeCT = sequence
-        if code in ['R']:
-            codeNT = codeCT = 'G'
         cmd.fragment('nt_'+aa_dict[codeNT],object_name)
         cmd.alter(object_name,'resi="%s"'%first_residue)
         cmd.edit(object_name+" and name C")
@@ -160,8 +158,6 @@ def build_residues():
     def build3(object_name, sequence, first_residue = "1"):
         if len(sequence):
             codeNT, code, codeCT = sequence
-            if code in ['J', 'R']:
-                codeNT = codeCT = 'G'
             cmd.fragment('nt_' + aa_dict[codeNT], object_name)
             cmd.alter(object_name, 'resi="%s"' % first_residue)
             cmd.edit(object_name + " and name C")
