@@ -963,9 +963,9 @@ if __name__ == '__main__':
             #    shutil.copy(resFile, agpdb)
             cv = None
             #cmd = "%s -dfi %s -c %s -a %s" % (acpypeExe, agpdb, cType, ffType)
-            if res == 'JJJ' and cType == 'bcc': cv = 3 #cmd += ' - n 3' # acpype failed to get correct charge
+            if res in ['JJJ', 'RRR'] and cType == 'bcc': cv = 3 #cmd += ' -n 3' # acpype failed to get correct charge
             mol = ACTopol(agpdb, chargeType = cType, atomType = ffType, chargeVal = cv,
-                          debug = False, verbose = debug, qprog = 'mopac', gmx45 = useGmx45)
+                          debug = False, verbose = debug, gmx45 = useGmx45)
             mol.createACTopol()
             mol.createMolTopol()
 
@@ -983,7 +983,7 @@ if __name__ == '__main__':
             if doOpls:
                 fixRes4Acpype(ogpdb)
                 #cmd = "%s -dfi %s -c %s -a %s" % (acpypeExe, ogpdb, cType, ffType)
-                if res == 'JJJ' and cType == 'bcc': cmd += ' - n 3' # acpype failed to get correct charge
+                if res == 'JJJ' and cType == 'bcc': cmd += ' -n 3' # acpype failed to get correct charge
                 mol = ACTopol(ogpdb, chargeType = cType, atomType = ffType, verbose = False)
                 mol.createACTopol()
                 mol.createMolTopol()
