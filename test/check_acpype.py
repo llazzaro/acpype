@@ -5,20 +5,15 @@ from acpype import ACTopol
 from acpype import _getoutput
 import shutil
 from glob import glob
-#from ccpnmr.format.general.Conversion import FormatConversion
 
 usePymol = True
-useGmx45 = False
 ffType = 'amber' # gaff
-cType = 'bcc' #'gas'
-doOpls = False
+cType = 'gas' #'gas'
 debug = False
 
-water = ''
-if useGmx45:
-    water = ' -water none'
+water = ' -water none'
 
-print('usePymol: %s, useGmx45: %s, ffType: %s, cType: %s, doOpls: %s' % (usePymol, useGmx45, ffType, cType, doOpls))
+print('usePymol: %s, ffType: %s, cType: %s' % (usePymol, ffType, cType))
 
 tmpDir = '/tmp/testAcpype'
 
@@ -40,14 +35,12 @@ exePymol = '/sw/bin/pymol'
 
 # Binaries for gromacs
 gpath = '/sw/'
-if useGmx45:
-    gpath = '/usr/local/'
 gmxTopDir = gpath + "share"
-pdb2gmx = gpath + '/bin/pdb2gmx'
-grompp = gpath + '/bin/grompp'
-mdrun = gpath + '/bin/mdrun'
-g_energy = '/usr/local/bin/g_energy' #'/sw/bin/g_energy'
-pdb2gmx45 = '/usr/local/bin/pdb2gmx'
+pdb2gmx = gpath + 'bin/pdb2gmx'
+grompp = gpath + 'bin/grompp'
+mdrun = gpath + 'bin/mdrun'
+g_energy = gpath + 'bin/g_energy' #'/sw/bin/g_energy'
+gmxdump = gpath + 'bin/gmxdump'
 
 amberff = "leaprc.ff99SB"
 
@@ -97,10 +90,10 @@ aa_dict = {'A':'ala', 'C':'cys', 'D':'asp', 'E':'glu', 'F':'phe', 'G':'gly',
            'M':'met', 'N':'asn', 'P':'pro', 'Q':'gln', 'R':'arg', 'S':'ser',
            'T':'thr', 'V':'val', 'W':'trp', 'Y':'tyr'}
 
-hisDictConv = {'HHH':['HIE', 'HISB'], 'JJJ':['HIP', 'HISH'], 'OOO':['HID', 'HISA']}
+#hisDictConv = {'HHH':['HIE', 'HISB'], 'JJJ':['HIP', 'HISH'], 'OOO':['HID', 'HISA']}
 
-if useGmx45:
-    hisDictConv = {'HHH':['HIE', 'HISE'], 'JJJ':['HIP', 'HISH'], 'OOO':['HID', 'HISD']}
+
+hisDictConv = {'HHH':['HIE', 'HISE'], 'JJJ':['HIP', 'HISH'], 'OOO':['HID', 'HISD']}
 
 pymolScript = 'aa_dict = %s' % str(aa_dict) + \
 '''
@@ -144,113 +137,6 @@ def perror(msg):
     if debug:
         print('ERROR: %s' % msg)
 
-def build_residues():
-    '''Usually failing thanks to Pymol'''
-    import __main__
-    __main__.pymol_argv = [ 'pymol', '-Gicq'] # Quiet and no GUI
-
-    from pymol import finish_launching
-    from pymol import editor
-    from pymol import cmd
-
-    finish_launching()
-
-    def build3(object_name, sequence, first_residue = "1"):
-        if len(sequence):
-            codeNT, code, codeCT = sequence
-            cmd.fragment('nt_' + aa_dict[codeNT], object_name)
-            cmd.alter(object_name, 'resi="%s"' % first_residue)
-            cmd.edit(object_name + " and name C")
-            for code in sequence[1:-1]:
-                editor.attach_amino_acid("pk1", aa_dict[code])
-            editor.attach_amino_acid("pk1", 'ct_' + aa_dict[codeCT])
-            cmd.edit()
-
-    seqi = aa_dict.keys()
-
-    count = 0
-
-    cmd.delete('all')
-
-    for aai in seqi:
-        aai3 = 3 * aai
-        print(aai)
-        build3(aai3, aai3)
-        cmd.alter(aai3, "chain='%s'" % aai3)
-        cmd.translate([15 * count, 0, 0], aai3)
-        cmd.sculpt_activate(aai3)
-        for dummy in range(100):
-            cmd.sculpt_iterate(aai3)
-        count = count + 1
-        aafile = aai3 + '.pdb'
-        cmd.set('pdb_conect_all')
-        cmd.save(aafile, 'all')
-        cmd.delete('all')
-    #cmd.quit()
-    return "PDB Residues generated"
-
-def hisConv(fName, his, opt):
-    ''' opt = 0 : pymol pdb to opls
-        opt = 1 : apdb (from opdb) to amber pdb
-        opt = 3 : put HIS
-    '''
-    hisA, hisO = hisDictConv.get(his)
-    if opt == 0:
-        cmd = "sed s/%s\ /%s/g %s > tMpFile; mv tMpFile %s" % (hisA, hisO, fName, fName)
-    elif opt == 1:
-        cmd = "sed s/%s/%s/g %s > tMpFile; mv tMpFile %s" % ('HIS', hisA, fName, fName)
-    elif opt == 2:
-        cmd = "sed s/%s\ /%s/g %s > tMpFile; mv tMpFile %s" % (hisA, 'HIS', fName, fName)
-    pdebug(cmd)
-    os.system(cmd)
-
-def createOplsPdb(fpdb):
-    '''
-    pdb -> opdb (opls)
-    fix atom names for OPLS in GMX
-    '''
-    fLines = file(fpdb).readlines()
-    fName = 'o' + fpdb
-    fopls = open(fName, 'w')
-    for line in fLines:
-        if 'ATOM  ' in line:
-            if 'AAA' not in fpdb:
-                line = line.replace(' 3HB ', ' 1HB ')
-            line = line.replace(' 3HG ', ' 1HG ')
-            line = line.replace('  GLY', '1HA  GLY')
-            line = line.replace(' HA  GLY', '2HA  GLY')
-            line = line.replace(' 3HD ', ' 1HD ')
-            line = line.replace('3HE  LYS', '1HE  LYS')
-            line = line.replace('3HG1 ILE', '1HG1 ILE')
-            line = line.replace('3H   PRO', '1H   PRO')
-        fopls.write(line)
-    fopls.close()
-    return fName
-
-def createOplsPdb2(fpdb):
-    '''
-    pdb -> opdb (opls)
-    fix atom names for OPLS in GMX
-    special case tleap
-    '''
-    fLines = file(fpdb).readlines()
-    fName = 'o' + fpdb
-    fopls = open(fName, 'w')
-    for line in fLines:
-        if 'ATOM  ' in line:
-            if 'AAA' not in fpdb:
-                line = line.replace(' HB3 ', ' HB1 ')
-            line = line.replace(' HG3 ', ' HG1 ')
-            line = line.replace(' HA3 GLY', ' HA1 GLY')
-            #line = line.replace(' HA  GLY', '2HA  GLY')
-            line = line.replace(' HD3 ', ' HD1 ')
-            line = line.replace('HE3 LYS', 'HE1 LYS')
-            line = line.replace('HG13 ILE', 'HG11 ILE')
-            line = line.replace('H3  PRO', 'H1  PRO')
-        fopls.write(line)
-    fopls.close()
-    return fName
-
 def createAmberPdb(fpdb, opt):
     '''pdb -> apdb (amber)
        opt = 0 : pymol pdb to apdb
@@ -261,32 +147,14 @@ def createAmberPdb(fpdb, opt):
     famb = open(fName, 'w')
     for line in fLines:
         if 'ATOM  ' in line:
-            if not useGmx45:
-                line = line.replace('CYS', 'CYN')
-                line = line.replace('LYS', 'LYP')
             if opt == 0:
                 if 'AAA' not in fpdb:
-                    if doOpls:
-                        line = line.replace(' 3HB ', ' 1HB ')
-                    else:
-                        line = line.replace(' HB3 ', ' HB1 ')
+                    line = line.replace(' HB3 ', ' HB1 ')
                 line = line.replace('CD1 ILE', 'CD  ILE')
-                if doOpls:
-                    line = line.replace(' 3HG ', ' 1HG ')
-                    line = line.replace('  ', ' 1HA ')
-                    line = line.replace(' HA  GLY', '2HA  GLY')
-                    line = line.replace('3HG1 ILE', '1HG1 ILE')
-                    line = line.replace('1HD1 ILE', ' HD1 ILE')
-                    line = line.replace('2HD1 ILE', ' HD2 ILE')
-                    line = line.replace('3HD1 ILE', ' HD3 ILE')
-                    line = line.replace(' 3HD ', ' 1HD ')
-                    line = line.replace('3HE  LYP', '1HE  LYP')
-                    line = line.replace('3H   PRO', '1H   PRO')
-                else:
-                    line = line.replace(' HG3 ', ' HG1 ')
-                    line = line.replace(' HA3 GLY', ' HA1 GLY')
-                    line = line.replace('HG13 ILE', 'HG11 ILE')
-                    line = line.replace('HG13 ILE', 'HG11 ILE')
+                line = line.replace(' HG3 ', ' HG1 ')
+                line = line.replace(' HA3 GLY', ' HA1 GLY')
+                line = line.replace('HG13 ILE', 'HG11 ILE')
+                line = line.replace('HG13 ILE', 'HG11 ILE')
                 if line[22:26] == '   3':
                     line = line.replace('  O  ', '  OC1').replace('  OXT', '  OC2')
             elif opt == 1:
@@ -309,9 +177,6 @@ def createAmberPdb3(fpdb):
     famb = open(fName, 'w')
     for line in fLines:
         if 'ATOM  ' in line:
-            if not useGmx45:
-                line = line.replace('CYS', 'CYN')
-                line = line.replace('LYS', 'LYP')
             if line[22:26] == '   1':
                 res = line[17:20]
                 line = line.replace('%s ' % res, 'N%s' % res)
@@ -330,10 +195,7 @@ def createAmberPdb2(fpdb, opt):
     projectName = 'testImport'
     if os.path.exists(projectName):
         shutil.rmtree(projectName)
-    #fc = FormatConversion(identifier = projectName, useGui = False)
-    #models = fc.importFile('coordinates', 'pseudoPdb', fpdb)
     _fpdb = "_%s" % fpdb
-    #fc.exportFile('coordinates', 'pseudoPdb', _fpdb, addKeywords = {'structures': models, 'forceNamingSystemName': 'PDB'})
 
     fLines = file(_fpdb).readlines()
     fName = 'a' + fpdb
@@ -356,34 +218,6 @@ def createAmberPdb2(fpdb, opt):
                 line = line.replace('%s ' % res, 'C%s' % res)
         famb.write(line) ### pay attention here!
     famb.close()
-    return fName
-
-def createOldPdb(fpdb):
-    '''using pdb2gmx 4.5 -ignh to get the atom names and in file _fpdb
-    '''
-    os.system('rm -fr \#*')
-    fName = '_' + fpdb
-    cmd = "%s -f %s -o %s -ff amber99sb -water none -ignh >& /dev/null" % (pdb2gmx45, fpdb, fName)
-    out = os.system(cmd)
-    atList = []
-    if out == 0:
-        for item in delList:
-            os.remove(item)
-        _fLines = file(fName).readlines()
-        for line in _fLines:
-            if 'ATOM  ' in line:
-                atList.append(line[11:17])
-    else:
-        perror(out)
-    fLines = file(fpdb).readlines()
-    nLines = []
-    n = 0
-    for line in fLines:
-        if 'ATOM  ' in line:
-            nLines.append(line[:11] + atList[n] + line[17:])
-            n += 1
-    file(fName, 'w').writelines(nLines)
-    os.system('rm -fr \#*')
     return fName
 
 def createOldPdb2(fpdb):
@@ -478,24 +312,9 @@ def nbDict(lista):
         line = line.split(';')[0]
         line = line.strip()
         if line and not line.startswith('#') and not line.startswith('['):
-            name, type = line.split()[0:2]
-            tdict[name] = type
+            name, type_ = line.split()[0:2]
+            tdict[name] = type_
     return tdict
-
-def checkTopOplsVsAmber(res):
-
-    agRes = parseTopFile(file('ag%s.top' % res).readlines())
-    ogRes = parseTopFile(file('og%s.top' % res).readlines())
-#    mRes = parseTopFile(file('g%s.acpype/g%s_GMX.itp' % (res,res)).readlines())
-
-#    flags = ['pairs', 'bonds', 'angles', 'dihedrals'], ['dihedraltypes', 'angletypes', 'bondtypes']
-
-    agPairs = agRes[0]['pairs']
-    ogPairs = ogRes[0]['pairs']
-#    mPairs = mRes[0]['pairs']
-
-    if agPairs != ogPairs:
-        print("!!!!!!", res)
 
 def roundAllFloats(lista, l):
     """Round to 3 decimals"""
@@ -510,19 +329,18 @@ def roundAllFloats(lista, l):
         nlista.append(tt)
     return nlista
 
-def checkTopAcpype(res, ff):
-    '''Compare acpype gmx itp against amber or opls pdb2gmx results'''
-    global amber2oplsDict, ac2opls
+def checkTopAcpype(res):
+    '''Compare acpype gmx itp against amber pdb2gmx results'''
     os.chdir(tmpDir)
     def addParam(l, item):
         ''' l : index for bonded types
             item : set of atomtypes'''
-        dict = {2:'bondtypes', 3:'angletypes', 4:'dihedraltypes'}
-        dType = {} # dict
-        for type in ffBon[0][dict[l]]:
-            i = type[:l + 1]
-            j = type[l + 1:]
-            dType[str(i)] = j # dict {[atomtypes,funct] : parameters}
+        dict_ = {2:'bondtypes', 3:'angletypes', 4:'dihedraltypes'}
+        dType = {} # dict_
+        for type_ in ffBon[0][dict_[l]]:
+            i = type_[:l + 1]
+            j = type_[l + 1:]
+            dType[str(i)] = j # dict_ {[atomtypes,funct] : parameters}
         entries = []
         lNum = item[l] # funct
         ent = [ffDictAtom[x] for x in item[:l]] # convert atomtypes ids to atomtypes names
@@ -566,49 +384,33 @@ def checkTopAcpype(res, ff):
                 break
             except: pass
         if not found:
-            print("%s %s %s not found in %s Bon" % (dict[l], ent, item, ffType))
+            print("%s %s %s not found in %s Bon" % (dict_[l], ent, item, ffType))
         #print(item, e, par)
         return par
 
-    compareParameters = False
-    if ff == 'a' : compareParameters = True
+    compareParameters = True
 
     agRes = parseTopFile(file('ag%s.top' % (res)).readlines())
-    if doOpls:
-        ogRes = parseTopFile(file('og%s.top' % (res)).readlines())
-    #print(ogRes)
-    #ffgRes = parseTopFile(file('%sg%s.top' % (ff,res)).readlines())
-    #print 111, os.getcwd()
-    acRes = parseTopFile(file('%sg%s.acpype/%sg%s_GMX.itp' % (ff, res, ff, res)).readlines())
-    if ff == 'a':
-        ffNb = aNb
-        ffBon = aBon
-        ffgRes = agRes
-    if doOpls:
-        if ff == 'o':
-            ffNb = oNb
-            ffBon = oBon
-            ffgRes = ogRes
+    acRes = parseTopFile(file('ag%s.acpype/ag%s_GMX.itp' % (res, res)).readlines())
+    _ffNb = aNb
+    ffBon = aBon
+    ffgRes = agRes
 
     atError = False
-    if ff == 'a':
-        print("    ==> Comparing atomtypes AC x AMBER")
+    print("    ==> Comparing atomtypes AC x AMBER")
 
-    ffDictAtom = {} # dict link res atom numbers to amber or opls atom types
+    ffDictAtom = {} # dict link res atom numbers to amber atom types
     for item in ffgRes[0]['atoms']:
         i, j = item[:2] # id, at
-        ambat = ffNb[j]
-        if useGmx45:
-            ambat = j
+        ambat = j
         ffDictAtom[i] = ambat
         # compare atom types AC x Amber
-        if ff == 'a':
-            acat = acRes[0]['atoms'][i - 1][1]
-            if ambat != acat:
-                print("    %i %s AC: %s   x   AMB: %s" % (i, item[4], acat, ambat))
-                atError = True
+        acat = acRes[0]['atoms'][i - 1][1]
+        if ambat != acat:
+            print("    %i %s AC: %s   x   AMB: %s" % (i, item[4], acat, ambat))
+            atError = True
 
-    if ff == 'a' and not atError:
+    if not atError:
         print("        atomtypes OK")
 
     acDictAtom = {}
@@ -616,43 +418,6 @@ def checkTopAcpype(res, ff):
         i, j = item[:2]
         acDictAtom[i] = j # dict for atom id -> atom type from acpype itp file
 
-    for k in acDictAtom.keys():
-        if amber2oplsDict.has_key(acDictAtom[k]):
-            amber2oplsDict[acDictAtom[k]].add(ffDictAtom[k])
-        else:
-            amber2oplsDict[acDictAtom[k]] = set([ffDictAtom[k]])
-
-    # to build a dict acpype atom types (amber or gaff) to [[opls_code],[opls_mass]]
-    #ac2opls
-    if doOpls:
-        if ff == 'o':
-            for item in acRes[0]['atoms']:
-                id, at = item[:2]
-                it = ogRes[0]['atoms'][id - 1]
-                ocode, omass = it[1], it[-1]
-                #print item, it, ocode, omass
-                if ac2opls.has_key(at):
-                    ac2opls[at][0].add(ocode)
-                    ac2opls[at][1].add(omass)
-                else:
-                    ac2opls[at] = [set([ocode]), set([omass])]
-
-    if doOpls:
-        # to build dict a2oD: amber atom type -> opls atom type
-        idx = 0
-        for aAT in agRes[0]['atoms']:
-            oAT = ogRes[0]['atoms'][idx]
-            aAT, aPdb = aAT[1], aAT[4]
-            oAT, oPdb = oAT[1], oAT[4]
-            if aPdb == oPdb:
-                if a2oD.has_key(aAT):
-                    a2oD[aAT].add(oAT)
-                else:
-                    a2oD[aAT] = set([oAT])
-            else:
-                #print agRes[0]['atoms'][idx], ogRes[0]['atoms'][idx]
-                pass
-            idx += 1
 
     flags = [('pairs', 2), ('bonds', 2), ('angles', 3), ('dihedrals', 4)] #, ['dihedraltypes', 'angletypes', 'bondtypes']
 
@@ -725,14 +490,38 @@ def checkTopAcpype(res, ff):
                     act3.remove(ac)
                     agt3.remove(agl[str(acs)])
 
-        if act3:
-            act3.sort()
-            print("    ac: ", act3)
-        if agt3:
-            agt3.sort()
-            print("    %sg: " % ff, agt3)
+        act4 = []
+        agt4 = []
 
-        if not act3 and not agt3:
+        for ac in act3:
+            if ac[:5] not in tAgRes:
+                if flag == flags[3][0]:
+                    if ac[6]:
+                        act4.append(ac)
+                else:
+                    act4.append(ac)
+
+        tAcRes = [x[:5] for x in acres]
+        for ac in agt3:
+            if ag[:5] not in tAcRes:
+                act4.append(ac)
+
+        if flag == flags[3][0]:
+            for ac in act4:
+                if not ac[6]:
+                    act4.remove(ac)
+            for ag in agt4:
+                if not ag[6]:
+                    agt4.remove(ac)
+
+        if act4:
+            act4.sort()
+            print("    ac: ", act4)
+        if agt4:
+            agt4.sort()
+            print("    %sg: " % ff, agt4)
+
+        if not act4 and not agt4:
             print("        %s OK" % flag)
 
 def parseOut(out):
@@ -788,10 +577,7 @@ def build_residues_tleap():
         #if aai != 'H': continue
         aai3 = 3 * aai
         res = aa_dict.get(aai).upper()
-        if res in ['ARG']:
-            res1 = 'GLY'
-        else:
-            res1 = res
+        res1 = res
         leapDict = {'amberff' : amberff, 'res' : res, 'aai3' : aai3, 'res1':res1}
         tleapin = genPdbTemplate % leapDict
         open('tleap.in', 'w').writelines(tleapin)
@@ -818,83 +604,87 @@ def calcGmxPotEnerDiff(res):
             v = eval(v)
             dictEner[k] = v
             if 'Dih.' in k or 'Bell.' in k:
-                if 'Dihedral' in list(dictEner.keys()):
-                    dictEner['Dihedral'] = dictEner['Dihedral'] + v
+                if 'Dihedral P+I' in list(dictEner.keys()):
+                    dictEner['Dihedral P+I'] = dictEner['Dihedral P+I'] + v
                 else:
-                    dictEner['Dihedral'] = v
+                    dictEner['Dihedral P+I'] = v
             if 'Coulomb' in k or 'LJ' in k:
-                if 'Non_Bonded' in list(dictEner.keys()):
-                    dictEner['Non_Bonded'] = dictEner['Non_Bonded'] + v
+                if 'TotalNonBonded' in list(dictEner.keys()):
+                    dictEner['TotalNonBonded'] = dictEner['TotalNonBonded'] + v
                 else:
-                    dictEner['Non_Bonded'] = v
-        dictEner['Bonded'] = dictEner.get('Potential') - dictEner.get('Non_Bonded')
+                    dictEner['TotalNonBonded'] = v
+        dictEner['Total_Bonded'] = dictEner.get('Potential') - dictEner.get('TotalNonBonded')
         return dictEner
 
     os.chdir(tmpDir)
     nEner = 9 # number of energy entries from g_energy
     tEner = ' '.join([str(x) for x in range(1, nEner + 1)])
     open('SPE.mdp', 'w').writelines(spe_mdp)
-    prefix = 'a'
-    if doOpls:
-        prefix = 'aog'
     cmdDict = {'pdb2gmx':pdb2gmx, 'grompp':grompp, 'mdrun':mdrun, 'res':res,
-               'g_energy':g_energy, 'tEner':tEner, 'water':water, 'prefix':prefix}
+               'g_energy':g_energy, 'tEner':tEner, 'water':water, 'gmxdump':gmxdump}
 
-    # calc Pot Ener for agaXXX.pdb or aogXXX.pdb
-#    if not useGmx45:
-#        shutil.copy('ag%s.pdb' % res, 'ag_%s.pdb' % res)
-#        createAmberPdb3('ag_%s.pdb' % res)
-#    else:
-#        shutil.copy('ag%s.pdb' % res, 'aga%s.pdb' % res)
-    template = '''%(pdb2gmx)s -ff amber99sb -f %(prefix)s%(res)s.pdb -o %(prefix)s%(res)s_.pdb -p %(prefix)s%(res)s.top %(water)s
-    %(grompp)s -c %(prefix)s%(res)s_.pdb -p %(prefix)s%(res)s.top -f SPE.mdp -o %(prefix)s%(res)s.tpr
-    %(mdrun)s -v -deffnm %(prefix)s%(res)s
-    echo %(tEner)s | %(g_energy)s -f %(prefix)s%(res)s.edr
+    # calc Pot Ener for aXXX.pdb (AMB_GMX)
+    template = '''%(pdb2gmx)s -ff amber99sb -f a%(res)s.pdb -o a%(res)s_.pdb -p a%(res)s.top %(water)s
+    %(grompp)s -c a%(res)s_.pdb -p a%(res)s.top -f SPE.mdp -o a%(res)s.tpr -pp a%(res)sp.top
+    %(mdrun)s -v -deffnm a%(res)s
+    echo %(tEner)s | %(g_energy)s -f a%(res)s.edr
     '''
-    dictEner1 = getEnergies(template)
-    #print(dictEner1)
+    dictEnerAMB = getEnergies(template)
+    #print(dictEnerAMB)
 
-    #calc Pot Ener for agXXX.acpype/agXXX.pdb
-    template = '''%(grompp)s -c ag%(res)s.acpype/ag%(res)s_NEW.pdb -p ag%(res)s.acpype/ag%(res)s_GMX.top -f SPE.mdp -o ag%(res)s.tpr
+    #calc Pot Ener for agXXX.acpype/agXXX.pdb (ACPYPE_GMX)
+    template = '''%(grompp)s -c ag%(res)s.acpype/ag%(res)s_NEW.pdb -p ag%(res)s.acpype/ag%(res)s_GMX.top -f SPE.mdp -o ag%(res)s.tpr -pp ag%(res)sp.top
     %(mdrun)s -v -deffnm ag%(res)s
     echo %(tEner)s | %(g_energy)s -f ag%(res)s.edr
     '''
-    dictEner2 = getEnergies(template)
-    #print(dictEner2)
+    dictEnerACPYPE = getEnergies(template)
+    #print(dictEnerACPYPE)
 
-    for k, v in dictEner1.items():
-        v2 = dictEner2.get(k)
+    order = ['LJ-14', 'LJ_(SR)', 'Coulomb-14', 'Coulomb_(SR)', 'TotalNonBonded', 'Potential', 'Angle', 'Bond', 'Proper_Dih.', 'Improper_Dih.', 'Dihedral P+I', 'Total_Bonded'] #sorted(dictEnerAMB.items())
+    for k in order:
+        v = dictEnerAMB.get(k)
+        v2 = dictEnerACPYPE.get(k)
         rerror = error(v2, v)
         if rerror > 0.1:
             print("%15s   %.3f   %5.6f x %5.6f" % (k, rerror, v2, v))
         else:
             print("%15s   %.3f" % (k, rerror))
 
+    cmd = "%(gmxdump)s -s a%(res)s.tpr" % cmdDict
+    amb = _getoutput(cmd)
+    cmd = "%(gmxdump)s -s ag%(res)s.tpr" % cmdDict
+    acp = _getoutput(cmd)
+
+    #dihAmb = [x.split(']=')[-1] for x in amb.splitlines() if ('PIDIHS' in x or 'PDIHS' in x) and 'functype' in x ]
+    #dihAcp = [x.split(']=')[-1] for x in acp.splitlines() if ('PIDIHS' in x or 'PDIHS' in x) and 'functype' in x ]
+
+    dihAmb = [x.split('PIDIHS')[-1][2:] for x in amb.splitlines() if ('PIDIHS' in x)]
+    dihAcp = [x.split('PIDIHS')[-1][2:] for x in acp.splitlines() if ('PIDIHS' in x)]
+
+    dAcp = set(dihAcp).difference(set(dihAmb))
+    dAmb = set(dihAmb).difference(set(dihAcp))
+    rAcp = [' '.join(reversed(x.split())) for x in dAcp]
+    rAmb = [' '.join(reversed(x.split())) for x in dAmb]
+    ddAmb = sorted(dAmb.difference(rAcp))
+    ddAcp = sorted(dAcp.difference(rAmb))
+    if ddAmb: print('IDIH: Amb diff Acp', ddAmb)
+    if ddAcp: print('IDIH: Acp diff Amb', ddAcp)
+
+    return dihAmb, dihAcp
+
+
 if __name__ == '__main__':
 
-    '''order: (tleap/EM or pymol) AAA.pdb -f-> oAAA.pdb --> (pdb2gmx) ogAAA.pdb -f->
-         -f-> aogAAA.pdb --> (pdb2gmx) agAAA.pdb -f-> acpype
+    '''order: (tleap/EM or pymol) AAA.pdb -f-> _AAA.pdb -f-> aAAA.pdb --> (pdb2gmx) agAAA.pdb -f-> agAAA.pdb --> acpype
     '''
-    os.system('rm -fr \#*')
-    global amber2oplsDict, a2oD, ac2opls
-    amber2oplsDict = {}
-    a2oD = {}
-    ac2opls = {}
-    if useGmx45:
-        aNb = nbDict(file(gmxTopDir + '/gromacs/top/amber99sb.ff/ffnonbonded.itp').readlines())
-        oNb = nbDict(file(gmxTopDir + '/gromacs/top/oplsaa.ff/ffnonbonded.itp').readlines())
-        aBon = parseTopFile(file(gmxTopDir + '/gromacs/top/amber99sb.ff/ffbonded.itp').readlines())
-        oBon = parseTopFile(file(gmxTopDir + '/gromacs/top/oplsaa.ff/ffbonded.itp').readlines())
-    else:
-        aNb = nbDict(file(gmxTopDir + '/gromacs/top/ffamber99sbnb.itp').readlines())
-        oNb = nbDict(file(gmxTopDir + '/gromacs/top/ffoplsaanb.itp').readlines())
-        aBon = parseTopFile(file(gmxTopDir + '/gromacs/top/ffamber99sbbon.itp').readlines())
-        oBon = parseTopFile(file(gmxTopDir + '/gromacs/top/ffoplsaabon.itp').readlines())
+    aNb = nbDict(file(gmxTopDir + '/gromacs/top/amber99sb.ff/ffnonbonded.itp').readlines())
+    aBon = parseTopFile(file(gmxTopDir + '/gromacs/top/amber99sb.ff/ffbonded.itp').readlines())
 
     tmpFile = 'tempScript.py'
     if not os.path.exists(tmpDir):
         os.mkdir(tmpDir)
     os.chdir(tmpDir)
+    os.system('rm -fr \#* *.acpype')
     #create res.pdb
     if usePymol:
         ff = open(tmpFile, 'w')
@@ -909,42 +699,16 @@ if __name__ == '__main__':
     listRes.sort()
     for resFile in listRes:
         res, ext = os.path.splitext(resFile) # eg. res = 'AAA'
+        #if res != 'RRR': continue
         if len(resFile) == 7 and ext == ".pdb" and resFile[:3].isupper():
-            #if not resFile == 'HHH.pdb': continue
             print("\nFile %s : residue %s" % (resFile, aa_dict[res[0]].upper()))
 
-            if doOpls:
-                if usePymol:
-                    # from pdb pymol to opls pdb and top
-                    opdb = createOplsPdb(resFile)
-                else:
-                    # from pdb org to opls pdb and top
-                    opdb = createOplsPdb2(resFile)
-                ogpdb = 'og%s' % resFile
-                ogtop = 'og%s.top' % res
-
-                if res in hisDictConv.keys():
-                    hisConv(opdb, res, 0) # fix HIE etc. from pymol/tleap pdb to pdb opls
-                #cmd = ' % s - f % s - o % s - p % s - ff oplsaa - water none' % (pdb2gmx, opdb, ogpdb, ogtop) # coords for O term changed# -water none for gmx 4.5
-                cmd = ' %s -f %s -o %s -p %s -ff oplsaa %s' % (pdb2gmx, opdb, ogpdb, ogtop, water)
-                #print(1111, cmd)
-                #out = commands.getstatusoutput(cmd)
-                out = _getoutput(cmd)
-                #parseOut(out)
-                apdb = createAmberPdb(ogpdb, 1) # create file aogAAA.pdb
-            else:
-                _pdb = createOldPdb2(resFile) # using my own dict
-                #_pdb = createOldPdb(resFile) # using pdb2gmx 4.5
-                #if res in hisDictConv.keys():
-                #    hisConv(resFile, res, 2)
-                apdb = createAmberPdb3(_pdb) # create file aAAA.pdb with NXXX, CXXX
+            _pdb = createOldPdb2(resFile) # using my own dict
+            apdb = createAmberPdb3(_pdb) # create file aAAA.pdb with NXXX, CXXX
 
             # from ogpdb to amber pdb and top
             agpdb = 'ag%s.pdb' % res # output name
             agtop = 'ag%s.top' % res
-            #if res in hisDictConv.keys():
-                    #hisConv(apdb, res, 2)
-            #        hisFlag = ''
             cmd = ' %s -f %s -o %s -p %s -ff amber99sb %s' % (pdb2gmx, apdb, agpdb, agtop, water)
             pdebug(cmd)
             out = _getoutput(cmd)
@@ -953,110 +717,24 @@ if __name__ == '__main__':
 
             # acpype on agpdb file
             fixRes4Acpype(agpdb)
-            #if doOpls:
-            #    fixRes4Acpype(agpdb)
-            #else:
-            #    shutil.copy(resFile, agpdb)
             cv = None
             #cmd = "%s -dfi %s -c %s -a %s" % (acpypeExe, agpdb, cType, ffType)
             if res in ['JJJ', 'RRR'] and cType == 'bcc': cv = 3 #cmd += ' -n 3' # acpype failed to get correct charge
             mol = ACTopol(agpdb, chargeType = cType, atomType = ffType, chargeVal = cv,
-                          debug = False, verbose = debug, gmx45 = useGmx45)
+                          debug = False, verbose = debug, gmx45 = True)
             mol.createACTopol()
             mol.createMolTopol()
 
             #out = commands.getstatusoutput(cmd)
             #parseOut(out[1])
             print("Compare ACPYPE x GMX AMBER99SB topol & param")
-            checkTopAcpype(res, 'a')
+            checkTopAcpype(res)
             # calc Pot Energy
             print("Compare ACPYPE x GMX AMBER99SB Pot. Energy (|ERROR|%)")
             # calc gmx amber energies
-            calcGmxPotEnerDiff(res)
+            dihAmb, dihAcp = calcGmxPotEnerDiff(res)
             # calc gmx acpype energies
 
-            # acpype on ogpdb file
-            if doOpls:
-                fixRes4Acpype(ogpdb)
-                #cmd = "%s -dfi %s -c %s -a %s" % (acpypeExe, ogpdb, cType, ffType)
-                if res == 'JJJ' and cType == 'bcc': cmd += ' -n 3' # acpype failed to get correct charge
-                mol = ACTopol(ogpdb, chargeType = cType, atomType = ffType, verbose = False)
-                mol.createACTopol()
-                mol.createMolTopol()
-
-                #out = commands.getstatusoutput(cmd)
-                #parseOut(out[1])
-                print("Compare ACPYPE x GMX OPLS/AA only topol")
-                checkTopAcpype(res, 'o')
-
-#            if out[0] :
-#                print("pdb2gmx for %s FAILED... aborting." % res)
-#                print(cmd)
-#            #break
     os.system('rm -f %s/\#* posre.itp tempScript.py' % tmpDir)
     os.system("find . -name 'ag*GMX*.itp' | xargs grep -v 'created by acpype on' > standard_ag_itp.txt")
-    os.system("find . -name 'og*GMX*.itp' | xargs grep -v 'created by acpype on' > standard_og_itp.txt")
 
-    #print ac2opls
-    if doOpls:
-        tmp = {}
-        for k, v in ac2opls.items():
-            vOpls, vMass = v
-            vOpls = [x.replace('opls_', '') for x in vOpls]
-            vMass = map(str, vMass)
-            vOpls.sort()
-            vMass.sort()
-            if len(vMass) > 1:
-                print(k, v)
-            tmp[k] = vOpls + vMass
-        #print tmp
-
-        #otopFiles = commands.getoutput('ls o*.top').splitlines()
-    #    print amber2oplsDict
-    #    print a2oD
-    #    ll = []
-    #    for k in amber2oplsDict:
-    #        v = amber2oplsDict[k]
-    #        if len(v) == 1:
-    #            ll.append([1,k,list(v)])
-    #        elif len(v) == 2:
-    #            ll.append([2,k,list(v)])
-    #        elif len(v) == 3:
-    #            ll.append([3,k,list(v)])
-    #        elif len(v) == 4:
-    #            ll.append([4,k,list(v)])
-    #
-    #    aNbRev = {}
-    #    for k,v in aNb.items():
-    #        if aNbRev.has_key(v):
-    #            aNbRev[v].append(k)
-    #        else:
-    #            aNbRev[v] = [k]
-    #    for k,v in aNbRev.items():
-    #        v.sort()
-    #        v0 = v[0]
-    #        aNbRev[k] = v0
-    #    from operator import itemgetter
-    #    print sorted(aNbRev.items(), key=itemgetter(1))
-    #
-    #    o1 = file('opls_sorted.txt').readlines()
-    #    dictOplsAtomType2OplsGmxCode = {}
-    #    dictOplsMass = {}
-    #    for line in o1:
-    #        line = line[:-1]
-    #        atOpls, gmxCodeOpls, mass = line.split()
-    #        if dictOplsAtomType2OplsGmxCode.has_key(atOpls):
-    #            dictOplsAtomType2OplsGmxCode[atOpls].append(gmxCodeOpls)
-    #            dictOplsMass[atOpls].add(mass)
-    #        else:
-    #            dictOplsAtomType2OplsGmxCode[atOpls] = [gmxCodeOpls]
-    #            dictOplsMass[atOpls] = set([mass])
-    #
-    #
-    #    notOpls = []
-    #    for ambKey, ambVal in dictAmbAtomType2AmbGmxCode.items():
-    #        if dictOplsAtomType2OplsGmxCode.has_key(ambKey):
-    #            print ambKey,ambVal,dictOplsAtomType2OplsGmxCode[ambKey]
-    #        else:
-    #            notOpls.append(ambKey)
-    #    print "No opls AT for %s" % str(notOpls)

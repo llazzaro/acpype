@@ -488,7 +488,10 @@ def parmMerge(fdat1, fdat2, frcmod = False):
 def _getoutput(cmd):
     '''to simulate commands.getoutput in order to work with python 2.6 up to 3.x'''
     out = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE).communicate()[0][:-1]
-    o = str(out.decode())
+    try:
+        o = str(out.decode())
+    except:
+        o = str(out)
     return o
 
 class AbstractTopol(object):
@@ -2947,7 +2950,7 @@ stop
 
 class ACTopol(AbstractTopol):
     """
-        Class to build the AC topologies (Antechamber AmberTools 1.2/1.3)
+        Class to build the AC topologies (Antechamber AmberTools)
     """
 
     def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
