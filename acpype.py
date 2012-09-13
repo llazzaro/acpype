@@ -32,12 +32,10 @@ from __future__ import print_function
 
     If you use this code, I am glad if you cite:
 
-    SOUSA DA SILVA, A. W.; VRANKEN, W. F.
-    ACPYPE - AnteChamber PYthon Parser interfacE. Manuscript to be submitted.
-
-    BATISTA, P. R.; WILTER, A.; DURHAM, E. H. A. B.; PASCUTTI, P. G. Molecular
-    Dynamics Simulations Applied to the Study of Subtypes of HIV-1 Protease.
-    Cell Biochemistry and Biophysics, 44, 395-404, 2006.
+    SOUSA DA SILVA, A. W. & VRANKEN, W. F.
+    ACPYPE - AnteChamber PYthon Parser interfacE.
+    BMC Research Notes 2012, 5:367 doi:10.1186/1756-0500-5-367
+    http://www.biomedcentral.com/1756-0500/5/367
 
     Alan Wilter Sousa da Silva, D.Sc.
     Bioinformatician, UniProt, EMBL-EBI
@@ -54,7 +52,7 @@ tag = "%s %s Rev: %s" % (svnDate, svnTime, svnRev)
 
 lineHeader = \
 '''
-| ACPYPE: AnteChamber PYthon Parser interfacE v. %s (c) 2011 AWSdS |
+| ACPYPE: AnteChamber PYthon Parser interfacE v. %s (c) 2012 AWSdS |
 ''' % tag
 frameLine = (len(lineHeader) - 2) * '='
 header = '%s%s%s' % (frameLine, lineHeader, frameLine)
