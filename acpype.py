@@ -3153,6 +3153,7 @@ class MolTopol(ACTopol):
                  debug = False, basename = None, verbose = True, gmx45 = False,
                  disam = False, direct = False, sorted = False, chiral = False):
 
+        self.chiral = chiral
         self.obchiralExe = _getoutput('which obchiral') or ''
         if not os.path.exists(self.obchiralExe) and self.chiral:
             self.printError("no 'obchiral' executable, it won't work to store non-planar improper dihedrals!")
@@ -3162,7 +3163,6 @@ class MolTopol(ACTopol):
         self.disam = disam
         self.direct = direct
         self.sorted = sorted
-        self.chiral = chiral
         self.verbose = verbose
         self.inputFile = acFileTop
         if acTopolObj:
