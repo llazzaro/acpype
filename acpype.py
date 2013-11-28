@@ -306,8 +306,8 @@ saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
 saveoff %(res)s %(acBase)s.lib
 quit
 """
-def dotproduct(a, b):
-  return sum((a * b) for a, b in zip(a, b))
+def dotproduct(aa, bb):
+    return sum((a * b) for a, b in zip(aa, bb))
 
 def crosproduct(a, b):
     c = [a[1] * b[2] - a[2] * b[1],
@@ -316,10 +316,10 @@ def crosproduct(a, b):
     return c
 
 def length(v):
-  return math.sqrt(dotproduct(v, v))
+    return math.sqrt(dotproduct(v, v))
 
-def vec_sub(a, b):
-    return [a - b for a, b in zip(a, b)]
+def vec_sub(aa, bb):
+    return [a - b for a, b in zip(aa, bb)]
 
 def imprDihAngle(a, b, c, d):
     ba = vec_sub(a, b)
@@ -385,17 +385,17 @@ def splitBlock(dat):
        0 = mass, 1 = extra + bond, 2 = angle, 3 = dihedral, 4 = improp, 5 = hbond
        6 = equiv nbon, 7 = nbon, 8 = END, 9 = etc.
     '''
-    dict = {}
+    dict_ = {}
     count = 0
     for line in dat:
         line = line.rstrip()
-        if count in dict:
-            dict[count].append(line)
+        if count in dict_:
+            dict_[count].append(line)
         else:
-            dict[count] = [line]
+            dict_[count] = [line]
         if not line:
             count += 1
-    return dict
+    return dict_
 
 def getParCode(line):
     key = line.replace(' -', '-').replace('- ', '-').split()[0]
@@ -403,12 +403,12 @@ def getParCode(line):
 
 def parseFrcmod(lista):
     heads = ['MASS', 'BOND', 'ANGL', 'DIHE', 'IMPR', 'HBON', 'NONB']
-    dict = {}
+    dict_ = {}
     for line in lista[1:]:
         line = line.strip()
         if line[:4] in heads:
             head = line[:4]
-            dict[head] = []
+            dict_[head] = []
             dd = {}
             continue
         elif line:
@@ -418,10 +418,10 @@ def parseFrcmod(lista):
                     dd[key].append(line)
             else:
                 dd[key] = [line]
-            dict[head] = dd
-    for k in dict.keys():
-        if not dict[k]: dict.pop(k)
-    return dict
+            dict_[head] = dd
+    for k in dict_.keys():
+        if not dict_[k]: dict_.pop(k)
+    return dict_
 
 def parmMerge(fdat1, fdat2, frcmod = False):
     '''merge two amber parm dat/frcmod files and save in /tmp'''
@@ -626,7 +626,7 @@ class AbstractTopol(object):
         """Set a 3 letter residue name
            and check coords duplication
         """
-        exit = False
+        exit_ = False
         localDir = os.path.abspath('.')
         if not os.path.exists(self.tmpDir):
             os.mkdir(self.tmpDir)
@@ -674,11 +674,11 @@ class AbstractTopol(object):
         shortd = ""
         longd = ""
         longSet = set()
-        id = 0
+        id_ = 0
         items = list(coords.items())
         l = len(items)
         for item in items:
-            id += 1
+            id_ += 1
             if len(item[1]) > 1:  # if True means atoms with same coordinates
                 for i in item[1]:
                     dups += "%s %s\n" % (i, item[0])
@@ -686,7 +686,7 @@ class AbstractTopol(object):
 #        for i in xrange(0,len(data),f):
 #            fdata += (data[i:i+f])+' '
 
-            for id2 in range(id, l):
+            for id2 in range(id_, l):
                 item2 = items[id2]
                 c1 = list(map(float, [item[0][i:i + 8] for i in range(0, 24, 8)]))
                 c2 = list(map(float, [item2[0][i:i + 8] for i in range(0, 24, 8)]))
@@ -703,19 +703,19 @@ class AbstractTopol(object):
         if dups:
             self.printError("Atoms with same coordinates in '%s'!" % self.inputFile)
             self.printQuoted(dups[:-1])
-            exit = True
+            exit_ = True
 
         if shortd:
             self.printError("Atoms TOO close (< %s Ang.)" % minDist)
             self.printQuoted("Dist (Ang.)    Atoms\n" + shortd[:-1])
-            exit = True
+            exit_ = True
 
         if longd:
             self.printError("Atoms TOO alone (> %s Ang.)" % maxDist)
             self.printQuoted(longd[:-1])
-            exit = True
+            exit_ = True
 
-        if exit:
+        if exit_:
             if self.force:
                 self.printWarn("You chose to proceed anyway with '-f' option. GOOD LUCK!")
             else:
@@ -952,13 +952,13 @@ a        """
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp', 'fragment.mol2',
                     self.tmpDir]  # , 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
         self.printMess("Removing temporary files...")
-        for file in delFiles:
-            file = os.path.join(self.absHomeDir, file)
-            if os.path.exists(file):
-                if os.path.isdir(file):
-                    rmtree(file)
+        for file_ in delFiles:
+            file_ = os.path.join(self.absHomeDir, file_)
+            if os.path.exists(file_):
+                if os.path.isdir(file_):
+                    rmtree(file_)
                 else:
-                    os.remove(file)
+                    os.remove(file_)
 
     def checkXyzAndTopFiles(self):
         fileXyz = self.acXyzFileName
@@ -1197,7 +1197,7 @@ a        """
         self.topFileData = open(self.acTopFileName, 'r').readlines()
         self.molTopol = MolTopol(self, verbose = self.verbose, debug = self.debug,
                                  gmx45 = self.gmx45, disam = self.disam, direct = self.direct,
-                                 sorted = self.sorted, chiral = self.chiral)
+                                 is_sorted = self.sorted, chiral = self.chiral)
         if self.outTopols:
             if 'cns' in self.outTopols:
                 self.molTopol.writeCnsTopolFiles()
@@ -1342,41 +1342,41 @@ a        """
         tmpList = []  # a list with unique atom types
         totalCharge = 0.0
         countRes = 0
-        id = 0
+        id_ = 0
         FirstNonSoluteId = None
         for atomName in atomNameList:
             if atomName != atomName.upper():
                 self.printDebug("atom name '%s' HAS to be all UPPERCASE... Applying this here." %
                                atomName)
                 atomName = atomName.upper()
-            atomTypeName = atomTypeNameList[id]
-            if id + 1 == resIds[countRes]:
+            atomTypeName = atomTypeNameList[id_]
+            if id_ + 1 == resIds[countRes]:
                 resid = countRes  # self.residueLabel[countRes]
                 countRes += 1
             resName = self.residueLabel[resid]
             if resName in ionOrSolResNameList and not FirstNonSoluteId:
-                FirstNonSoluteId = id
-                # print id, resid, resName
-            mass = massList[id]
-            # charge = balanceChargeList[id]
-            charge = chargeList[id]
+                FirstNonSoluteId = id_
+                # print id_, resid, resName
+            mass = massList[id_]
+            # charge = balanceChargeList[id_]
+            charge = chargeList[id_]
             chargeConverted = charge / qConv
             totalCharge += charge
-            coord = coords[id]
-            ACOEF = ACOEFs[id]
-            BCOEF = BCOEFs[id]
+            coord = coords[id_]
+            ACOEF = ACOEFs[id_]
+            BCOEF = BCOEFs[id_]
             atomType = AtomType(atomTypeName, mass, ACOEF, BCOEF)
             if atomTypeName not in tmpList:
                 tmpList.append(atomTypeName)
                 atomTypes.append(atomType)
-            atom = Atom(atomName, atomType, id + 1, resid, mass, chargeConverted, coord)
+            atom = Atom(atomName, atomType, id_ + 1, resid, mass, chargeConverted, coord)
             atoms.append(atom)
-            id += 1
+            id_ += 1
 
         balanceChargeList, balanceValue, balanceIds = self.balanceCharges(chargeList, FirstNonSoluteId)
 
-        for id in balanceIds:
-            atoms[id].charge = balanceValue / qConv
+        for id_ in balanceIds:
+            atoms[id_].charge = balanceValue / qConv
         # self.printDebug("atom ids and balanced charges: %s, %3f10" % (balanceIds, balanceValue/qConv))
 
         if atomTypeName[0].islower():
@@ -1512,8 +1512,8 @@ a        """
             out = map(int, re.findall('Atom (\d+) Is', _getoutput(cmd)))
             # print("*%s*" % out)
             chiralGroups = []
-            for id in out:
-                atChi = self.atoms[id - 1]
+            for id_ in out:
+                atChi = self.atoms[id_ - 1]
                 quad = []
                 for bb in self.bonds:
                     bAts = bb.atoms[:]
@@ -1651,12 +1651,12 @@ a        """
         # limId = chargeList.index(lim)
         diff = totalConverted - round(totalConverted)
         fix = lim - diff * qConv / nLims
-        id = 0
+        id_ = 0
         for c in chargeList:
             if c == lim:
-                limIds.append(id)
-                chargeList[id] = fix
-            id += 1
+                limIds.append(id_)
+                chargeList[id_] = fix
+            id_ += 1
         # self.printDebug(chargeList)
         self.printDebug("balanceCharges done")
         return chargeList, fix, limIds
@@ -1670,17 +1670,17 @@ a        """
         ACOEFs = []
         BCOEFs = []
         ntypes = max(uniqAtomTypeIdList)
-        # id = 0
+        # id_ = 0
         # for atName in self._atomTypeNameList:
-        for id in range(len(self._atomTypeNameList)):
-            # id = self._atomTypeNameList.index(atName)
-            atomTypeId = uniqAtomTypeIdList[id]
+        for id_ in range(len(self._atomTypeNameList)):
+            # id_ = self._atomTypeNameList.index(atName)
+            atomTypeId = uniqAtomTypeIdList[id_]
             index = ntypes * (atomTypeId - 1) + atomTypeId
             nonBondId = nonBonIdList[index - 1]
-            # print "*****", index, ntypes, atName, id, atomTypeId, nonBondId
+            # print "*****", index, ntypes, atName, id_, atomTypeId, nonBondId
             ACOEFs.append(rawACOEFs[nonBondId - 1])
             BCOEFs.append(rawBCOEFs[nonBondId - 1])
-            # id += 1
+            # id_ += 1
         # print ACOEFs
         self.printDebug("getABCOEFs done")
         return ACOEFs, BCOEFs
@@ -1782,21 +1782,21 @@ a        """
             self.printDebug(cmd)
         _log = _getoutput(cmd)
 
-    def writePdb(self, file):
+    def writePdb(self, file_):
         """
-            Write a new PDB file with the atom names defined by Antechamber
-            Input: file path string
+            Write a new PDB file_ with the atom names defined by Antechamber
+            Input: file_ path string
             The format generated here use is slightly different from
             http://www.wwpdb.org/documentation/format23/sect9.html respected to
             atom name
         """
         # TODO: assuming only one residue ('1')
-        pdbFile = open(file, 'w')
-        fbase = os.path.basename(file)
+        pdbFile = open(file_, 'w')
+        fbase = os.path.basename(file_)
         pdbFile.write("REMARK " + head % (fbase, date))
-        id = 1
+        id_ = 1
         for atom in self.atoms:
-            # id = self.atoms.index(atom) + 1
+            # id_ = self.atoms.index(atom) + 1
             aName = atom.atomName
             if len(aName) == 2:
                 aName = ' %s ' % aName
@@ -1811,9 +1811,9 @@ a        """
             y = atom.coords[1]
             z = atom.coords[2]
             line = "%-6s%5d %4s %3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
-            ('ATOM', id, aName, rName, 1, 4 * ' ', x, y, z, 1.0, 0.0, 10 * ' ', s)
+            ('ATOM', id_, aName, rName, 1, 4 * ' ', x, y, z, 1.0, 0.0, 10 * ' ', s)
             pdbFile.write(line)
-            id += 1
+            id_ += 1
         pdbFile.write('END\n')
 
     def writeGromacsTopolFiles(self, amb2gmx = False):
@@ -2118,7 +2118,7 @@ a        """
   NA+             1
 
 [ atoms ]
-  ; id    at type res nr  residu name     at name  cg nr  charge   mass
+  ; id_    at type res nr  residu name     at name  cg nr  charge   mass
     1       IP      1          NA+         NA+       1      1     22.9898
 """
         headCl = \
@@ -2128,7 +2128,7 @@ a        """
   CL-             1
 
 [ atoms ]
-  ; id    at type res nr  residu name     at name  cg nr  charge   mass
+  ; id_    at type res nr  residu name     at name  cg nr  charge   mass
     1       IM      1         CL-           CL-      1     -1     35.45300
 """
         headK = \
@@ -2138,7 +2138,7 @@ a        """
   K+             1
 
 [ atoms ]
-  ; id    at type res nr  residu name     at name  cg nr  charge   mass
+  ; id_    at type res nr  residu name     at name  cg nr  charge   mass
     1       K       1          K+         K+       1      1     39.100
 """
         headWaterTip3p = \
@@ -2310,10 +2310,10 @@ a        """
             aType = atom.atomType.atomTypeName
             oItem = d2opls.get(aType, ['x', 0])
             oplsAtName = oplsCode2AtomTypeDict.get(oItem[0], 'x')
-            id = atom.id
-            id2oplsATDict[id] = oplsAtName
+            id_ = atom.id
+            id2oplsATDict[id_] = oplsAtName
             oaCode = 'opls_' + oItem[0]
-            cgnr = id
+            cgnr = id_
             if self.sorted:
                 cgnr = atom.cgnr  # JDC
             charge = atom.charge
@@ -2322,9 +2322,9 @@ a        """
             qtot += charge
             resnr = resid + 1
             line = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot %1.3f\n" % \
-            (id, aType, resnr, resname, aName, cgnr, charge, mass, qtot)  # JDC
+            (id_, aType, resnr, resname, aName, cgnr, charge, mass, qtot)  # JDC
             oline = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot % 3.3f  %-4s\n" % \
-            (id, oaCode, resnr, resname, aName, cgnr, charge, omass, qtot, oplsAtName)  # JDC
+            (id_, oaCode, resnr, resname, aName, cgnr, charge, omass, qtot, oplsAtName)  # JDC
             count += 1
             temp.append(line)
             otemp.append(oline)
@@ -2791,9 +2791,9 @@ iod phase }\n")
         lineSet = set()
         for item in self.condensedProperDihedrals:
             seq = ''
-            id = 0
+            id_ = 0
             for dih in item:
-                # id = item.index(dih)
+                # id_ = item.index(dih)
                 l = len(item)
                 a1 = dih.atoms[0].atomType.atomTypeName + '_'
                 a2 = dih.atoms[1].atomType.atomTypeName + '_'
@@ -2805,7 +2805,7 @@ iod phase }\n")
                 p = dih.period
                 ph = dih.phase * radPi
                 if l > 1:
-                    if id == 0:
+                    if id_ == 0:
                         line = "DIHEdral %5s %5s %5s %5s  MULT %1i %7.3f %4i %8\
 .2f\n" % (a1, a2, a3, a4, l, kp, p, ph)
                     else:
@@ -2814,7 +2814,7 @@ iod phase }\n")
                     line = "DIHEdral %5s %5s %5s %5s %15.3f %4i %8.2f\n" % (a1,
                                                           a2, a3, a4, kp, p, ph)
                 seq += line
-                id += 1
+                id_ += 1
             lineSet.add(seq)
         for item in lineSet:
             parFile.write(item)
@@ -2838,7 +2838,7 @@ eriod phase }\n")
 
         if self.chiral:
             for idhc in self.chiralGroups:
-                atc, neig, angle = idhc
+                _atc, neig, angle = idhc
                 a1 = neig[0].atomType.atomTypeName + '_'
                 a2 = neig[1].atomType.atomTypeName + '_'
                 a3 = neig[2].atomType.atomTypeName + '_'
@@ -2937,7 +2937,7 @@ eriod phase }\n")
 
         if self.chiral:
             for idhc in self.chiralGroups:
-                atc, neig, angle = idhc
+                _atc, neig, angle = idhc
                 a1Name = neig[0].atomName
                 a2Name = neig[1].atomName
                 a3Name = neig[2].atomName
@@ -3038,14 +3038,14 @@ class ACTopol(AbstractTopol):
             multiplicity = '1', atomType = 'gaff', force = False, basename = None,
             debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
             timeTol = 36000, qprog = 'sqm', ekFlag = None, verbose = True,
-            gmx45 = False, disam = False, direct = False, sorted = False, chiral = False):
+            gmx45 = False, disam = False, direct = False, is_sorted = False, chiral = False):
 
         self.debug = debug
         self.verbose = verbose
         self.gmx45 = gmx45
         self.disam = disam
         self.direct = direct
-        self.sorted = sorted
+        self.sorted = is_sorted
         self.chiral = chiral
         self.inputFile = os.path.basename(inputFile)
         self.rootDir = os.path.abspath('.')
@@ -3155,7 +3155,7 @@ class MolTopol(ACTopol):
     """
     def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
                  debug = False, basename = None, verbose = True, gmx45 = False,
-                 disam = False, direct = False, sorted = False, chiral = False):
+                 disam = False, direct = False, is_sorted = False, chiral = False):
 
         self.chiral = chiral
         self.obchiralExe = _getoutput('which obchiral') or ''
@@ -3164,7 +3164,7 @@ class MolTopol(ACTopol):
         self.gmx45 = gmx45
         self.disam = disam
         self.direct = direct
-        self.sorted = sorted
+        self.sorted = is_sorted
         self.verbose = verbose
         self.inputFile = acFileTop
         if acTopolObj:
@@ -3245,11 +3245,11 @@ class Atom(object):
         where index i and j for atom types.
         Coord is given in Ang. and mass in Atomic Mass Unit.
     """
-    def __init__(self, atomName, atomType, id, resid, mass, charge, coord):
+    def __init__(self, atomName, atomType, id_, resid, mass, charge, coord):
         self.atomName = atomName
         self.atomType = atomType
-        self.id = id
-        self.cgnr = id
+        self.id = id_
+        self.cgnr = id_
         self.resid = resid
         self.mass = mass
         self.charge = charge  # / qConv
@@ -3474,7 +3474,7 @@ if __name__ == '__main__':
                               debug = options.debug, basename = options.basename,
                               verbose = options.verboseless, gmx45 = options.gmx45,
                               disam = options.disambiguate, direct = options.direct,
-                              sorted = options.sorted, chiral = options.chiral)
+                              is_sorted = options.sorted, chiral = options.chiral)
             system.printDebug("prmtop and inpcrd files parsed")
             system.writeGromacsTopolFiles(amb2gmx = True)
         else:
@@ -3487,7 +3487,7 @@ if __name__ == '__main__':
                                qprog = options.qprog, ekFlag = '''"%s"''' % options.keyword,
                                verbose = options.verboseless, gmx45 = options.gmx45,
                                disam = options.disambiguate, direct = options.direct,
-                               sorted = options.sorted, chiral = options.chiral)
+                               is_sorted = options.sorted, chiral = options.chiral)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting ! ")
@@ -3516,9 +3516,9 @@ if __name__ == '__main__':
 
     if options.ipython:
         try:
-            from IPython.Shell import IPShellEmbed  # @UnresolvedImport
+            from IPython.Shell import IPShellEmbed  # @UnresolvedImport @UnusedImport
         except:
-            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed
+            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed  # @UnresolvedImport @Reimport
         ipshell = IPShellEmbed()
         ipshell()
 
