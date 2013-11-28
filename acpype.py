@@ -1504,6 +1504,7 @@ a        """
         """
             Get chiral atoms, its 4 neighbours and improper dihedral angle
         """
+        self.chiralGroups = []
         if self.obchiralExe:
             # print (self.obchiralExe, os.getcwd())
             cmd = '%s %s' % (self.obchiralExe, self.inputFile)
@@ -3023,7 +3024,10 @@ stop
         dictInp['CNS_ran'] = self.baseName + '_rand.pdb'
         line = inpData % dictInp
         inpFile.write(line)
-        self.printDebug("chiralGroups %i" % len(self.chiralGroups))
+        if os.path.exists(self.obchiralExe):
+            self.printDebug("chiralGroups %i" % len(self.chiralGroups))
+        else:
+            self.printDebug("No 'obchiral' to process chiral atoms. Consider installing http://openbabel.org")
 
 class ACTopol(AbstractTopol):
     """
@@ -3155,8 +3159,6 @@ class MolTopol(ACTopol):
 
         self.chiral = chiral
         self.obchiralExe = _getoutput('which obchiral') or ''
-        if not os.path.exists(self.obchiralExe) and self.chiral:
-            self.printError("no 'obchiral' executable, it won't work to store non-planar improper dihedrals!")
         self.allhdg = False
         self.debug = debug
         self.gmx45 = gmx45
@@ -3176,6 +3178,10 @@ class MolTopol(ACTopol):
             self.printError("Files '%s' and '%s' don't exist")
             self.printError("molTopol object won't be created")
             return None
+
+#         if not os.path.exists(self.obchiralExe) and self.chiral:
+#             self.printError("no 'obchiral' executable, it won't work to store non-planar improper dihedrals!")
+#             self.printWarn("Consider installing http://openbabel.org")
 
         self.xyzFileData = open(acFileXyz, 'r').readlines()
         self.topFileData = open(acFileTop, 'r').readlines()
@@ -3201,7 +3207,10 @@ class MolTopol(ACTopol):
         self.getDihedrals()
 
         self.getChirals()
-        if self.chiral and not self.chiralGroups:
+        if not os.path.exists(self.obchiralExe) and self.chiral:
+            self.printError("no 'obchiral' executable, it won't work to store non-planar improper dihedrals!")
+            self.printWarn("Consider installing http://openbabel.org")
+        elif self.chiral and not self.chiralGroups:
             self.printWarn("No chiral atoms found")
 
         # self.setAtomPairs()
