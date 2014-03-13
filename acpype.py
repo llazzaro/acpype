@@ -94,12 +94,12 @@ leapAmberFile = 'leaprc.ff12SB'
 
 cal = 4.184
 Pi = 3.141593
-qConv = 18.222281775  # 18.2223
-radPi = 57.295780  # 180/Pi
+qConv = 18.222281775 # 18.2223
+radPi = 57.295780 # 180/Pi
 maxDist = 3.0
 minDist = 0.5
-maxDist2 = maxDist ** 2  # squared Ang.
-minDist2 = minDist ** 2  # squared Ang.
+maxDist2 = maxDist ** 2 # squared Ang.
+minDist2 = minDist ** 2 # squared Ang.
 diffTol = 0.01
 
 dictAmbAtomType2AmbGmxCode = \
@@ -340,7 +340,7 @@ def invalidArgs(text = None):
 
 # verNum = string.split(sys.version)[0]
 verNum = re.sub('[^0-9\.]', '', sys.version.split()[0])
-version = verNum.split('.')  # string.split(verNum, ".")
+version = verNum.split('.') # string.split(verNum, ".")
 verList = list(map(int, version))
 if verList < [2, 6, 0]:
     invalidArgs(text = "Python version %s\n       Sorry, you need python 2.6 or higher" % verNum)
@@ -439,7 +439,7 @@ def parmMerge(fdat1, fdat2, frcmod = False):
 
     if frcmod:
         dHeads = {'MASS':0, 'BOND':1, 'ANGL':2, 'DIHE':3, 'IMPR':4, 'HBON':5, 'NONB':7}
-        dat2 = parseFrcmod(file(fdat2).readlines())  # dict
+        dat2 = parseFrcmod(file(fdat2).readlines()) # dict
         for k in dat2:
             for parEntry in dat2[k]:
                 idFirst = None
@@ -453,7 +453,7 @@ def parmMerge(fdat1, fdat2, frcmod = False):
                 rev.reverse()
                 if idFirst == None: idFirst = 0
                 for ll in rev:
-                    if dHeads[k] in [0, 1, 7]:  # MASS has title in index 0 and so BOND, NONB
+                    if dHeads[k] in [0, 1, 7]: # MASS has title in index 0 and so BOND, NONB
                         dat1[dHeads[k]].insert(idFirst + 1, ll)
                     else:
                         dat1[dHeads[k]].insert(idFirst, ll)
@@ -487,7 +487,7 @@ def parmMerge(fdat1, fdat2, frcmod = False):
             lines = dat1[k][id1:-1] + dat2[k][id2:-1] + ['']
             for line in lines:
                 mdat.append(line)
-        if k in [2, 3, 4, 5, 6]:  # angles, p dih, imp dih
+        if k in [2, 3, 4, 5, 6]: # angles, p dih, imp dih
             lines = dat1[k][:-1] + dat2[k][:-1] + ['']
             for line in lines:
                 mdat.append(line)
@@ -679,7 +679,7 @@ class AbstractTopol(object):
         l = len(items)
         for item in items:
             id_ += 1
-            if len(item[1]) > 1:  # if True means atoms with same coordinates
+            if len(item[1]) > 1: # if True means atoms with same coordinates
                 for i in item[1]:
                     dups += "%s %s\n" % (i, item[0])
 
@@ -694,7 +694,7 @@ class AbstractTopol(object):
                 if dist2 < minDist2:
                     dist = math.sqrt(dist2)
                     shortd += "%8.5f       %s %s\n" % (dist, item[1], item2[1])
-                if dist2 < maxDist2:  # and not longOK:
+                if dist2 < maxDist2: # and not longOK:
                     longSet.add(str(item[1]))
                     longSet.add(str(item2[1]))
             if str(item[1]) not in longSet and l > 1:
@@ -909,7 +909,7 @@ a        """
             p = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE)
             pid = p.pid
 
-            out = str(p.communicate()[0].decode())  # p.stdout.read()
+            out = str(p.communicate()[0].decode()) # p.stdout.read()
             self.acLog = out
 
         if os.path.exists(self.acMol2FileName):
@@ -918,7 +918,7 @@ a        """
             self.printQuoted(self.acLog)
             return True
 
-    def signal_handler(self, _signum, _frame):  # , pid = 0):
+    def signal_handler(self, _signum, _frame): # , pid = 0):
         global pid
         pids = self.job_pids_family(pid)
         self.printDebug("PID: %s, PIDS: %s" % (pid, pids))
@@ -935,7 +935,7 @@ a        """
         dict_pids = {}
         pids = [pid]
         cmd = "ps -A -o uid,pid,ppid|grep %i" % os.getuid()
-        out = _getoutput(cmd).split('\n')  # getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
+        out = _getoutput(cmd).split('\n') # getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
         for item in out:
             vec = item.split()
             dict_pids[vec[2]] = vec[1]
@@ -950,7 +950,7 @@ a        """
     def delOutputFiles(self):
         delFiles = ['mopac.in', 'tleap.in', 'sleap.in', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp', 'fragment.mol2',
-                    self.tmpDir]  # , 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
+                    self.tmpDir] # , 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
         self.printMess("Removing temporary files...")
         for file_ in delFiles:
             file_ = os.path.join(self.absHomeDir, file_)
@@ -1006,7 +1006,7 @@ a        """
             signal.signal(signal.SIGALRM, self.signal_handler)
             signal.alarm(self.timeTol)
 
-            out = str(p.communicate()[0].decode())  # p.stdout.read()
+            out = str(p.communicate()[0].decode()) # p.stdout.read()
 
             self.sleapLog = out
             self.checkLeapLog(self.sleapLog)
@@ -1108,7 +1108,7 @@ a        """
             # parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
             # parm10file = self.locateDat('parm10.dat') # PARM99 + frcmod.ff99SB + frcmod.parmbsc0 in AmberTools 1.4
 
-            cmd += ' -p %s' % parm99gaffff99SBFile  # Ignoring parm10.dat and BSC0
+            cmd += ' -p %s' % parm99gaffff99SBFile # Ignoring parm10.dat and BSC0
 
         self.parmchkLog = _getoutput(cmd)
 
@@ -1228,7 +1228,7 @@ a        """
             mess = "Pickle file %s already present... doing nothing" % pklFile
         self.printMess(mess)
         if dumpFlag:
-            with open(pklFile, "wb") as f:  # for python 2.6 or higher
+            with open(pklFile, "wb") as f: # for python 2.6 or higher
                 # f = open(pklFile, "wb")
                 if verList[0] == 3:
                     pickle.dump(self, f, protocol = 2, fix_imports = True)
@@ -1263,16 +1263,16 @@ a        """
                 data += line
         # data need format
         sdata = [data[i:i + f].strip() for i in range(0, len(data), f)]
-        if '+' and '.' in data:  # it's a float
+        if '+' and '.' in data: # it's a float
             ndata = list(map(float, sdata))
         elif flag != 'RESIDUE_LABEL':
-            try:  # try if it's integer
+            try: # try if it's integer
                 ndata = list(map(int, sdata))
-            except:  # it's string
+            except: # it's string
                 ndata = sdata
         else:
             ndata = sdata
-        return ndata  # a list
+        return ndata # a list
 
     def getResidueLabel(self):
         """
@@ -1339,7 +1339,7 @@ a        """
 
         atoms = []
         atomTypes = []
-        tmpList = []  # a list with unique atom types
+        tmpList = [] # a list with unique atom types
         totalCharge = 0.0
         countRes = 0
         id_ = 0
@@ -1351,7 +1351,7 @@ a        """
                 atomName = atomName.upper()
             atomTypeName = atomTypeNameList[id_]
             if id_ + 1 == resIds[countRes]:
-                resid = countRes  # self.residueLabel[countRes]
+                resid = countRes # self.residueLabel[countRes]
                 countRes += 1
             resName = self.residueLabel[resid]
             if resName in ionOrSolResNameList and not FirstNonSoluteId:
@@ -1404,7 +1404,7 @@ a        """
         bondCodeList = bondCodeHList + bondCodeNonHList
         bonds = []
         for i in range(0, len(bondCodeList), 3):
-            idAtom1 = bondCodeList[i] // 3  # remember python starts with id 0
+            idAtom1 = bondCodeList[i] // 3 # remember python starts with id 0
             idAtom2 = bondCodeList[i + 1] // 3
             bondTypeId = bondCodeList[i + 2] - 1
             atom1 = self.atoms[idAtom1]
@@ -1426,7 +1426,7 @@ a        """
         angleCodeList = angleCodeHList + angleCodeNonHList
         angles = []
         for i in range(0, len(angleCodeList), 4):
-            idAtom1 = angleCodeList[i] // 3  # remember python starts with id 0
+            idAtom1 = angleCodeList[i] // 3 # remember python starts with id 0
             idAtom2 = angleCodeList[i + 1] // 3
             idAtom3 = angleCodeList[i + 2] // 3
             angleTypeId = angleCodeList[i + 3] - 1
@@ -1434,7 +1434,7 @@ a        """
             atom2 = self.atoms[idAtom2]
             atom3 = self.atoms[idAtom3]
             kt = uniqKtList[angleTypeId]
-            teq = uniqTeqList[angleTypeId]  # angle given in rad in prmtop
+            teq = uniqTeqList[angleTypeId] # angle given in rad in prmtop
             atoms = [atom1, atom2, atom3]
             angle = Angle(atoms, kt, teq)
             angles.append(angle)
@@ -1455,16 +1455,16 @@ a        """
         dihCodeList = dihCodeHList + dihCodeNonHList
         properDih = []
         improperDih = []
-        condProperDih = []  # list of dihedrals condensed by the same quartet
+        condProperDih = [] # list of dihedrals condensed by the same quartet
         # atomPairs = []
         atomPairs = set()
         for i in range(0, len(dihCodeList), 5):
-            idAtom1 = dihCodeList[i] // 3  # remember python starts with id 0
+            idAtom1 = dihCodeList[i] // 3 # remember python starts with id 0
             idAtom2 = dihCodeList[i + 1] // 3
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
             # in amber are to be ignored; if id4 < 0, dihedral is improper
-            idAtom3raw = dihCodeList[i + 2] // 3  # can be negative -> exclude from 1-4vdw
-            idAtom4raw = dihCodeList[i + 3] // 3  # can be negative -> Improper
+            idAtom3raw = dihCodeList[i + 2] // 3 # can be negative -> exclude from 1-4vdw
+            idAtom4raw = dihCodeList[i + 3] // 3 # can be negative -> Improper
             idAtom3 = abs(idAtom3raw)
             idAtom4 = abs(idAtom4raw)
             dihTypeId = dihCodeList[i + 4] - 1
@@ -1472,10 +1472,10 @@ a        """
             atom2 = self.atoms[idAtom2]
             atom3 = self.atoms[idAtom3]
             atom4 = self.atoms[idAtom4]
-            kPhi = uniqKpList[dihTypeId]  # already divided by IDIVF
-            period = int(uniqPeriodList[dihTypeId])  # integer
-            phase = uniqPhaseList[dihTypeId]  # angle given in rad in prmtop
-            if phase == kPhi == 0: period = 0  # period is set to 0
+            kPhi = uniqKpList[dihTypeId] # already divided by IDIVF
+            period = int(uniqPeriodList[dihTypeId]) # integer
+            phase = uniqPhaseList[dihTypeId] # angle given in rad in prmtop
+            if phase == kPhi == 0: period = 0 # period is set to 0
             atoms = [atom1, atom2, atom3, atom4]
             dihedral = Dihedral(atoms, kPhi, period, phase)
             if idAtom4raw > 0:
@@ -1496,8 +1496,8 @@ a        """
         except: pass
         self.properDihedrals = properDih
         self.improperDihedrals = improperDih
-        self.condensedProperDihedrals = condProperDih  # [[],[],...]
-        self.atomPairs = atomPairs  # set((atom1, atom2), ...)
+        self.condensedProperDihedrals = condProperDih # [[],[],...]
+        self.atomPairs = atomPairs # set((atom1, atom2), ...)
         self.printDebug("getDihedrals done")
 
     def getChirals(self):
@@ -1559,7 +1559,7 @@ a        """
 
         # Build list of sorted atoms, assigning charge groups by heavy atom.
         sorted_atoms = list()
-        cgnr = 1  # charge group number: each heavy atoms is assigned its own charge group
+        cgnr = 1 # charge group number: each heavy atoms is assigned its own charge group
         # First pass: add heavy atoms, followed by the hydrogens bonded to them.
         for atom in self.atoms:
             if is_heavy(atom):
@@ -1604,7 +1604,7 @@ a        """
             pair = [atom1, atom2]
             if atomPairs.count(pair) == 0:
                 atomPairs.append(pair)
-        self.atomPairs = atomPairs  # [[atom1, atom2], ...]
+        self.atomPairs = atomPairs # [[atom1, atom2], ...]
         self.printDebug("atomPairs done")
 
     def getExcludedAtoms(self):
@@ -1708,10 +1708,10 @@ a        """
             V = 6 * [0.0]
             C = 6 * [0.0]
             for dih in item:
-                period = dih.period  # Pn
-                kPhi = dih.kPhi  # in rad
-                phaseRaw = dih.phase * radPi  # in degree
-                phase = int(phaseRaw)  # in degree
+                period = dih.period # Pn
+                kPhi = dih.kPhi # in rad
+                phaseRaw = dih.phase * radPi # in degree
+                phase = int(phaseRaw) # in degree
                 if period > 4 and not self.gmx45:
                     self.printError("Likely trying to convert ILDN to RB, use option '-r' for GMX45")
                     sys.exit(1)
@@ -1770,7 +1770,7 @@ a        """
 
         at = self.atomType
         self.getResidueLabel()
-        res = self.resName  # self.residueLabel[0]
+        res = self.resName # self.residueLabel[0]
         # print res, self.residueLabel, type(self.residueLabel)
 
         cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -at %s \
@@ -1863,7 +1863,7 @@ a        """
             # HA          1.4590  0.0150             Spellmeyer (from parm99.dat)
             # to convert r and epsilon to ACOEF and BCOEF
             # ACOEF = sqrt(e1*e2) * (r1 + r2)^12 ; BCOEF = 2 * sqrt(e1*e2) * (r1 + r2)^6 = 2 * ACOEF/(r1+r2)^6
-            # to convert ACOEF and BCOEF to r and espsilon
+            # to convert ACOEF and BCOEF to r and epsilon
             # r = 0.5 * (2*ACOEF/BCOEF)^(1/6); ep = BCOEF^2/(4*ACOEF)
             # to convert ACOEF and BCOEF to sigma and epsilon (GMX)
             # sigma = (ACOEF/BCOEF)^(1/6) * 0.1 ; epsilon = 4.184 * BCOEF^2/(4*ACOEF)
@@ -2315,16 +2315,16 @@ a        """
             oaCode = 'opls_' + oItem[0]
             cgnr = id_
             if self.sorted:
-                cgnr = atom.cgnr  # JDC
+                cgnr = atom.cgnr # JDC
             charge = atom.charge
             mass = atom.mass
             omass = float(oItem[-1])
             qtot += charge
             resnr = resid + 1
             line = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot %1.3f\n" % \
-            (id_, aType, resnr, resname, aName, cgnr, charge, mass, qtot)  # JDC
+            (id_, aType, resnr, resname, aName, cgnr, charge, mass, qtot) # JDC
             oline = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot % 3.3f  %-4s\n" % \
-            (id_, oaCode, resnr, resname, aName, cgnr, charge, omass, qtot, oplsAtName)  # JDC
+            (id_, oaCode, resnr, resname, aName, cgnr, charge, omass, qtot, oplsAtName) # JDC
             count += 1
             temp.append(line)
             otemp.append(oline)
@@ -2478,7 +2478,7 @@ a        """
             self.printDebug("GMX proper dihedrals done")
         else:
             self.printMess("Writing GMX dihedrals for GMX 4.5.\n")
-            funct = 9  # 9
+            funct = 9 # 9
             for dih in self.properDihedralsGmx45:
                 a1 = dih[0][0].atomName
                 a2 = dih[0][1].atomName
@@ -2488,9 +2488,9 @@ a        """
                 id2 = dih[0][1].id
                 id3 = dih[0][2].id
                 id4 = dih[0][3].id
-                ph = dih[1]  # phase already in degree
-                kd = dih[2] * cal  # kPhi PK
-                pn = dih[3]  # .period
+                ph = dih[1] # phase already in degree
+                kd = dih[2] * cal # kPhi PK
+                pn = dih[3] # .period
                 line = "%6i %6i %6i %6i %6i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
                                 (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
                 oline = "%6i %6i %6i %6i %6i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
@@ -2510,7 +2510,7 @@ a        """
                     oitpText += otemp
 
         # for properDihedralsAlphaGamma
-        if self.gmx45: funct = 4  # 4
+        if self.gmx45: funct = 4 # 4
         else: funct = 1
         temp = []
         otemp = []
@@ -2523,9 +2523,9 @@ a        """
             id2 = dih[0][1].id
             id3 = dih[0][2].id
             id4 = dih[0][3].id
-            ph = dih[1]  # phase already in degree
-            kd = dih[2] * cal  # kPhi PK
-            pn = dih[3]  # .period
+            ph = dih[1] # phase already in degree
+            kd = dih[2] * cal # kPhi PK
+            pn = dih[3] # .period
             line = "%6i %6i %6i %6i %6i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
                             (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             oline = "%6i %6i %6i %6i %6i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
@@ -2649,10 +2649,10 @@ a        """
                 text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
             elif round(vX, 2) == 109.47:
                 self.printDebug("PBC octahedron")
-                f1 = 0.471405  # 1/3 * sqrt(2)
+                f1 = 0.471405 # 1/3 * sqrt(2)
                 f2 = 0.333333 * boxX
                 v22 = boxY * 2 * f1
-                v33 = boxZ * f1 * 1.73205  # f1 * sqrt(3)
+                v33 = boxZ * f1 * 1.73205 # f1 * sqrt(3)
                 v21 = v31 = v32 = 0.0
                 v12 = f2
                 v13 = -f2
@@ -2664,9 +2664,9 @@ a        """
             X = [a.coords[0] * 0.1 for a in self.atoms]
             Y = [a.coords[1] * 0.1 for a in self.atoms]
             Z = [a.coords[2] * 0.1 for a in self.atoms]
-            boxX = max(X) - min(X)  # + 2.0 # 2.0 is double of rlist
-            boxY = max(Y) - min(Y)  # + 2.0
-            boxZ = max(Z) - min(Z)  # + 2.0
+            boxX = max(X) - min(X) # + 2.0 # 2.0 is double of rlist
+            boxY = max(Y) - min(Y) # + 2.0
+            boxZ = max(Z) - min(Z) # + 2.0
             text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
         groFile.write(text)
 
@@ -2902,7 +2902,7 @@ eriod phase }\n")
             line = "BOND %-5s %-5s\n" % (a1Name, a2Name)
             topFile.write(line)
 
-        if not autoAngleFlag or 1:  # generating angles anyway
+        if not autoAngleFlag or 1: # generating angles anyway
             topFile.write("\n{ Angles: atomName1 atomName2 atomName3}\n")
             for angle in self.angles:
                 a1Name = angle.atoms[0].atomName
@@ -2911,7 +2911,7 @@ eriod phase }\n")
                 line = "ANGLe %-5s %-5s %-5s\n" % (a1Name, a2Name, a3Name)
                 topFile.write(line)
 
-        if not autoDihFlag or 1:  # generating angles anyway
+        if not autoDihFlag or 1: # generating angles anyway
             topFile.write("\n{ Proper Dihedrals: name1 name2 name3 name4 }\n")
             for item in self.condensedProperDihedrals:
                 for dih in item:
@@ -3055,7 +3055,7 @@ class ACTopol(AbstractTopol):
         baseOriginal, ext = os.path.splitext(self.inputFile)
         base = basename or baseOriginal
         self.baseOriginal = baseOriginal
-        self.baseName = base  # name of the input file without ext.
+        self.baseName = base # name of the input file without ext.
         self.timeTol = timeTol
         self.printDebug("Max execution time tolerance is %s" % elapsedTime(self.timeTol))
         self.ext = ext
@@ -3081,7 +3081,7 @@ class ACTopol(AbstractTopol):
                     self.acExe = ac_path
                     break
         if not self.acExe:
-            self.acExe = _getoutput('which antechamber') or ''  # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+            self.acExe = _getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not os.path.exists(self.acExe):
             self.printError("no 'antechamber' executable!")
             return None
@@ -3090,7 +3090,7 @@ class ACTopol(AbstractTopol):
         self.parmchkExe = _getoutput('which parmchk') or ''
         self.babelExe = _getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
-            if self.ext != '.mol2' and self.ext != '.mdl':  # and self.ext != '.mol':
+            if self.ext != '.mol2' and self.ext != '.mdl': # and self.ext != '.mol':
                 self.printError("no 'babel' executable; you need it if input is PDB")
                 self.printError("otherwise use only MOL2 or MDL file as input ... aborting!")
                 sys.exit(1)
@@ -3191,9 +3191,9 @@ class MolTopol(ACTopol):
 
         self.getResidueLabel()
         if len(self.residueLabel) > 1:
-            self.baseName = basename or os.path.splitext(os.path.basename(acFileTop))[0]  # 'solute'
+            self.baseName = basename or os.path.splitext(os.path.basename(acFileTop))[0] # 'solute'
         else:
-            self.baseName = basename or self.residueLabel[0]  # 3 caps letters
+            self.baseName = basename or self.residueLabel[0] # 3 caps letters
         if acTopolObj:
             self.baseName = basename or acTopolObj.baseName
         self.printDebug("basename defined = '%s'" % self.baseName)
@@ -3252,7 +3252,7 @@ class Atom(object):
         self.cgnr = id_
         self.resid = resid
         self.mass = mass
-        self.charge = charge  # / qConv
+        self.charge = charge # / qConv
         self.coords = coord
 
     def __str__(self):
@@ -3301,7 +3301,7 @@ class Angle(object):
     def __init__(self, atoms, kTheta, thetaEq):
         self.atoms = atoms
         self.kTheta = kTheta
-        self.thetaEq = thetaEq  # rad, to convert to degree: thetaEq * 180/Pi
+        self.thetaEq = thetaEq # rad, to convert to degree: thetaEq * 180/Pi
 
     def __str__(self):
         return '<%s, ang=%.2f>' % (self.atoms, self.thetaEq * 180 / Pi)
@@ -3318,7 +3318,7 @@ class Dihedral(object):
         self.atoms = atoms
         self.kPhi = kPhi
         self.period = period
-        self.phase = phase  # rad, to convert to degree: kPhi * 180/Pi
+        self.phase = phase # rad, to convert to degree: kPhi * 180/Pi
 
     def __str__(self):
         return '<%s, ang=%.2f>' % (self.atoms, self.phase * 180 / Pi)
@@ -3368,7 +3368,7 @@ if __name__ == '__main__':
                       help = "multiplicity (2S+1), default is 1",)
     parser.add_option('-a', '--atom_type',
                       type = 'choice',
-                      choices = ['gaff', 'amber'],  # , 'bcc', 'sybyl']
+                      choices = ['gaff', 'amber'], # , 'bcc', 'sybyl']
                       action = "store",
                       default = 'gaff',
                       dest = 'atom_type',
@@ -3516,9 +3516,9 @@ if __name__ == '__main__':
 
     if options.ipython:
         try:
-            from IPython.Shell import IPShellEmbed  # @UnresolvedImport @UnusedImport
+            from IPython.Shell import IPShellEmbed # @UnresolvedImport @UnusedImport
         except:
-            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed  # @UnresolvedImport @Reimport
+            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed # @UnresolvedImport @Reimport
         ipshell = IPShellEmbed()
         ipshell()
 
