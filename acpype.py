@@ -885,10 +885,15 @@ a        """
         ct = chargeType or self.chargeType
         at = atomType or self.atomType
 
+        if ct == 'user':
+            ct = ''
+        else:
+            ct = '-c %s' % ct
+
         exten = self.ext[1:]
         if exten == 'mol': exten = 'mdl'
 
-        cmd = '%s -i %s -fi %s -o %s -fo mol2 -c %s -nc %s -m %s -s 2 -df %i -at\
+        cmd = '%s -i %s -fi %s -o %s -fo mol2 %s -nc %s -m %s -s 2 -df %i -at\
  %s -pf y %s' % (self.acExe, self.inputFile, exten, self.acMol2FileName,
                      ct, self.chargeVal, self.multiplicity, self.qFlag, at,
                      self.ekFlag)
