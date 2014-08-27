@@ -59,13 +59,15 @@ import re
 """
 
 svnId = '$Id$'
-try: svnRev, svnDate, svnTime = svnId.split()[2:5]
-except: svnRev, svnDate, svnTime = '0', '0', '0'
+try:
+    svnRev, svnDate, svnTime = svnId.split()[2:5]
+except:
+    svnRev, svnDate, svnTime = '0', '0', '0'
 year = datetime.today().year
 tag = "%s %s Rev: %s" % (svnDate, svnTime, svnRev)
 
 lineHeader = \
-'''
+    '''
 | ACPYPE: AnteChamber PYthon Parser interfacE v. %s (c) %s AWSdS |
 ''' % (tag, year)
 frameLine = (len(lineHeader) - 2) * '='
@@ -78,7 +80,7 @@ header = '%s%s%s' % (frameLine, lineHeader, frameLine)
 
 # List of Topology Formats created by acpype so far:
 outTopols = ['gmx', 'cns', 'charmm']
-qDict = {'mopac' : 0, 'divcon' : 1, 'sqm': 2}
+qDict = {'mopac': 0, 'divcon': 1, 'sqm': 2}
 
 # Residues that are not solute, to be avoided when balancing charges in
 # amb2gmx mode
@@ -94,93 +96,93 @@ leapAmberFile = 'leaprc.ff12SB'
 
 cal = 4.184
 Pi = 3.141593
-qConv = 18.222281775 # 18.2223
-radPi = 57.295780 # 180/Pi
+qConv = 18.222281775  # 18.2223
+radPi = 57.295780  # 180/Pi
 maxDist = 3.0
 minDist = 0.5
-maxDist2 = maxDist ** 2 # squared Ang.
-minDist2 = minDist ** 2 # squared Ang.
+maxDist2 = maxDist ** 2  # squared Ang.
+minDist2 = minDist ** 2  # squared Ang.
 diffTol = 0.01
 
 dictAmbAtomType2AmbGmxCode = \
-{'BR':'1', 'C':'2', 'CA':'3', 'CB':'4', 'CC':'5', 'CK':'6', 'CM':'7', 'CN':'8', 'CQ':'9',
- 'CR':'10', 'CT':'11', 'CV':'12', 'CW':'13', 'C*':'14', 'Ca':'15', 'F':'16', 'H':'17',
- 'HC':'18', 'H1':'19', 'H2':'20', 'H3':'21', 'HA':'22', 'H4':'23', 'H5':'24', 'HO':'25',
- 'HS':'26', 'HW':'27', 'HP':'28', 'I':'29', 'Cl':'30', 'Na':'31', 'IB':'32', 'Mg':'33',
- 'N':'34', 'NA':'35', 'NB':'36', 'NC':'37', 'N2':'38', 'N3':'39', 'N*':'40', 'O':'41',
- 'OW':'42', 'OH':'43', 'OS':'44', 'O2':'45', 'P':'46', 'S':'47', 'SH':'48', 'CU':'49',
- 'FE':'50', 'K':'51', 'Rb':'52', 'Cs':'53', 'Li':'56', 'Zn':'57', 'Sr':'58', 'Ba':'59',
- 'MCH3A':'MCH3A', 'MCH3B':'MCH3B', 'MNH2':'MNH2', 'MNH3':'MNH3', 'MW':'MW'}
+    {'BR': '1', 'C': '2', 'CA': '3', 'CB': '4', 'CC': '5', 'CK': '6', 'CM': '7', 'CN': '8', 'CQ': '9',
+     'CR': '10', 'CT': '11', 'CV': '12', 'CW': '13', 'C*': '14', 'Ca': '15', 'F': '16', 'H': '17',
+     'HC': '18', 'H1': '19', 'H2': '20', 'H3': '21', 'HA': '22', 'H4': '23', 'H5': '24', 'HO': '25',
+     'HS': '26', 'HW': '27', 'HP': '28', 'I': '29', 'Cl': '30', 'Na': '31', 'IB': '32', 'Mg': '33',
+     'N': '34', 'NA': '35', 'NB': '36', 'NC': '37', 'N2': '38', 'N3': '39', 'N*': '40', 'O': '41',
+     'OW': '42', 'OH': '43', 'OS': '44', 'O2': '45', 'P': '46', 'S': '47', 'SH': '48', 'CU': '49',
+     'FE': '50', 'K': '51', 'Rb': '52', 'Cs': '53', 'Li': '56', 'Zn': '57', 'Sr': '58', 'Ba': '59',
+     'MCH3A': 'MCH3A', 'MCH3B': 'MCH3B', 'MNH2': 'MNH2', 'MNH3': 'MNH3', 'MW': 'MW'}
 
 dictOplsAtomType2OplsGmxCode = \
-{'Ac3+':['697'], 'Am3+':['699'], 'Ar':['Ar', '097'], 'Ba2+':['414'],
- 'Br':['722', '730'], 'Br-':['402'],
- 'CT':['064', '076', '122', '135', '136', '137', '138', '139', '148', '149', '152', '157', '158', '159', '161', '173', '174', '175', '181', '182', '183', '184', '206', '207', '208', '209', '210', '211', '212', '213', '214', '215', '216', '217', '218', '219', '220', '223', '224', '225', '229', '230', '242', '243', '244', '256', '257', '258', '259', '273', '274', '275', '276', '291', '292', '293', '294', '297', '305', '306', '307', '308', '331', '371', '373', '375', '391', '396', '421', '431', '443', '448', '453', '455', '458', '461', '468', '476', '482', '484', '486', '490', '491', '492', '498', '499', '505', '515', '516', '645', '670', '671', '672', '673', '674', '675', '676', '677', '678', '679', '680', '681', '701', '725', '747', '748', '755', '756', '757', '758', '762', '764', '765', '766', '774', '775', '776', '782', '783', '903', '904', '905', '906', '907', '908', '912', '913', '914', '915', '942', '943', '944', '945', '951', '957', '959', '960', '961', '962', '963', '964'],
- 'CA':['053', '145', '147', '166', '199', '221', '228', '260', '263', '266', '302', '312', '315', '317', '336', '351', '362', '380', '457', '460', '463', '472', '488', '521', '522', '523', '528', '532', '533', '538', '539', '551', '582', '590', '591', '592', '593', '604', '605', '606', '607', '608', '609', '610', '611', '612', '625', '644', '647', '648', '649', '650', '651', '652', '714', '716', '718', '720', '724', '727', '729', '731', '735', '736', '737', '738', '739', '742', '752', '768', '916', '917', '918'],
- 'C3':['007', '010', '036', '039', '063', '065', '067', '068', '069', '070', '080', '088', '090', '092', '096', '106', '107', '109', '126', '132', '415', '418', '425', '429'],
- 'C':['001', '017', '026', '058', '095', '131', '231', '234', '235', '247', '252', '267', '320', '322', '334', '366', '378', '470', '471', '772', '952'],
- 'C2':['005', '009', '015', '016', '019', '022', '027', '028', '031', '034', '037', '056', '057', '061', '071', '081', '089', '091', '093', '110'],
- 'CT_2':['223B', '224B', '225B', '246', '283', '284', '285', '292B', '293B', '295', '298', '299', '906B', '912B'],
- 'CM':['141', '142', '143', '227', '323', '324', '337', '338', '381', '382', '517', '518', '708'],
- 'CW':['508', '514', '543', '552', '561', '567', '575', '583', '588', '637'],
- 'CB':['050', '349', '350', '364', '365', '501', '595', '623', '624'],
- 'CH':['006', '008', '014', '025', '029', '030', '060', '073'],
- 'CZ':['261', '423', '754', '925', '927', '928', '929', '931'],
- 'CO':['189', '191', '193', '195', '197', '198'],
- 'C_2':['232', '233', '277', '280', '465'],
- 'CR':['506', '509', '558', '572', '634'],
- 'CQ':['347', '531', '621', '642'],
- 'CV':['507', '560', '574', '636'],
- 'CY':['711', '712', '713', '733'],
- 'CS':['544', '568', '589'],
- 'CK':['353', '627'], 'CN':['502', '594'], 'CP':['043', '048'], 'CU':['550', '581'],
- 'CT_3':['245', '296'], 'C=':['150', '178'], 'CD':['011', '075'],
- 'C4':['066'], 'C7':['077'], 'C8':['074'], 'C9':['072'], 'CX':['510'],
- 'C!':['145B'], 'C*':['500'], 'C+':['700'], 'C_3':['271'],
- 'CC':['045'], 'CF':['044'], 'CG':['049'], 'CT_4':['160'],
- 'Ca2+':['412'],
- 'Cl':['123', '151', '226', '264'],
- 'Cl-':['401', '709'],
- 'Cs+':['410'], 'Cu2+':['Cu2+'], 'Eu3+':['705'],
- 'F':['164', '719', '721', '726', '728', '786', '956', '965'],
- 'F-':['400'], 'Fe2+':['Fe2+'], 'Gd3+':['706'],
- 'HA':['146', '316', '318', '389', '524', '525', '526', '529', '534', '535', '536', '540', '541', '546', '547', '554', '555', '556', '563', '564', '565', '569', '570', '576', '577', '578', '584', '585', '586', '597', '598', '599', '600', '601', '602', '613', '614', '615', '616', '617', '618', '619', '629', '630', '631', '638', '639', '640', '643', '653', '654', '655', '656', '715', '717', '740', '741', '746'],
- 'HC':['140', '144', '153', '156', '165', '176', '185', '190', '192', '194', '196', '255', '279', '282', '329', '330', '332', '344', '372', '374', '376', '392', '416', '419', '422', '426', '430', '432', '444', '449', '454', '456', '459', '462', '469', '477', '483', '485', '487', '702', '710', '759', '763', '777', '778', '779', '784', '911', '926', '930', '950', '958'],
- 'H':['004', '013', '041', '047', '128', '240', '241', '250', '254', '314', '325', '327', '339', '342', '343', '357', '358', '360', '367', '369', '383', '385', '387', '388', '428', '479', '481', '504', '513', '545', '553', '562', '596', '632', '744', '745', '909', '910'],
- 'H3':['021', '052', '055', '104', '105', '289', '290', '301', '304', '310', '941', '955'],
- 'HO':['024', '079', '155', '163', '168', '170', '172', '188', '270', '435'],
- 'HS':['033', '086', '087', '204', '205'],
- 'HW':['112', '114', '117', '119', '796'],
- 'H4':['345', '390'], 'H5':['355', '359'],
- 'He':['130'], 'I':['732'], 'I-':['403'], 'K+':['408'], 'Kr':['098'],
- 'LP':['433', '797'], 'La3+':['703'], 'Li+':['404', '406'],
- 'MCH3A':['MCH3A'], 'MCH3B':['MCH3B'], 'MNH2':['MNH2'], 'MNH3':['MNH3'],
- 'MW':['MW', '115'], 'Mg2+':['411'],
- 'NA':['040', '046', '319', '321', '333', '354', '361', '377', '379', '503', '512', '542', '548', '557', '587', '628'],
- 'NC':['311', '335', '346', '348', '363', '520', '527', '530', '537', '603', '620', '622', '641', '646'],
- 'N':['003', '012', '094', '237', '238', '239', '249', '251', '265', '478', '480', '787'],
- 'N3':['020', '101', '102', '103', '286', '287', '288', '309', '427', '940', '953'],
- 'N2':['051', '054', '300', '303', '313', '341', '356', '368', '386', '743'],
- 'NB':['042', '352', '511', '549', '559', '573', '580', '626', '635'],
- 'N*':['319B', '333B', '354B', '377B'],
- 'NT':['127', '900', '901', '902'],
- 'NZ':['262', '424', '750', '753'],
- 'NO':['760', '767'], 'NY':['749', '751'],
- 'Na+':['405', '407'], 'Nd3+':['704'], 'Ne':['129'],
- 'OS':['062', '108', '179', '180', '186', '395', '442', '447', '452', '467', '473', '566', '571', '579', '773'],
- 'O':['002', '059', '236', '248', '253', '326', '328', '340', '370', '384', '771', '788'],
- 'OH':['023', '078', '154', '162', '167', '169', '171', '187', '268', '420', '434'],
- 'O2':['018', '125', '272', '394', '441', '446', '451', '954'],
- 'OW':['111', '113', '116', '118', '795'],
- 'O_2':['278', '281', '466'],
- 'OY':['475', '494', '497'],
- 'OL':['120'], 'ON':['761'], 'OU':['437'], 'O_3':['269'],
- 'P':['393', '440', '445', '450', '785'],
- 'P+':['781'], 'Rb+':['409'],
- 'S':['035', '038', '084', '085', '124', '202', '203', '222', '633'],
- 'SH':['032', '082', '083', '200', '201', '417', '734'],
- 'SI':['SI'], 'SY':['474'], 'SY2':['493'], 'SZ':['496'], 'Sr2+':['413'],
- 'Th4+':['698'], 'U':['436'], 'Xe':['099'], 'Yb3+':['707'], 'Zn2+':['Zn2+']}
+    {'Ac3+': ['697'], 'Am3+': ['699'], 'Ar': ['Ar', '097'], 'Ba2+': ['414'],
+     'Br': ['722', '730'], 'Br-': ['402'],
+     'CT': ['064', '076', '122', '135', '136', '137', '138', '139', '148', '149', '152', '157', '158', '159', '161', '173', '174', '175', '181', '182', '183', '184', '206', '207', '208', '209', '210', '211', '212', '213', '214', '215', '216', '217', '218', '219', '220', '223', '224', '225', '229', '230', '242', '243', '244', '256', '257', '258', '259', '273', '274', '275', '276', '291', '292', '293', '294', '297', '305', '306', '307', '308', '331', '371', '373', '375', '391', '396', '421', '431', '443', '448', '453', '455', '458', '461', '468', '476', '482', '484', '486', '490', '491', '492', '498', '499', '505', '515', '516', '645', '670', '671', '672', '673', '674', '675', '676', '677', '678', '679', '680', '681', '701', '725', '747', '748', '755', '756', '757', '758', '762', '764', '765', '766', '774', '775', '776', '782', '783', '903', '904', '905', '906', '907', '908', '912', '913', '914', '915', '942', '943', '944', '945', '951', '957', '959', '960', '961', '962', '963', '964'],
+     'CA': ['053', '145', '147', '166', '199', '221', '228', '260', '263', '266', '302', '312', '315', '317', '336', '351', '362', '380', '457', '460', '463', '472', '488', '521', '522', '523', '528', '532', '533', '538', '539', '551', '582', '590', '591', '592', '593', '604', '605', '606', '607', '608', '609', '610', '611', '612', '625', '644', '647', '648', '649', '650', '651', '652', '714', '716', '718', '720', '724', '727', '729', '731', '735', '736', '737', '738', '739', '742', '752', '768', '916', '917', '918'],
+     'C3': ['007', '010', '036', '039', '063', '065', '067', '068', '069', '070', '080', '088', '090', '092', '096', '106', '107', '109', '126', '132', '415', '418', '425', '429'],
+     'C': ['001', '017', '026', '058', '095', '131', '231', '234', '235', '247', '252', '267', '320', '322', '334', '366', '378', '470', '471', '772', '952'],
+     'C2': ['005', '009', '015', '016', '019', '022', '027', '028', '031', '034', '037', '056', '057', '061', '071', '081', '089', '091', '093', '110'],
+     'CT_2': ['223B', '224B', '225B', '246', '283', '284', '285', '292B', '293B', '295', '298', '299', '906B', '912B'],
+     'CM': ['141', '142', '143', '227', '323', '324', '337', '338', '381', '382', '517', '518', '708'],
+     'CW': ['508', '514', '543', '552', '561', '567', '575', '583', '588', '637'],
+     'CB': ['050', '349', '350', '364', '365', '501', '595', '623', '624'],
+     'CH': ['006', '008', '014', '025', '029', '030', '060', '073'],
+     'CZ': ['261', '423', '754', '925', '927', '928', '929', '931'],
+     'CO': ['189', '191', '193', '195', '197', '198'],
+     'C_2': ['232', '233', '277', '280', '465'],
+     'CR': ['506', '509', '558', '572', '634'],
+     'CQ': ['347', '531', '621', '642'],
+     'CV': ['507', '560', '574', '636'],
+     'CY': ['711', '712', '713', '733'],
+     'CS': ['544', '568', '589'],
+     'CK': ['353', '627'], 'CN': ['502', '594'], 'CP': ['043', '048'], 'CU': ['550', '581'],
+     'CT_3': ['245', '296'], 'C=': ['150', '178'], 'CD': ['011', '075'],
+     'C4': ['066'], 'C7': ['077'], 'C8': ['074'], 'C9': ['072'], 'CX': ['510'],
+     'C!': ['145B'], 'C*': ['500'], 'C+': ['700'], 'C_3': ['271'],
+     'CC': ['045'], 'CF': ['044'], 'CG': ['049'], 'CT_4': ['160'],
+     'Ca2+': ['412'],
+     'Cl': ['123', '151', '226', '264'],
+     'Cl-': ['401', '709'],
+     'Cs+': ['410'], 'Cu2+': ['Cu2+'], 'Eu3+': ['705'],
+     'F': ['164', '719', '721', '726', '728', '786', '956', '965'],
+     'F-': ['400'], 'Fe2+': ['Fe2+'], 'Gd3+': ['706'],
+     'HA': ['146', '316', '318', '389', '524', '525', '526', '529', '534', '535', '536', '540', '541', '546', '547', '554', '555', '556', '563', '564', '565', '569', '570', '576', '577', '578', '584', '585', '586', '597', '598', '599', '600', '601', '602', '613', '614', '615', '616', '617', '618', '619', '629', '630', '631', '638', '639', '640', '643', '653', '654', '655', '656', '715', '717', '740', '741', '746'],
+     'HC': ['140', '144', '153', '156', '165', '176', '185', '190', '192', '194', '196', '255', '279', '282', '329', '330', '332', '344', '372', '374', '376', '392', '416', '419', '422', '426', '430', '432', '444', '449', '454', '456', '459', '462', '469', '477', '483', '485', '487', '702', '710', '759', '763', '777', '778', '779', '784', '911', '926', '930', '950', '958'],
+     'H': ['004', '013', '041', '047', '128', '240', '241', '250', '254', '314', '325', '327', '339', '342', '343', '357', '358', '360', '367', '369', '383', '385', '387', '388', '428', '479', '481', '504', '513', '545', '553', '562', '596', '632', '744', '745', '909', '910'],
+     'H3': ['021', '052', '055', '104', '105', '289', '290', '301', '304', '310', '941', '955'],
+     'HO': ['024', '079', '155', '163', '168', '170', '172', '188', '270', '435'],
+     'HS': ['033', '086', '087', '204', '205'],
+     'HW': ['112', '114', '117', '119', '796'],
+     'H4': ['345', '390'], 'H5': ['355', '359'],
+     'He': ['130'], 'I': ['732'], 'I-': ['403'], 'K+': ['408'], 'Kr': ['098'],
+     'LP': ['433', '797'], 'La3+': ['703'], 'Li+': ['404', '406'],
+     'MCH3A': ['MCH3A'], 'MCH3B': ['MCH3B'], 'MNH2': ['MNH2'], 'MNH3': ['MNH3'],
+     'MW': ['MW', '115'], 'Mg2+': ['411'],
+     'NA': ['040', '046', '319', '321', '333', '354', '361', '377', '379', '503', '512', '542', '548', '557', '587', '628'],
+     'NC': ['311', '335', '346', '348', '363', '520', '527', '530', '537', '603', '620', '622', '641', '646'],
+     'N': ['003', '012', '094', '237', '238', '239', '249', '251', '265', '478', '480', '787'],
+     'N3': ['020', '101', '102', '103', '286', '287', '288', '309', '427', '940', '953'],
+     'N2': ['051', '054', '300', '303', '313', '341', '356', '368', '386', '743'],
+     'NB': ['042', '352', '511', '549', '559', '573', '580', '626', '635'],
+     'N*': ['319B', '333B', '354B', '377B'],
+     'NT': ['127', '900', '901', '902'],
+     'NZ': ['262', '424', '750', '753'],
+     'NO': ['760', '767'], 'NY': ['749', '751'],
+     'Na+': ['405', '407'], 'Nd3+': ['704'], 'Ne': ['129'],
+     'OS': ['062', '108', '179', '180', '186', '395', '442', '447', '452', '467', '473', '566', '571', '579', '773'],
+     'O': ['002', '059', '236', '248', '253', '326', '328', '340', '370', '384', '771', '788'],
+     'OH': ['023', '078', '154', '162', '167', '169', '171', '187', '268', '420', '434'],
+     'O2': ['018', '125', '272', '394', '441', '446', '451', '954'],
+     'OW': ['111', '113', '116', '118', '795'],
+     'O_2': ['278', '281', '466'],
+     'OY': ['475', '494', '497'],
+     'OL': ['120'], 'ON': ['761'], 'OU': ['437'], 'O_3': ['269'],
+     'P': ['393', '440', '445', '450', '785'],
+     'P+': ['781'], 'Rb+': ['409'],
+     'S': ['035', '038', '084', '085', '124', '202', '203', '222', '633'],
+     'SH': ['032', '082', '083', '200', '201', '417', '734'],
+     'SI': ['SI'], 'SY': ['474'], 'SY2': ['493'], 'SZ': ['496'], 'Sr2+': ['413'],
+     'Th4+': ['698'], 'U': ['436'], 'Xe': ['099'], 'Yb3+': ['707'], 'Zn2+': ['Zn2+']}
 
 # reverse dictOplsAtomType2OplsGmxCode
 oplsCode2AtomTypeDict = {}
@@ -193,7 +195,7 @@ for k, v in list(dictOplsAtomType2OplsGmxCode.items()):
 #            oplsCode2AtomTypeDict[code] = [k]
 
 # Cross dictAmbAtomType2AmbGmxCode with dictOplsAtomType2OplsGmxCode & add H1,HP,H2
-dictAtomTypeAmb2OplsGmxCode = {'H1':['140', '1.00800'], 'HP':['140', '1.00800'], 'H2':['140', '1.00800']}
+dictAtomTypeAmb2OplsGmxCode = {'H1': ['140', '1.00800'], 'HP': ['140', '1.00800'], 'H2': ['140', '1.00800']}
 dictOplsMass = {'SY2': ['32.06000'], 'Zn2+': ['65.37000'], 'CQ': ['12.01100'], 'CP': ['12.01100'], 'Nd3+': ['144.24000'], 'Br-': ['79.90400'], 'Cu2+': ['63.54600'], 'Br': ['79.90400'], 'H': ['1.00800'], 'P': ['30.97376'], 'Sr2+': ['87.62000'], 'ON': ['15.99940'], 'OL': ['0.00000'], 'OH': ['15.99940'], 'OY': ['15.99940'], 'OW': ['15.99940'], 'OU': ['15.99940'], 'OS': ['15.99940'], 'Am3+': ['243.06000'], 'HS': ['1.00800'], 'HW': ['1.00800'], 'HO': ['1.00800'], 'HC': ['1.00800'], 'HA': ['1.00800'], 'O2': ['15.99940'], 'Ca2+': ['40.08000'], 'Th4+': ['232.04000'], 'He': ['4.00260'], 'C': ['12.01100'], 'Cs+': ['132.90540'], 'O': ['15.99940'], 'Gd3+': ['157.25000'], 'S': ['32.06000'], 'P+': ['30.97376'], 'La3+': ['138.91000'], 'H3': ['1.00800'], 'H4': ['1.00800'], 'MNH2': ['0.00000'], 'MW': ['0.00000'], 'NB': ['14.00670'], 'K+': ['39.09830'], 'Ne': ['20.17970'], 'Rb+': ['85.46780'], 'C+': ['12.01100'], 'C*': ['12.01100'], 'NO': ['14.00670'], 'CT_4': ['12.01100'], 'NA': ['14.00670'], 'C!': ['12.01100'], 'NC': ['14.00670'], 'NZ': ['14.00670'], 'CT_2': ['12.01100'], 'CT_3': ['12.01100'], 'NY': ['14.00670'], 'C9': ['14.02700'], 'C8': ['13.01900'], 'C=': ['12.01100'], 'Yb3+': ['173.04000'], 'C3': ['15.03500', '12.01100'], 'C2': ['14.02700'], 'C7': ['12.01100'], 'C4': ['16.04300'], 'CK': ['12.01100'], 'Cl-': ['35.45300'], 'N*': ['14.00670'], 'CH': ['13.01900'], 'CO': ['12.01100'], 'CN': ['12.01100'], 'CM': ['12.01100'], 'F': ['18.99840'], 'CC': ['12.01100'], 'CB': ['12.01100'], 'CA': ['12.01100'], 'CG': ['12.01100'], 'CF': ['12.01100'], 'N': ['14.00670'], 'CZ': ['12.01100'], 'CY': ['12.01100'], 'CX': ['12.01100'], 'Ac3+': ['227.03000'], 'CS': ['12.01100'], 'CR': ['12.01100'], 'N2': ['14.00670'], 'N3': ['14.00670'], 'CW': ['12.01100'], 'CV': ['12.01100'], 'CU': ['12.01100'], 'CT': ['12.01100'], 'SZ': ['32.06000'], 'SY': ['32.06000'], 'Cl': ['35.45300'], 'NT': ['14.00670'], 'O_2': ['15.99940'], 'Xe': ['131.29300'], 'SI': ['28.08000'], 'SH': ['32.06000'], 'Eu3+': ['151.96000'], 'F-': ['18.99840'], 'MNH3': ['0.00000'], 'H5': ['1.00800'], 'C_3': ['12.01100'], 'C_2': ['12.01100'], 'I-': ['126.90450'], 'LP': ['0.00000'], 'I': ['126.90450'], 'Na+': ['22.98977'], 'Li+': ['6.94100'], 'U': ['0.00000'], 'MCH3A': ['0.00000'], 'MCH3B': ['0.00000'], 'CD': ['13.01900', '12.01100'], 'O_3': ['15.99940'], 'Kr': ['83.79800'], 'Fe2+': ['55.84700'], 'Ar': ['39.94800'], 'Mg2+': ['24.30500'], 'Ba2+': ['137.33000']}
 for ambKey in dictAmbAtomType2AmbGmxCode:
     if ambKey in dictOplsAtomType2OplsGmxCode:
@@ -207,13 +209,13 @@ dictAtomTypeGaff2OplsGmxCode = {'cc': ['500', '506', '507', '508', '514', '12.01
 
 # draft
 atomTypeAmber2oplsDict = {'HS': ['HS'], 'HP': ['HC'], 'HO': ['HO'], 'HC': ['HC'],
-                   'HA': ['HA'], 'O2': ['O2'], 'C*': ['C*'], 'NA': ['NA'],
-                   'NB': ['NB'], 'CB': ['CB'], 'CN': ['CN'], 'CV': ['CV'],
-                   'CM': ['CA'], 'CA': ['CA'], 'CR': ['CR'], 'OH': ['OH'],
-                   'H1': ['HC'], 'H4': ['HA'], 'N2': ['N2'], 'N3': ['N3'],
-                   'H5': ['HA'], 'SH': ['SH'], 'N': ['N'], 'S': ['S'], 'O': ['O'],
-                   'C': ['C', 'C_3'], 'CW': ['CW', 'CX'], 'H': ['H', 'H3'],
-                   'CC': ['CX', 'CW', 'CV'], 'CT': ['CT', 'CT_2', 'CT_3']}
+                          'HA': ['HA'], 'O2': ['O2'], 'C*': ['C*'], 'NA': ['NA'],
+                          'NB': ['NB'], 'CB': ['CB'], 'CN': ['CN'], 'CV': ['CV'],
+                          'CM': ['CA'], 'CA': ['CA'], 'CR': ['CR'], 'OH': ['OH'],
+                          'H1': ['HC'], 'H4': ['HA'], 'N2': ['N2'], 'N3': ['N3'],
+                          'H5': ['HA'], 'SH': ['SH'], 'N': ['N'], 'S': ['S'], 'O': ['O'],
+                          'C': ['C', 'C_3'], 'CW': ['CW', 'CX'], 'H': ['H', 'H3'],
+                          'CC': ['CX', 'CW', 'CV'], 'CT': ['CT', 'CT_2', 'CT_3']}
 
 # draft
 a2oD = {'amber99_2': ['opls_235', 'opls_271'],
@@ -244,7 +246,7 @@ a2oD = {'amber99_2': ['opls_235', 'opls_271'],
         'amber99_45': ['opls_272'],
         'amber99_47': ['opls_202'],
         'amber99_48': ['opls_200'],
- }
+        }
 
 global pid
 pid = 0
@@ -254,12 +256,12 @@ head = "%s created by acpype (Rev: " + svnRev + ") on %s\n"
 date = datetime.now().ctime()
 
 usage = \
-"""
+    """
     acpype -i _file_ [-c _string_] [-n _int_] [-m _int_] [-a _string_] [-f] etc. or
     acpype -p _prmtop_ -x _inpcrd_ [-d]"""
 
 epilog = \
-"""
+    """
 
     output: assuming 'root' is the basename of either the top input file,
             the 3-letter residue name or user defined (-b option)
@@ -282,7 +284,7 @@ epilog = \
     root_CHARMM.inp   :  run parameters file for CHARMM"""
 
 SLEAP_TEMPLATE = \
-"""
+    """
 source %(leapAmberFile)s
 source %(leapGaffFile)s
 set default fastbld on
@@ -295,7 +297,7 @@ quit
 """
 
 TLEAP_TEMPLATE = \
-"""
+    """
 verbosity 1
 source %(leapAmberFile)s
 source %(leapGaffFile)s
@@ -306,8 +308,11 @@ saveamberparm %(res)s %(acBase)s.prmtop %(acBase)s.inpcrd
 saveoff %(res)s %(acBase)s.lib
 quit
 """
+
+
 def dotproduct(aa, bb):
     return sum((a * b) for a, b in zip(aa, bb))
+
 
 def crosproduct(a, b):
     c = [a[1] * b[2] - a[2] * b[1],
@@ -315,11 +320,14 @@ def crosproduct(a, b):
          a[0] * b[1] - a[1] * b[0]]
     return c
 
+
 def length(v):
     return math.sqrt(dotproduct(v, v))
 
+
 def vec_sub(aa, bb):
     return [a - b for a, b in zip(aa, bb)]
+
 
 def imprDihAngle(a, b, c, d):
     ba = vec_sub(a, b)
@@ -330,27 +338,30 @@ def imprDihAngle(a, b, c, d):
     n2 = crosproduct(cb, cd)
     angle = math.acos(dotproduct(n1, n2) / (length(n1) * length(n2))) * 180 / Pi
     cp = crosproduct(n1, n2)
-    if (dotproduct(cp, bc) < 0) : angle = -1 * angle
+    if (dotproduct(cp, bc) < 0):
+        angle = -1 * angle
     return angle
 
-def invalidArgs(text = None):
+
+def invalidArgs(text=None):
     if text:
         print('ERROR: ' + text)
     sys.exit(1)
 
 # verNum = string.split(sys.version)[0]
 verNum = re.sub('[^0-9\.]', '', sys.version.split()[0])
-version = verNum.split('.') # string.split(verNum, ".")
+version = verNum.split('.')  # string.split(verNum, ".")
 verList = list(map(int, version))
 if verList < [2, 6, 0]:
-    invalidArgs(text = "Python version %s\n       Sorry, you need python 2.6 or higher" % verNum)
+    invalidArgs(text="Python version %s\n       Sorry, you need python 2.6 or higher" % verNum)
 
 try:
     set()
 except NameError:
-    from sets import Set as set
+    from sets import Set as set  # @UnresolvedImport
 
-def elapsedTime(seconds, suffixes = ['y', 'w', 'd', 'h', 'm', 's'], add_s = False, separator = ' '):
+
+def elapsedTime(seconds, suffixes=['y', 'w', 'd', 'h', 'm', 's'], add_s=False, separator=' '):
     """
     Takes an amount of seconds and turns it into a human-readable amount of time.
     """
@@ -361,11 +372,11 @@ def elapsedTime(seconds, suffixes = ['y', 'w', 'd', 'h', 'm', 's'], add_s = Fals
     # - the first piece in each tuple is the suffix (d, h, w)
     # - the second piece is the length in seconds (a day is 60s * 60m * 24h)
     parts = [(suffixes[0], 60 * 60 * 24 * 7 * 52),
-          (suffixes[1], 60 * 60 * 24 * 7),
-          (suffixes[2], 60 * 60 * 24),
-          (suffixes[3], 60 * 60),
-          (suffixes[4], 60),
-          (suffixes[5], 1)]
+             (suffixes[1], 60 * 60 * 24 * 7),
+             (suffixes[2], 60 * 60 * 24),
+             (suffixes[3], 60 * 60),
+             (suffixes[4], 60),
+             (suffixes[5], 1)]
 
     # for each time piece, grab the value and remaining seconds, and add it to
     # the time string
@@ -374,11 +385,12 @@ def elapsedTime(seconds, suffixes = ['y', 'w', 'd', 'h', 'm', 's'], add_s = Fals
         if value > 0:
             seconds = seconds % length
             time.append('%s%s' % (str(value),
-                           (suffix, (suffix, suffix + 's')[value > 1])[add_s]))
+                                  (suffix, (suffix, suffix + 's')[value > 1])[add_s]))
         if seconds < 1:
             break
 
     return separator.join(time)
+
 
 def splitBlock(dat):
     '''split a amber parm dat file in blocks
@@ -397,9 +409,11 @@ def splitBlock(dat):
             count += 1
     return dict_
 
+
 def getParCode(line):
     key = line.replace(' -', '-').replace('- ', '-').split()[0]
     return key
+
 
 def parseFrcmod(lista):
     heads = ['MASS', 'BOND', 'ANGL', 'DIHE', 'IMPR', 'HBON', 'NONB']
@@ -420,10 +434,12 @@ def parseFrcmod(lista):
                 dd[key] = [line]
             dict_[head] = dd
     for k in dict_.keys():
-        if not dict_[k]: dict_.pop(k)
+        if not dict_[k]:
+            dict_.pop(k)
     return dict_
 
-def parmMerge(fdat1, fdat2, frcmod = False):
+
+def parmMerge(fdat1, fdat2, frcmod=False):
     '''merge two amber parm dat/frcmod files and save in /tmp'''
     name1 = os.path.basename(fdat1).split('.dat')[0]
     if frcmod:
@@ -435,11 +451,11 @@ def parmMerge(fdat1, fdat2, frcmod = False):
     mdat = ['merged %s %s' % (name1, name2)]
 
     # if os.path.exists(mname): return mname
-    dat1 = splitBlock(file(fdat1).readlines())
+    dat1 = splitBlock(open(fdat1).readlines())
 
     if frcmod:
-        dHeads = {'MASS':0, 'BOND':1, 'ANGL':2, 'DIHE':3, 'IMPR':4, 'HBON':5, 'NONB':7}
-        dat2 = parseFrcmod(file(fdat2).readlines()) # dict
+        dHeads = {'MASS': 0, 'BOND': 1, 'ANGL': 2, 'DIHE': 3, 'IMPR': 4, 'HBON': 5, 'NONB': 7}
+        dat2 = parseFrcmod(open(fdat2).readlines())  # dict
         for k in dat2:
             for parEntry in dat2[k]:
                 idFirst = None
@@ -447,13 +463,15 @@ def parmMerge(fdat1, fdat2, frcmod = False):
                     if line:
                         key = line.replace(' -', '-').replace('- ', '-').split()[0]
                         if key == parEntry:
-                            if not idFirst: idFirst = dat1[dHeads[k]].index(line)
+                            if not idFirst:
+                                idFirst = dat1[dHeads[k]].index(line)
                             dat1[dHeads[k]].remove(line)
                 rev = dat2[k][parEntry][:]
                 rev.reverse()
-                if idFirst == None: idFirst = 0
+                if idFirst is None:
+                    idFirst = 0
                 for ll in rev:
-                    if dHeads[k] in [0, 1, 7]: # MASS has title in index 0 and so BOND, NONB
+                    if dHeads[k] in [0, 1, 7]:  # MASS has title in index 0 and so BOND, NONB
                         dat1[dHeads[k]].insert(idFirst + 1, ll)
                     else:
                         dat1[dHeads[k]].insert(idFirst, ll)
@@ -463,7 +481,7 @@ def parmMerge(fdat1, fdat2, frcmod = False):
                 mdatFile.write(line + '\n')
         return mname
 
-    dat2 = splitBlock(file(fdat2).readlines())
+    dat2 = splitBlock(open(fdat2).readlines())
     for k in dat1.keys()[:8]:
         if k == 0:
             lines = dat1[k][1:-1] + dat2[k][1:-1] + ['']
@@ -487,7 +505,7 @@ def parmMerge(fdat1, fdat2, frcmod = False):
             lines = dat1[k][id1:-1] + dat2[k][id2:-1] + ['']
             for line in lines:
                 mdat.append(line)
-        if k in [2, 3, 4, 5, 6]: # angles, p dih, imp dih
+        if k in [2, 3, 4, 5, 6]:  # angles, p dih, imp dih
             lines = dat1[k][:-1] + dat2[k][:-1] + ['']
             for line in lines:
                 mdat.append(line)
@@ -507,40 +525,44 @@ def parmMerge(fdat1, fdat2, frcmod = False):
 
     return mname
 
+
 def _getoutput(cmd):
     '''to simulate commands.getoutput in order to work with python 2.6 up to 3.x'''
-    out = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE).communicate()[0][:-1]
+    out = sub.Popen(cmd, shell=True, stderr=sub.STDOUT, stdout=sub.PIPE).communicate()[0][:-1]
     try:
         o = str(out.decode())
     except:
         o = str(out)
     return o
 
+
 class AbstractTopol(object):
+
     """
         Super class to build topologies
     """
+
     def __init__(self):
         if self.__class__ is AbstractTopol:
             raise TypeError("Attempt to create istance of abstract class AbstractTopol")
 
-    def printDebug(self, text = ''):
+    def printDebug(self, text=''):
         if self.debug:
             print('DEBUG: %s' % text)
 
-    def printWarn(self, text = ''):
+    def printWarn(self, text=''):
         if self.verbose:
             print('WARNING: %s' % text)
 
-    def printError(self, text = ''):
+    def printError(self, text=''):
         if self.verbose:
             print('ERROR: %s' % text)
 
-    def printMess(self, text = ''):
+    def printMess(self, text=''):
         if self.verbose:
             print('==> %s' % text)
 
-    def printQuoted(self, text = ''):
+    def printQuoted(self, text=''):
         if self.verbose:
             print(10 * '+' + 'start_quote' + 59 * '+')
             print(text)
@@ -570,7 +592,7 @@ class AbstractTopol(object):
                 self.printWarn("cannot read charges from a PDB file")
                 self.printWarn("using now 'bcc' method for charge")
 
-        if self.chargeVal == None and not done:
+        if self.chargeVal is None and not done:
             self.printWarn("no charge value given, trying to guess one...")
             mol2FileForGuessCharge = self.inputFile
             if self.ext == ".pdb":
@@ -583,10 +605,11 @@ class AbstractTopol(object):
                 in_mol = 'mol2'
             else:
                 in_mol = self.ext[1:]
-                if in_mol == 'mol': in_mol = 'mdl'
+                if in_mol == 'mol':
+                    in_mol = 'mdl'
 
             cmd = '%s -i %s -fi %s -o tmp -fo mol2 -c gas -pf y' % \
-                                                        (self.acExe, mol2FileForGuessCharge, in_mol)
+                (self.acExe, mol2FileForGuessCharge, in_mol)
 
             if self.debug:
                 self.printMess("Debugging...")
@@ -638,9 +661,10 @@ class AbstractTopol(object):
         if self.ext == '.pdb':
             tmpFile = open(self.inputFile, 'r')
         else:
-            if exten == 'mol': exten = 'mdl'
+            if exten == 'mol':
+                exten = 'mdl'
             cmd = '%s -i %s -fi %s -o tmp -fo ac -pf y' % \
-                                    (self.acExe, self.inputFile, exten)
+                (self.acExe, self.inputFile, exten)
             self.printDebug(cmd)
             out = _getoutput(cmd)
             if not out.isspace():
@@ -679,7 +703,7 @@ class AbstractTopol(object):
         l = len(items)
         for item in items:
             id_ += 1
-            if len(item[1]) > 1: # if True means atoms with same coordinates
+            if len(item[1]) > 1:  # if True means atoms with same coordinates
                 for i in item[1]:
                     dups += "%s %s\n" % (i, item[0])
 
@@ -694,7 +718,7 @@ class AbstractTopol(object):
                 if dist2 < minDist2:
                     dist = math.sqrt(dist2)
                     shortd += "%8.5f       %s %s\n" % (dist, item[1], item2[1])
-                if dist2 < maxDist2: # and not longOK:
+                if dist2 < maxDist2:  # and not longOK:
                     longSet.add(str(item[1]))
                     longSet.add(str(item2[1]))
             if str(item[1]) not in longSet and l > 1:
@@ -783,7 +807,7 @@ class AbstractTopol(object):
         charge = 0.0
         ll = []
         cmd = '%s -i %s -fi mol2 -o tmp -fo mol2 -c wc -cf tmp.crg -pf y' % \
-                                                        (self.acExe, mol2File)
+            (self.acExe, mol2File)
         if self.debug:
             self.printMess("Debugging...")
             cmd = cmd.replace('-pf y', '-pf n')
@@ -805,7 +829,7 @@ class AbstractTopol(object):
 
         return charge
 
-    def execAntechamber(self, chargeType = None, atomType = None):
+    def execAntechamber(self, chargeType=None, atomType=None):
         """ AmaberTools 1.3
             To call Antechamber and execute it
 
@@ -891,12 +915,13 @@ a        """
             ct = '-c %s' % ct
 
         exten = self.ext[1:]
-        if exten == 'mol': exten = 'mdl'
+        if exten == 'mol':
+            exten = 'mdl'
 
         cmd = '%s -i %s -fi %s -o %s -fo mol2 %s -nc %s -m %s -s 2 -df %i -at\
  %s -pf y %s' % (self.acExe, self.inputFile, exten, self.acMol2FileName,
-                     ct, self.chargeVal, self.multiplicity, self.qFlag, at,
-                     self.ekFlag)
+                 ct, self.chargeVal, self.multiplicity, self.qFlag, at,
+                 self.ekFlag)
 
         if self.debug:
             self.printMess("Debugging...")
@@ -907,14 +932,16 @@ a        """
         if os.path.exists(self.acMol2FileName) and not self.force:
             self.printMess("AC output file present... doing nothing")
         else:
-            try: os.remove(self.acMol2FileName)
-            except: pass
+            try:
+                os.remove(self.acMol2FileName)
+            except:
+                pass
             signal.signal(signal.SIGALRM, self.signal_handler)
             signal.alarm(self.timeTol)
-            p = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE)
+            p = sub.Popen(cmd, shell=True, stderr=sub.STDOUT, stdout=sub.PIPE)
             pid = p.pid
 
-            out = str(p.communicate()[0].decode()) # p.stdout.read()
+            out = str(p.communicate()[0].decode())  # p.stdout.read()
             self.acLog = out
 
         if os.path.exists(self.acMol2FileName):
@@ -923,12 +950,12 @@ a        """
             self.printQuoted(self.acLog)
             return True
 
-    def signal_handler(self, _signum, _frame): # , pid = 0):
+    def signal_handler(self, _signum, _frame):  # , pid = 0):
         global pid
         pids = self.job_pids_family(pid)
         self.printDebug("PID: %s, PIDS: %s" % (pid, pids))
-        self.printMess("Timed out! Process %s killed, max exec time (%ss) exceeded" \
-                        % (pids, self.timeTol))
+        self.printMess("Timed out! Process %s killed, max exec time (%ss) exceeded"
+                       % (pids, self.timeTol))
         # os.system('kill -15 %s' % pids)
         for i in pids.split():
             os.kill(int(i), 15)
@@ -940,7 +967,7 @@ a        """
         dict_pids = {}
         pids = [pid]
         cmd = "ps -A -o uid,pid,ppid|grep %i" % os.getuid()
-        out = _getoutput(cmd).split('\n') # getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
+        out = _getoutput(cmd).split('\n')  # getoutput("ps -A -o uid,pid,ppid|grep %i" % os.getuid()).split('\n')
         for item in out:
             vec = item.split()
             dict_pids[vec[2]] = vec[1]
@@ -955,7 +982,7 @@ a        """
     def delOutputFiles(self):
         delFiles = ['mopac.in', 'tleap.in', 'sleap.in', 'fixbo.log',
                     'addhs.log', 'ac_tmp_ot.mol2', 'frcmod.ac_tmp', 'fragment.mol2',
-                    self.tmpDir] # , 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
+                    self.tmpDir]  # , 'divcon.pdb', 'mopac.pdb', 'mopac.out'] #'leap.log'
         self.printMess("Removing temporary files...")
         for file_ in delFiles:
             file_ = os.path.join(self.absHomeDir, file_)
@@ -1001,17 +1028,20 @@ a        """
         if self.checkXyzAndTopFiles() and not self.force:
             self.printMess("Topologies files already present... doing nothing")
         else:
-            try: os.remove(self.acTopFileName) ; os.remove(self.acXyzFileName)
-            except: pass
+            try:
+                os.remove(self.acTopFileName)
+                os.remove(self.acXyzFileName)
+            except:
+                pass
             self.printMess("Executing Sleap...")
             self.printDebug(cmd)
 
-            p = sub.Popen(cmd, shell = True, stderr = sub.STDOUT, stdout = sub.PIPE)
+            p = sub.Popen(cmd, shell=True, stderr=sub.STDOUT, stdout=sub.PIPE)
             pid = p.pid
             signal.signal(signal.SIGALRM, self.signal_handler)
             signal.alarm(self.timeTol)
 
-            out = str(p.communicate()[0].decode()) # p.stdout.read()
+            out = str(p.communicate()[0].decode())  # p.stdout.read()
 
             self.sleapLog = out
             self.checkLeapLog(self.sleapLog)
@@ -1059,8 +1089,11 @@ a        """
         if self.checkXyzAndTopFiles() and not self.force:
             self.printMess("Topologies files already present... doing nothing")
         else:
-            try: os.remove(self.acTopFileName) ; os.remove(self.acXyzFileName)
-            except: pass
+            try:
+                os.remove(self.acTopFileName)
+                os.remove(self.acXyzFileName)
+            except:
+                pass
             self.printMess("Executing Tleap...")
             self.printDebug(cmd)
             self.tleapLog = _getoutput(cmd)
@@ -1092,9 +1125,11 @@ a        """
         amberhome = os.environ.get('AMBERHOME')
         if amberhome:
             aFileF = os.path.join(amberhome, 'dat/leap/parm', aFile)
-            if os.path.exists(aFileF): return aFileF
+            if os.path.exists(aFileF):
+                return aFileF
         aFileF = os.path.join(os.path.dirname(self.acExe), '../dat/leap/parm', aFile)
-        if os.path.exists(aFileF): return aFileF
+        if os.path.exists(aFileF):
+            return aFileF
         return None
 
     def execParmchk(self):
@@ -1109,11 +1144,11 @@ a        """
             frcmodff99SB = self.locateDat('frcmod.ff99SB')
             # frcmodparmbsc0 = self.locateDat('frcmod.parmbsc0')
             parm99gaffFile = parmMerge(parm99file, gaffFile)
-            parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod = True)
+            parm99gaffff99SBFile = parmMerge(parm99gaffFile, frcmodff99SB, frcmod=True)
             # parm99gaffff99SBparmbsc0File = parmMerge(parm99gaffff99SBFile, frcmodparmbsc0, frcmod = True)
             # parm10file = self.locateDat('parm10.dat') # PARM99 + frcmod.ff99SB + frcmod.parmbsc0 in AmberTools 1.4
 
-            cmd += ' -p %s' % parm99gaffff99SBFile # Ignoring parm10.dat and BSC0
+            cmd += ' -p %s' % parm99gaffff99SBFile  # Ignoring parm10.dat and BSC0
 
         self.parmchkLog = _getoutput(cmd)
 
@@ -1149,7 +1184,7 @@ a        """
         self.makeDir()
 
         cmd = '%s -ipdb %s -omol2 %s.mol2' % (self.babelExe, self.inputFile,
-                                                  self.baseName)
+                                              self.baseName)
         self.printDebug(cmd)
         self.babelLog = _getoutput(cmd)
         self.ext = '.mol2'
@@ -1200,9 +1235,9 @@ a        """
             Create molTop obj
         """
         self.topFileData = open(self.acTopFileName, 'r').readlines()
-        self.molTopol = MolTopol(self, verbose = self.verbose, debug = self.debug,
-                                 gmx45 = self.gmx45, disam = self.disam, direct = self.direct,
-                                 is_sorted = self.sorted, chiral = self.chiral)
+        self.molTopol = MolTopol(self, verbose=self.verbose, debug=self.debug,
+                                 gmx45=self.gmx45, disam=self.disam, direct=self.direct,
+                                 is_sorted=self.sorted, chiral=self.chiral)
         if self.outTopols:
             if 'cns' in self.outTopols:
                 self.molTopol.writeCnsTopolFiles()
@@ -1233,12 +1268,12 @@ a        """
             mess = "Pickle file %s already present... doing nothing" % pklFile
         self.printMess(mess)
         if dumpFlag:
-            with open(pklFile, "wb") as f: # for python 2.6 or higher
+            with open(pklFile, "wb") as f:  # for python 2.6 or higher
                 # f = open(pklFile, "wb")
                 if verList[0] == 3:
-                    pickle.dump(self, f, protocol = 2, fix_imports = True)
+                    pickle.dump(self, f, protocol=2, fix_imports=True)
                 else:
-                    pickle.dump(self, f, protocol = 2)
+                    pickle.dump(self, f, protocol=2)
 
     def getFlagData(self, flag):
         """
@@ -1256,7 +1291,8 @@ a        """
             if tFlag in line:
                 block = True
                 continue
-            if block and '%FLAG ' in line: break
+            if block and '%FLAG ' in line:
+                break
             if block:
                 if '%FORMAT' in line:
                     line = line.strip().strip('%FORMAT()').split('.')[0]
@@ -1268,16 +1304,30 @@ a        """
                 data += line
         # data need format
         sdata = [data[i:i + f].strip() for i in range(0, len(data), f)]
-        if '+' and '.' in data: # it's a float
+        if '+' and '.' in data:  # it's a float
             ndata = list(map(float, sdata))
         elif flag != 'RESIDUE_LABEL':
-            try: # try if it's integer
+            try:  # try if it's integer
                 ndata = list(map(int, sdata))
-            except: # it's string
+            except:  # it's string
                 ndata = sdata
         else:
             ndata = sdata
-        return ndata # a list
+        if flag == 'AMBER_ATOM_TYPE':
+            nn = []
+            ll = set()
+            prefixed = False
+            for ii in ndata:
+                prefixed = True
+                if ii[0].isdigit():
+                    ll.add(ii)
+                    ii = 'A' + ii
+                nn.append(ii)
+            if prefixed:
+                self.printDebug("GMX does not like atomtype starting with Digit")
+                self.printDebug("prefixing AtomType %s with 'A'." % list(ll))
+            ndata = nn
+        return ndata  # a list
 
     def getResidueLabel(self):
         """
@@ -1344,7 +1394,7 @@ a        """
 
         atoms = []
         atomTypes = []
-        tmpList = [] # a list with unique atom types
+        tmpList = []  # a list with unique atom types
         totalCharge = 0.0
         countRes = 0
         id_ = 0
@@ -1352,11 +1402,11 @@ a        """
         for atomName in atomNameList:
             if atomName != atomName.upper():
                 self.printDebug("atom name '%s' HAS to be all UPPERCASE... Applying this here." %
-                               atomName)
+                                atomName)
                 atomName = atomName.upper()
             atomTypeName = atomTypeNameList[id_]
             if id_ + 1 == resIds[countRes]:
-                resid = countRes # self.residueLabel[countRes]
+                resid = countRes  # self.residueLabel[countRes]
                 countRes += 1
             resName = self.residueLabel[resid]
             if resName in ionOrSolResNameList and not FirstNonSoluteId:
@@ -1409,7 +1459,7 @@ a        """
         bondCodeList = bondCodeHList + bondCodeNonHList
         bonds = []
         for i in range(0, len(bondCodeList), 3):
-            idAtom1 = bondCodeList[i] // 3 # remember python starts with id 0
+            idAtom1 = bondCodeList[i] // 3  # remember python starts with id 0
             idAtom2 = bondCodeList[i + 1] // 3
             bondTypeId = bondCodeList[i + 2] - 1
             atom1 = self.atoms[idAtom1]
@@ -1431,7 +1481,7 @@ a        """
         angleCodeList = angleCodeHList + angleCodeNonHList
         angles = []
         for i in range(0, len(angleCodeList), 4):
-            idAtom1 = angleCodeList[i] // 3 # remember python starts with id 0
+            idAtom1 = angleCodeList[i] // 3  # remember python starts with id 0
             idAtom2 = angleCodeList[i + 1] // 3
             idAtom3 = angleCodeList[i + 2] // 3
             angleTypeId = angleCodeList[i + 3] - 1
@@ -1439,7 +1489,7 @@ a        """
             atom2 = self.atoms[idAtom2]
             atom3 = self.atoms[idAtom3]
             kt = uniqKtList[angleTypeId]
-            teq = uniqTeqList[angleTypeId] # angle given in rad in prmtop
+            teq = uniqTeqList[angleTypeId]  # angle given in rad in prmtop
             atoms = [atom1, atom2, atom3]
             angle = Angle(atoms, kt, teq)
             angles.append(angle)
@@ -1460,16 +1510,16 @@ a        """
         dihCodeList = dihCodeHList + dihCodeNonHList
         properDih = []
         improperDih = []
-        condProperDih = [] # list of dihedrals condensed by the same quartet
+        condProperDih = []  # list of dihedrals condensed by the same quartet
         # atomPairs = []
         atomPairs = set()
         for i in range(0, len(dihCodeList), 5):
-            idAtom1 = dihCodeList[i] // 3 # remember python starts with id 0
+            idAtom1 = dihCodeList[i] // 3  # remember python starts with id 0
             idAtom2 = dihCodeList[i + 1] // 3
             # 3 and 4 indexes can be negative: if id3 < 0, end group interations
             # in amber are to be ignored; if id4 < 0, dihedral is improper
-            idAtom3raw = dihCodeList[i + 2] // 3 # can be negative -> exclude from 1-4vdw
-            idAtom4raw = dihCodeList[i + 3] // 3 # can be negative -> Improper
+            idAtom3raw = dihCodeList[i + 2] // 3  # can be negative -> exclude from 1-4vdw
+            idAtom4raw = dihCodeList[i + 3] // 3  # can be negative -> Improper
             idAtom3 = abs(idAtom3raw)
             idAtom4 = abs(idAtom4raw)
             dihTypeId = dihCodeList[i + 4] - 1
@@ -1477,15 +1527,18 @@ a        """
             atom2 = self.atoms[idAtom2]
             atom3 = self.atoms[idAtom3]
             atom4 = self.atoms[idAtom4]
-            kPhi = uniqKpList[dihTypeId] # already divided by IDIVF
-            period = int(uniqPeriodList[dihTypeId]) # integer
-            phase = uniqPhaseList[dihTypeId] # angle given in rad in prmtop
-            if phase == kPhi == 0: period = 0 # period is set to 0
+            kPhi = uniqKpList[dihTypeId]  # already divided by IDIVF
+            period = int(uniqPeriodList[dihTypeId])  # integer
+            phase = uniqPhaseList[dihTypeId]  # angle given in rad in prmtop
+            if phase == kPhi == 0:
+                period = 0  # period is set to 0
             atoms = [atom1, atom2, atom3, atom4]
             dihedral = Dihedral(atoms, kPhi, period, phase)
             if idAtom4raw > 0:
-                try: atomsPrev = properDih[-1].atoms
-                except: atomsPrev = []
+                try:
+                    atomsPrev = properDih[-1].atoms
+                except:
+                    atomsPrev = []
                 properDih.append(dihedral)
                 if idAtom3raw < 0 and atomsPrev == atoms:
                     condProperDih[-1].append(dihedral)
@@ -1497,12 +1550,14 @@ a        """
                     atomPairs.add(pair)
             else:
                 improperDih.append(dihedral)
-        try: atomPairs = sorted(atomPairs)
-        except: pass
+        try:
+            atomPairs = sorted(atomPairs)
+        except:
+            pass
         self.properDihedrals = properDih
         self.improperDihedrals = improperDih
-        self.condensedProperDihedrals = condProperDih # [[],[],...]
-        self.atomPairs = atomPairs # set((atom1, atom2), ...)
+        self.condensedProperDihedrals = condProperDih  # [[],[],...]
+        self.atomPairs = atomPairs  # set((atom1, atom2), ...)
         self.printDebug("getDihedrals done")
 
     def getChirals(self):
@@ -1532,7 +1587,6 @@ a        """
                 v1, v2, v3, v4 = [x.coords for x in quad]
                 chiralGroups.append((atChi, quad, imprDihAngle(v1, v2, v3, v4)))
             self.chiralGroups = chiralGroups
-
 
     def sortAtomsForGromacs(self):
         """
@@ -1564,7 +1618,7 @@ a        """
 
         # Build list of sorted atoms, assigning charge groups by heavy atom.
         sorted_atoms = list()
-        cgnr = 1 # charge group number: each heavy atoms is assigned its own charge group
+        cgnr = 1  # charge group number: each heavy atoms is assigned its own charge group
         # First pass: add heavy atoms, followed by the hydrogens bonded to them.
         for atom in self.atoms:
             if is_heavy(atom):
@@ -1609,7 +1663,7 @@ a        """
             pair = [atom1, atom2]
             if atomPairs.count(pair) == 0:
                 atomPairs.append(pair)
-        self.atomPairs = atomPairs # [[atom1, atom2], ...]
+        self.atomPairs = atomPairs  # [[atom1, atom2], ...]
         self.printDebug("atomPairs done")
 
     def getExcludedAtoms(self):
@@ -1635,7 +1689,7 @@ a        """
         self.excludedAtoms = excludedAtomsList
         self.printDebug("getExcludedAtoms")
 
-    def balanceCharges(self, chargeList, FirstNonSoluteId = None):
+    def balanceCharges(self, chargeList, FirstNonSoluteId=None):
         """
             Note that python is very annoying about floating points.
             Even after balance, there will always be some residue of order e-12
@@ -1650,8 +1704,10 @@ a        """
         self.printDebug('charge to be balanced: total %13.10f' % (totalConverted))
         maxVal = max(chargeList[:FirstNonSoluteId])
         minVal = min(chargeList[:FirstNonSoluteId])
-        if abs(maxVal) >= abs(minVal): lim = maxVal
-        else: lim = minVal
+        if abs(maxVal) >= abs(minVal):
+            lim = maxVal
+        else:
+            lim = minVal
         nLims = chargeList.count(lim)
         # limId = chargeList.index(lim)
         diff = totalConverted - round(totalConverted)
@@ -1713,17 +1769,18 @@ a        """
             V = 6 * [0.0]
             C = 6 * [0.0]
             for dih in item:
-                period = dih.period # Pn
-                kPhi = dih.kPhi # in rad
-                phaseRaw = dih.phase * radPi # in degree
-                phase = int(phaseRaw) # in degree
+                period = dih.period  # Pn
+                kPhi = dih.kPhi  # in rad
+                phaseRaw = dih.phase * radPi  # in degree
+                phase = int(phaseRaw)  # in degree
                 if period > 4 and not self.gmx45:
                     self.printError("Likely trying to convert ILDN to RB, use option '-r' for GMX45")
                     sys.exit(1)
                 if phase in [0, 180]:
                     properDihedralsGmx45.append([item[0].atoms, phaseRaw, kPhi, period])
                     if not self.gmx45:
-                        if kPhi > 0: V[period] = 2 * kPhi * cal
+                        if kPhi > 0:
+                            V[period] = 2 * kPhi * cal
                         if period == 1:
                             C[0] += 0.5 * V[period]
                             if phase == 0:
@@ -1775,7 +1832,7 @@ a        """
 
         at = self.atomType
         self.getResidueLabel()
-        res = self.resName # self.residueLabel[0]
+        res = self.resName  # self.residueLabel[0]
         # print res, self.residueLabel, type(self.residueLabel)
 
         cmd = '%s -i %s -fi mol2 -o %s -fo charmm -s 2 -at %s \
@@ -1816,12 +1873,12 @@ a        """
             y = atom.coords[1]
             z = atom.coords[2]
             line = "%-6s%5d %4s %3s Z%4d%s%8.3f%8.3f%8.3f%6.2f%6.2f%s%2s\n" % \
-            ('ATOM', id_, aName, rName, 1, 4 * ' ', x, y, z, 1.0, 0.0, 10 * ' ', s)
+                ('ATOM', id_, aName, rName, 1, 4 * ' ', x, y, z, 1.0, 0.0, 10 * ' ', s)
             pdbFile.write(line)
             id_ += 1
         pdbFile.write('END\n')
 
-    def writeGromacsTopolFiles(self, amb2gmx = False):
+    def writeGromacsTopolFiles(self, amb2gmx=False):
         """
             # from ~/Programmes/amber10/dat/leap/parm/gaff.dat
             #atom type        atomic mass        atomic polarizability        comments
@@ -1927,7 +1984,7 @@ a        """
 
         self.writeGroFile()
 
-        self.writeGromacsTop(amb2gmx = amb2gmx)
+        self.writeGromacsTop(amb2gmx=amb2gmx)
 
         self.writeMdpFiles()
 
@@ -1971,12 +2028,12 @@ a        """
         for a in self.atoms:
             atName = a.atomType.atomTypeName
             if atName in delAtomTypes:
-                atom = Atom(a.atomName, dictAtomTypes[atName.upper()], a.id, \
+                atom = Atom(a.atomName, dictAtomTypes[atName.upper()], a.id,
                             a.resid, a.mass, a.charge, a.coords)
                 atom.cgnr = a.cgnr
                 atomsGromacs.append(atom)
             elif atName in modAtomTypes:
-                atom = Atom(a.atomName, dictAtomTypes[atName + '_'], a.id, \
+                atom = Atom(a.atomName, dictAtomTypes[atName + '_'], a.id,
                             a.resid, a.mass, a.charge, a.coords)
                 atom.cgnr = a.cgnr
                 atomsGromacs.append(atom)
@@ -1989,7 +2046,7 @@ a        """
         # print modAtomTypes
         # print delAtomTypes
 
-    def writeGromacsTop(self, amb2gmx = False):
+    def writeGromacsTop(self, amb2gmx=False):
         if self.atomTypeSystem == 'amber':
             d2opls = dictAtomTypeAmb2OplsGmxCode
         else:
@@ -2005,69 +2062,69 @@ a        """
         oitp = self.baseName + '_GMX_OPLS.itp'
 
         headDefault = \
-"""
+            """
 [ defaults ]
 ; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
 1               2               yes             0.5     0.8333
 """
         headItp = \
-"""
+            """
 ; Include %s topology
 #include "%s"
 """
         headOpls = \
-"""
+            """
 ; Include forcefield parameters
 #include "ffoplsaa.itp"
 """
         headSystem = \
-"""
+            """
 [ system ]
  %s
 """
         headMols = \
-"""
+            """
 [ molecules ]
 ; Compound        nmols
 """
         headAtomtypes = \
-"""
+            """
 [ atomtypes ]
 ;name   bond_type     mass     charge   ptype   sigma         epsilon       Amb
 """
         headAtomtypesOpls = \
-"""
+            """
 ; For OPLS atomtypes manual fine tuning
 ; AC_at:OPLS_at:OPLScode: Possible_Aternatives (see ffoplsaa.atp and ffoplsaanb.itp)
 """
         headMoleculetype = \
-"""
+            """
 [ moleculetype ]
 ;name            nrexcl
  %-16s 3
 """
         headAtoms = \
-"""
+            """
 [ atoms ]
 ;   nr  type  resi  res  atom  cgnr     charge      mass       ; qtot   bond_type
 """
         headBonds = \
-"""
+            """
 [ bonds ]
 ;   ai     aj funct   r             k
 """
         headPairs = \
-"""
+            """
 [ pairs ]
 ;   ai     aj    funct
 """
         headAngles = \
-"""
+            """
 [ angles ]
 ;   ai     aj     ak    funct   theta         cth
 """
         headProDih = \
-"""
+            """
 [ dihedrals ] ; propers
 ; treated as RBs in GROMACS to use combine multiple AMBER torsions per quartet
 ;    i      j      k      l   func    C0         C1         C2         C3         C4         C5
@@ -2078,20 +2135,20 @@ a        """
 """
 
         headProDihGmx45 = \
-"""
+            """
 [ dihedrals ] ; propers
 ; for gromacs 4.5 or higher, using funct 9
 ;    i      j      k      l   func   phase     kd      pn
 """
 
         headImpDih = \
-"""
+            """
 [ dihedrals ] ; impropers
 ; treated as propers in GROMACS to use correct AMBER analytical function
 ;    i      j      k      l   func   phase     kd      pn
 """
         _headTopWaterTip3p = \
-"""
+            """
 [ bondtypes ]
   ; i    j      func       b0          kb
   OW    HW         1    0.09572   462750.4 ; TIP3P water
@@ -2104,7 +2161,7 @@ a        """
 """
 
         _headTopWaterSpce = \
-"""
+            """
 [ bondtypes ]
   ; i    j      func       b0          kb
   OW    HW         1    0.1       462750.4 ; SPCE water
@@ -2117,7 +2174,7 @@ a        """
 """
 # NOTE: headTopWaterTip3p and headTopWaterSpce actually do NOTHING
         headNa = \
-"""
+            """
 [ moleculetype ]
   ; molname       nrexcl
   NA+             1
@@ -2127,7 +2184,7 @@ a        """
     1       IP      1          NA+         NA+       1      1     22.9898
 """
         headCl = \
-"""
+            """
 [ moleculetype ]
   ; molname       nrexcl
   CL-             1
@@ -2137,7 +2194,7 @@ a        """
     1       IM      1         CL-           CL-      1     -1     35.45300
 """
         headK = \
-"""
+            """
 [ moleculetype ]
   ; molname       nrexcl
   K+             1
@@ -2147,7 +2204,7 @@ a        """
     1       K       1          K+         K+       1      1     39.100
 """
         headWaterTip3p = \
-"""
+            """
 [ moleculetype ]
 ; molname       nrexcl ; TIP3P model
   WAT             2
@@ -2180,7 +2237,7 @@ a        """
 """
 
         headWaterSpce = \
-"""
+            """
 [ moleculetype ]
 ; molname       nrexcl ; SPCE model
   WAT             2
@@ -2215,7 +2272,7 @@ a        """
             self.printMess("Converting directly from AMBER to GROMACS.\n")
 
         # Dict of ions dealt by acpype emulating amb2gmx
-        ionsDict = {'Na+':headNa, 'Cl-':headCl, 'K+':headK}
+        ionsDict = {'Na+': headNa, 'Cl-': headCl, 'K+': headK}
         ionsSorted = []
 # NOTE: headWaterTip3p and headWaterSpce actually do the real thing
 #      so, skipping headTopWaterTip3p and headWaterTip3p
@@ -2262,8 +2319,8 @@ a        """
             # OW 581935.564 594.825035 tip3p
             #       print aTypeName, A, B
             line = " %-8s %-11s %3.5f  %3.5f   A   %13.5e %13.5e" % \
-            (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
-            " ; %4.2f  %1.4f\n" % (r0, epAmber)
+                (aTypeName, aTypeName, 0.0, 0.0, sigma, epsilon) + \
+                " ; %4.2f  %1.4f\n" % (r0, epAmber)
             oline = "; %s:%s:opls_%s: %s\n" % (aTypeName, aTypeNameOpls, oaCode[0], repr(oaCode[1:]))
             # tmpFile.write(line)
             temp.append(line)
@@ -2309,7 +2366,7 @@ a        """
             resid = atom.resid
             resname = self.residueLabel[resid]
             if not self.direct:
-                if resname in list(ionsDict.keys()) + ['WAT' ]:
+                if resname in list(ionsDict.keys()) + ['WAT']:
                     break
             aName = atom.atomName
             aType = atom.atomType.atomTypeName
@@ -2320,16 +2377,16 @@ a        """
             oaCode = 'opls_' + oItem[0]
             cgnr = id_
             if self.sorted:
-                cgnr = atom.cgnr # JDC
+                cgnr = atom.cgnr  # JDC
             charge = atom.charge
             mass = atom.mass
             omass = float(oItem[-1])
             qtot += charge
             resnr = resid + 1
             line = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot %1.3f\n" % \
-            (id_, aType, resnr, resname, aName, cgnr, charge, mass, qtot) # JDC
+                (id_, aType, resnr, resname, aName, cgnr, charge, mass, qtot)  # JDC
             oline = "%6d %4s %5d %5s %5s %4d %12.6f %12.5f ; qtot % 3.3f  %-4s\n" % \
-            (id_, oaCode, resnr, resname, aName, cgnr, charge, omass, qtot, oplsAtName) # JDC
+                (id_, oaCode, resnr, resname, aName, cgnr, charge, omass, qtot, oplsAtName)  # JDC
             count += 1
             temp.append(line)
             otemp.append(oline)
@@ -2351,7 +2408,8 @@ a        """
         for bond in self.bonds:
             res1 = self.residueLabel[bond.atoms[0].resid]
             res2 = self.residueLabel[bond.atoms[0].resid]
-            if 'WAT' in [res1, res2] : continue
+            if 'WAT' in [res1, res2]:
+                continue
             a1Name = bond.atoms[0].atomName
             a2Name = bond.atoms[1].atomName
             id1 = bond.atoms[0].id
@@ -2359,7 +2417,7 @@ a        """
             oat1 = id2oplsATDict.get(id1)
             oat2 = id2oplsATDict.get(id2)
             line = "%6i %6i %3i %13.4e %13.4e ; %6s - %-6s\n" % (id1, id2, 1,
-                   bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
+                                                                 bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name, a2Name)
             oline = "%6i %6i %3i ; %13.4e %13.4e ; %6s - %-6s %6s - %-6s\n" % \
                 (id1, id2, 1, bond.rEq * 0.1, bond.kBond * 200 * cal, a1Name,
                  a2Name, oat1, oat2)
@@ -2391,7 +2449,7 @@ a        """
             # id1 = self.atoms.index(pair[0]) + 1
             # id2 = self.atoms.index(pair[1]) + 1
             line = "%6i %6i %6i ; %6s - %-6s\n" % (id1, id2, 1, a1Name,
-                                                        a2Name)
+                                                   a2Name)
             temp.append(line)
         temp.sort()
         if temp:
@@ -2419,7 +2477,7 @@ a        """
             oat2 = id2oplsATDict.get(id2)
             oat3 = id2oplsATDict.get(id3)
             line = "%6i %6i %6i %6i %13.4e %13.4e ; %6s - %-6s - %-6s\n" % (id1, id2,
-            id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
+                                                                            id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta, a1, a2, a3)
             oline = "%6i %6i %6i %6i ; %13.4e %13.4e ; %6s - %-4s - %-6s %4s - %+4s - %-4s\n" % \
                 (id1, id2, id3, 1, angle.thetaEq * radPi, 2 * cal * angle.kTheta,
                  a1, a2, a3, oat1, oat2, oat3)
@@ -2460,13 +2518,13 @@ a        """
                 oat4 = id2oplsATDict.get(id4)
                 c0, c1, c2, c3, c4, c5 = dih[1]
                 line = \
-                "%6i %6i %6i %6i %6i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
-                (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
-                + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
+                    "%6i %6i %6i %6i %6i %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
+                    (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
+                    + " ; %6s-%6s-%6s-%6s\n" % (a1, a2, a3, a4)
                 oline = \
-                "%6i %6i %6i %6i %6i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
-                (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
-                + " ; %6s-%6s-%6s-%6s    %4s-%4s-%4s-%4s\n" % (a1, a2, a3, a4, oat1, oat2, oat3, oat4)
+                    "%6i %6i %6i %6i %6i ; %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f" % \
+                    (id1, id2, id3, id4, 3, c0, c1, c2, c3, c4, c5) \
+                    + " ; %6s-%6s-%6s-%6s    %4s-%4s-%4s-%4s\n" % (a1, a2, a3, a4, oat1, oat2, oat3, oat4)
                 temp.append(line)
                 otemp.append(oline)
             temp.sort()
@@ -2483,7 +2541,7 @@ a        """
             self.printDebug("GMX proper dihedrals done")
         else:
             self.printMess("Writing GMX dihedrals for GMX 4.5.\n")
-            funct = 9 # 9
+            funct = 9  # 9
             for dih in self.properDihedralsGmx45:
                 a1 = dih[0][0].atomName
                 a2 = dih[0][1].atomName
@@ -2493,13 +2551,13 @@ a        """
                 id2 = dih[0][1].id
                 id3 = dih[0][2].id
                 id4 = dih[0][3].id
-                ph = dih[1] # phase already in degree
-                kd = dih[2] * cal # kPhi PK
-                pn = dih[3] # .period
+                ph = dih[1]  # phase already in degree
+                kd = dih[2] * cal  # kPhi PK
+                pn = dih[3]  # .period
                 line = "%6i %6i %6i %6i %6i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                    (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
                 oline = "%6i %6i %6i %6i %6i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                    (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
                 temp.append(line)
                 otemp.append(oline)
             temp.sort()
@@ -2515,8 +2573,10 @@ a        """
                     oitpText += otemp
 
         # for properDihedralsAlphaGamma
-        if self.gmx45: funct = 4 # 4
-        else: funct = 1
+        if self.gmx45:
+            funct = 4  # 4
+        else:
+            funct = 1
         temp = []
         otemp = []
         for dih in self.properDihedralsAlphaGamma:
@@ -2528,13 +2588,13 @@ a        """
             id2 = dih[0][1].id
             id3 = dih[0][2].id
             id4 = dih[0][3].id
-            ph = dih[1] # phase already in degree
-            kd = dih[2] * cal # kPhi PK
-            pn = dih[3] # .period
+            ph = dih[1]  # phase already in degree
+            kd = dih[2] * cal  # kPhi PK
+            pn = dih[3]  # .period
             line = "%6i %6i %6i %6i %6i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             oline = "%6i %6i %6i %6i %6i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
@@ -2566,9 +2626,9 @@ a        """
             pn = dih.period
             ph = dih.phase * radPi
             line = "%6i %6i %6i %6i %6i %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             oline = "%6i %6i %6i %6i %6i ; %8.2f %9.5f %3i ; %6s-%6s-%6s-%6s\n" % \
-                            (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
+                (id1, id2, id3, id4, funct, ph, kd, pn, a1, a2, a3, a4)
             temp.append(line)
             otemp.append(oline)
         temp.sort()
@@ -2640,7 +2700,8 @@ a        """
                    (resid + 1, self.residueLabel[resid], atom.atomName,
                     count, coords[0], coords[1], coords[2])
             count += 1
-            if count == 100000: count = 0
+            if count == 100000:
+                count = 0
             groFile.write(line)
         if self.pbc:
             boxX = self.pbc[0][0] * 0.1
@@ -2654,70 +2715,40 @@ a        """
                 text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
             elif round(vX, 2) == 109.47:
                 self.printDebug("PBC octahedron")
-                f1 = 0.471405 # 1/3 * sqrt(2)
+                f1 = 0.471405  # 1/3 * sqrt(2)
                 f2 = 0.333333 * boxX
                 v22 = boxY * 2 * f1
-                v33 = boxZ * f1 * 1.73205 # f1 * sqrt(3)
+                v33 = boxZ * f1 * 1.73205  # f1 * sqrt(3)
                 v21 = v31 = v32 = 0.0
                 v12 = f2
                 v13 = -f2
                 v23 = f1 * boxX
                 text = "%11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f\n" % \
-                   (boxX, v22, v33, v21, v31, v12, v32, v13, v23)
+                    (boxX, v22, v33, v21, v31, v12, v32, v13, v23)
         else:
             self.printDebug("Box size estimated")
             X = [a.coords[0] * 0.1 for a in self.atoms]
             Y = [a.coords[1] * 0.1 for a in self.atoms]
             Z = [a.coords[2] * 0.1 for a in self.atoms]
-            boxX = max(X) - min(X) # + 2.0 # 2.0 is double of rlist
-            boxY = max(Y) - min(Y) # + 2.0
-            boxZ = max(Z) - min(Z) # + 2.0
+            boxX = max(X) - min(X)  # + 2.0 # 2.0 is double of rlist
+            boxY = max(Y) - min(Y)  # + 2.0
+            boxZ = max(Z) - min(Z)  # + 2.0
             text = "%11.5f %11.5f %11.5f\n" % (boxX, boxY, boxZ)
         groFile.write(text)
 
     def writeMdpFiles(self):
-        emMdp = \
-"""
-cpp                      = /usr/bin/cpp
-define                   = -DFLEXIBLE
+        emMdp = """; to test
+; grompp -f em.mdp -c {base}_GMX.gro -p {base}_GMX.top -o em.tpr -v
+; mdrun -v -deffnm em
 integrator               = steep
 nsteps                   = 500
-constraints              = none
-emtol                    = 1000.0
-emstep                   = 0.01
-nstcomm                  = 1
-ns_type                  = simple
-nstlist                  = 0
-rlist                    = 0
-rcoulomb                 = 0
-rvdw                     = 0
-Tcoupl                   = no
-Pcoupl                   = no
-gen_vel                  = no
-nstxout                  = 1
-pbc                      = no
-"""
-        mdMdp = \
-"""
-cpp                      = /usr/bin/cpp
-define                   = ;-DFLEXIBLE
+""".format(base=self.baseName)
+        mdMdp = """; to test
+; grompp -f md.mdp -c em.gro -p {base}_GMX.top -o md.tpr
+; mdrun -v -deffnm md
 integrator               = md
-nsteps                   = 500
-constraints              = none
-emtol                    = 1000.0
-emstep                   = 0.01
-comm_mode                = angular
-ns_type                  = simple
-nstlist                  = 0
-rlist                    = 0
-rcoulomb                 = 0
-rvdw                     = 0
-Tcoupl                   = no
-Pcoupl                   = no
-gen_vel                  = no
-nstxout                  = 1
-pbc                      = no
-"""
+nsteps                   = 1000
+""".format(base=self.baseName)
         emMdpFile = open('em.mdp', 'w')
         mdMdpFile = open('md.mdp', 'w')
         emMdpFile.write(emMdp)
@@ -2817,7 +2848,7 @@ iod phase }\n")
                         line = "%s %7.3f %4i %8.2f\n" % (40 * " ", kp, p, ph)
                 else:
                     line = "DIHEdral %5s %5s %5s %5s %15.3f %4i %8.2f\n" % (a1,
-                                                          a2, a3, a4, kp, p, ph)
+                                                                            a2, a3, a4, kp, p, ph)
                 seq += line
                 id_ += 1
             lineSet.add(seq)
@@ -2838,7 +2869,7 @@ eriod phase }\n")
             p = idh.period
             ph = idh.phase * radPi
             line = "IMPRoper %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3,
-                                                                 a4, kp, p, ph)
+                                                                    a4, kp, p, ph)
             lineSet.add(line)
 
         if self.chiral:
@@ -2852,7 +2883,7 @@ eriod phase }\n")
                 p = 0
                 ph = angle
                 line = "IMPRoper %5s %5s %5s %5s %13.1f %4i %8.2f\n" % (a1, a2, a3,
-                                                                     a4, kp, p, ph)
+                                                                        a4, kp, p, ph)
                 lineSet.add(line)
 
         for item in lineSet:
@@ -2871,7 +2902,7 @@ eriod phase }\n")
                 sigma = math.pow((A / B), (1.0 / 6))
                 sig2 = sigma
             line = "NONBonded %5s %11.6f %11.6f %11.6f %11.6f\n" % (atName,
-                    epAmber, sigma, ep2, sig2)
+                                                                    epAmber, sigma, ep2, sig2)
             parFile.write(line)
         parFile.write("\nset echo=true end\n")
 
@@ -2907,7 +2938,7 @@ eriod phase }\n")
             line = "BOND %-5s %-5s\n" % (a1Name, a2Name)
             topFile.write(line)
 
-        if not autoAngleFlag or 1: # generating angles anyway
+        if not autoAngleFlag or 1:  # generating angles anyway
             topFile.write("\n{ Angles: atomName1 atomName2 atomName3}\n")
             for angle in self.angles:
                 a1Name = angle.atoms[0].atomName
@@ -2916,7 +2947,7 @@ eriod phase }\n")
                 line = "ANGLe %-5s %-5s %-5s\n" % (a1Name, a2Name, a3Name)
                 topFile.write(line)
 
-        if not autoDihFlag or 1: # generating angles anyway
+        if not autoDihFlag or 1:  # generating angles anyway
             topFile.write("\n{ Proper Dihedrals: name1 name2 name3 name4 }\n")
             for item in self.condensedProperDihedrals:
                 for dih in item:
@@ -2958,7 +2989,7 @@ eriod phase }\n")
         # print "Writing CNS INP file\n"
         inpFile.write("Remarks " + head % (inp, date))
         inpData = \
-"""
+            """
 topology
   @%(CNS_top)s
 end
@@ -3034,16 +3065,18 @@ stop
         else:
             self.printDebug("No 'obchiral' to process chiral atoms. Consider installing http://openbabel.org")
 
+
 class ACTopol(AbstractTopol):
+
     """
         Class to build the AC topologies (Antechamber AmberTools)
     """
 
-    def __init__(self, inputFile, chargeType = 'bcc', chargeVal = None,
-            multiplicity = '1', atomType = 'gaff', force = False, basename = None,
-            debug = False, outTopol = 'all', engine = 'tleap', allhdg = False,
-            timeTol = 36000, qprog = 'sqm', ekFlag = None, verbose = True,
-            gmx45 = False, disam = False, direct = False, is_sorted = False, chiral = False):
+    def __init__(self, inputFile, chargeType='bcc', chargeVal=None,
+                 multiplicity='1', atomType='gaff', force=False, basename=None,
+                 debug=False, outTopol='all', engine='tleap', allhdg=False,
+                 timeTol=36000, qprog='sqm', ekFlag=None, verbose=True,
+                 gmx45=False, disam=False, direct=False, is_sorted=False, chiral=False):
 
         self.debug = debug
         self.verbose = verbose
@@ -3060,11 +3093,11 @@ class ACTopol(AbstractTopol):
         baseOriginal, ext = os.path.splitext(self.inputFile)
         base = basename or baseOriginal
         self.baseOriginal = baseOriginal
-        self.baseName = base # name of the input file without ext.
+        self.baseName = base  # name of the input file without ext.
         self.timeTol = timeTol
         self.printDebug("Max execution time tolerance is %s" % elapsedTime(self.timeTol))
         self.ext = ext
-        if ekFlag == '"None"' or ekFlag == None:
+        if ekFlag == '"None"' or ekFlag is None:
             self.ekFlag = ''
         else:
             self.ekFlag = '-ek %s' % ekFlag
@@ -3086,7 +3119,7 @@ class ACTopol(AbstractTopol):
                     self.acExe = ac_path
                     break
         if not self.acExe:
-            self.acExe = _getoutput('which antechamber') or '' # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
+            self.acExe = _getoutput('which antechamber') or ''  # '/Users/alan/Programmes/antechamber-1.27/exe/antechamber'
         if not os.path.exists(self.acExe):
             self.printError("no 'antechamber' executable!")
             return None
@@ -3095,7 +3128,7 @@ class ACTopol(AbstractTopol):
         self.parmchkExe = _getoutput('which parmchk') or ''
         self.babelExe = _getoutput('which babel') or ''
         if not os.path.exists(self.babelExe):
-            if self.ext != '.mol2' and self.ext != '.mdl': # and self.ext != '.mol':
+            if self.ext != '.mol2' and self.ext != '.mdl':  # and self.ext != '.mol':
                 self.printError("no 'babel' executable; you need it if input is PDB")
                 self.printError("otherwise use only MOL2 or MDL file as input ... aborting!")
                 sys.exit(1)
@@ -3142,12 +3175,14 @@ class ACTopol(AbstractTopol):
         self.outTopols = [outTopol]
         if outTopol == 'all':
             self.outTopols = outTopols
-        self.acParDict = {'base' : base, 'ext' : ext[1:], 'acBase': acBase,
-                          'acMol2FileName' : acMol2FileName, 'res' : self.resName,
-                          'leapAmberFile':leapAmberFile, 'baseOrg' : self.baseOriginal,
-                          'leapGaffFile':leapGaffFile}
+        self.acParDict = {'base': base, 'ext': ext[1:], 'acBase': acBase,
+                          'acMol2FileName': acMol2FileName, 'res': self.resName,
+                          'leapAmberFile': leapAmberFile, 'baseOrg': self.baseOriginal,
+                          'leapGaffFile': leapGaffFile}
+
 
 class MolTopol(ACTopol):
+
     """"
         Class to write topologies and parameters files for several applications
 
@@ -3158,9 +3193,10 @@ class MolTopol(ACTopol):
         INPUTS: acFileXyz and acFileTop
         RETURN: molTopol obj or None
     """
-    def __init__(self, acTopolObj = None, acFileXyz = None, acFileTop = None,
-                 debug = False, basename = None, verbose = True, gmx45 = False,
-                 disam = False, direct = False, is_sorted = False, chiral = False):
+
+    def __init__(self, acTopolObj=None, acFileXyz=None, acFileTop=None,
+                 debug=False, basename=None, verbose=True, gmx45=False,
+                 disam=False, direct=False, is_sorted=False, chiral=False):
 
         self.chiral = chiral
         self.obchiralExe = _getoutput('which obchiral') or ''
@@ -3173,8 +3209,10 @@ class MolTopol(ACTopol):
         self.verbose = verbose
         self.inputFile = acFileTop
         if acTopolObj:
-            if not acFileXyz: acFileXyz = acTopolObj.acXyzFileName
-            if not acFileTop: acFileTop = acTopolObj.acTopFileName
+            if not acFileXyz:
+                acFileXyz = acTopolObj.acXyzFileName
+            if not acFileTop:
+                acFileTop = acTopolObj.acTopFileName
             self._parent = acTopolObj
             self.allhdg = self._parent.allhdg
             self.debug = self._parent.debug
@@ -3196,9 +3234,9 @@ class MolTopol(ACTopol):
 
         self.getResidueLabel()
         if len(self.residueLabel) > 1:
-            self.baseName = basename or os.path.splitext(os.path.basename(acFileTop))[0] # 'solute'
+            self.baseName = basename or os.path.splitext(os.path.basename(acFileTop))[0]  # 'solute'
         else:
-            self.baseName = basename or self.residueLabel[0] # 3 caps letters
+            self.baseName = basename or self.residueLabel[0]  # 3 caps letters
         if acTopolObj:
             self.baseName = basename or acTopolObj.baseName
         self.printDebug("basename defined = '%s'" % self.baseName)
@@ -3235,7 +3273,9 @@ class MolTopol(ACTopol):
             self.printMess("Sorting atoms for gromacs ordering.\n")
             self.sortAtomsForGromacs()
 
+
 class Atom(object):
+
     """
         Charges in prmtop file has to be divide by 18.2223 to convert to charge
         in units of the electron charge.
@@ -3250,6 +3290,7 @@ class Atom(object):
         where index i and j for atom types.
         Coord is given in Ang. and mass in Atomic Mass Unit.
     """
+
     def __init__(self, atomName, atomType, id_, resid, mass, charge, coord):
         self.atomName = atomName
         self.atomType = atomType
@@ -3257,7 +3298,7 @@ class Atom(object):
         self.cgnr = id_
         self.resid = resid
         self.mass = mass
-        self.charge = charge # / qConv
+        self.charge = charge  # / qConv
         self.coords = coord
 
     def __str__(self):
@@ -3268,9 +3309,11 @@ class Atom(object):
 
 
 class AtomType(object):
+
     """
         AtomType per atom in gaff or amber.
     """
+
     def __init__(self, atomTypeName, mass, ACOEF, BCOEF):
         self.atomTypeName = atomTypeName
         self.mass = mass
@@ -3283,10 +3326,13 @@ class AtomType(object):
     def __repr__(self):
         return '<AtomType=%s>' % self.atomTypeName
 
+
 class Bond(object):
+
     """
         attributes: pair of Atoms, spring constant (kcal/mol), dist. eq. (Ang)
     """
+
     def __init__(self, atoms, kBond, rEq):
         self.atoms = atoms
         self.kBond = kBond
@@ -3300,13 +3346,15 @@ class Bond(object):
 
 
 class Angle(object):
+
     """
         attributes: 3 Atoms, spring constant (kcal/mol/rad^2), angle eq. (rad)
     """
+
     def __init__(self, atoms, kTheta, thetaEq):
         self.atoms = atoms
         self.kTheta = kTheta
-        self.thetaEq = thetaEq # rad, to convert to degree: thetaEq * 180/Pi
+        self.thetaEq = thetaEq  # rad, to convert to degree: thetaEq * 180/Pi
 
     def __str__(self):
         return '<%s, ang=%.2f>' % (self.atoms, self.thetaEq * 180 / Pi)
@@ -3314,16 +3362,19 @@ class Angle(object):
     def __repr__(self):
         return '<%s, ang=%.2f>' % (self.atoms, self.thetaEq * 180 / Pi)
 
+
 class Dihedral(object):
+
     """
         attributes: 4 Atoms, spring constant (kcal/mol), periodicity,
         phase (rad)
     """
+
     def __init__(self, atoms, kPhi, period, phase):
         self.atoms = atoms
         self.kPhi = kPhi
         self.period = period
-        self.phase = phase # rad, to convert to degree: kPhi * 180/Pi
+        self.phase = phase  # rad, to convert to degree: kPhi * 180/Pi
 
     def __str__(self):
         return '<%s, ang=%.2f>' % (self.atoms, self.phase * 180 / Pi)
@@ -3335,121 +3386,121 @@ if __name__ == '__main__':
     t0 = time.time()
     print(header)
 
-    parser = optparse.OptionParser(usage = usage + epilog)
+    parser = optparse.OptionParser(usage=usage + epilog)
     parser.add_option('-i', '--input',
-                      action = "store",
-                      dest = 'input',
-                      help = "input file name with either extension '.pdb', '.mdl' or '.mol2' (mandatory if -p and -x not set)",)
+                      action="store",
+                      dest='input',
+                      help="input file name with either extension '.pdb', '.mdl' or '.mol2' (mandatory if -p and -x not set)",)
     parser.add_option('-b', '--basename',
-                      action = "store",
-                      dest = 'basename',
-                      help = 'a basename for the project (folder and output files)',)
+                      action="store",
+                      dest='basename',
+                      help='a basename for the project (folder and output files)',)
     parser.add_option('-x', '--inpcrd',
-                      action = "store",
-                      dest = 'inpcrd',
-                      help = "amber inpcrd file name (always used with -p)",)
+                      action="store",
+                      dest='inpcrd',
+                      help="amber inpcrd file name (always used with -p)",)
     parser.add_option('-p', '--prmtop',
-                      action = "store",
-                      dest = 'prmtop',
-                      help = "amber prmtop file name (always used with -x)",)
+                      action="store",
+                      dest='prmtop',
+                      help="amber prmtop file name (always used with -x)",)
     parser.add_option('-c', '--charge_method',
-                      type = 'choice',
-                      choices = ['gas', 'bcc', 'user'],
-                      action = "store",
-                      default = 'bcc',
-                      dest = 'charge_method',
-                      help = "charge method: gas, bcc (default), user (user's charges in mol2 file)",)
+                      type='choice',
+                      choices=['gas', 'bcc', 'user'],
+                      action="store",
+                      default='bcc',
+                      dest='charge_method',
+                      help="charge method: gas, bcc (default), user (user's charges in mol2 file)",)
     parser.add_option('-n', '--net_charge',
-                      action = "store",
-                      type = 'int',
-                      default = 0,
-                      dest = 'net_charge',
-                      help = "net molecular charge (int), for gas default is 0",)
+                      action="store",
+                      type='int',
+                      default=0,
+                      dest='net_charge',
+                      help="net molecular charge (int), for gas default is 0",)
     parser.add_option('-m', '--multiplicity',
-                      action = "store",
-                      type = 'int',
-                      default = 1,
-                      dest = 'multiplicity',
-                      help = "multiplicity (2S+1), default is 1",)
+                      action="store",
+                      type='int',
+                      default=1,
+                      dest='multiplicity',
+                      help="multiplicity (2S+1), default is 1",)
     parser.add_option('-a', '--atom_type',
-                      type = 'choice',
-                      choices = ['gaff', 'amber'], # , 'bcc', 'sybyl']
-                      action = "store",
-                      default = 'gaff',
-                      dest = 'atom_type',
-                      help = "atom type, can be gaff or amber (AMBER99+SB), default is gaff",)
+                      type='choice',
+                      choices=['gaff', 'amber'],  # , 'bcc', 'sybyl']
+                      action="store",
+                      default='gaff',
+                      dest='atom_type',
+                      help="atom type, can be gaff or amber (AMBER99+SB), default is gaff",)
     parser.add_option('-q', '--qprog',
-                      type = 'choice',
-                      choices = ['mopac', 'sqm', 'divcon'],
-                      action = "store",
-                      default = 'sqm',
-                      dest = 'qprog',
-                      help = "am1-bcc flag, sqm (default), divcon, mopac",)
+                      type='choice',
+                      choices=['mopac', 'sqm', 'divcon'],
+                      action="store",
+                      default='sqm',
+                      dest='qprog',
+                      help="am1-bcc flag, sqm (default), divcon, mopac",)
     parser.add_option('-k', '--keyword',
-                      action = "store",
-                      dest = 'keyword',
-                      help = "mopac or sqm keyword, inside quotes",)
+                      action="store",
+                      dest='keyword',
+                      help="mopac or sqm keyword, inside quotes",)
     parser.add_option('-f', '--force',
-                      action = "store_true",
-                      dest = 'force',
-                      help = 'force topologies recalculation anew',)
+                      action="store_true",
+                      dest='force',
+                      help='force topologies recalculation anew',)
     parser.add_option('-d', '--debug',
-                      action = "store_true",
-                      dest = 'debug',
-                      help = 'for debugging purposes, keep any temporary file created',)
+                      action="store_true",
+                      dest='debug',
+                      help='for debugging purposes, keep any temporary file created',)
     parser.add_option('-o', '--outtop',
-                      type = 'choice',
-                      choices = ['all'] + outTopols,
-                      action = "store",
-                      default = 'all',
-                      dest = 'outtop',
-                      help = "output topologies: all (default), gmx, cns or charmm",)
+                      type='choice',
+                      choices=['all'] + outTopols,
+                      action="store",
+                      default='all',
+                      dest='outtop',
+                      help="output topologies: all (default), gmx, cns or charmm",)
     parser.add_option('-r', '--gmx45',
-                      action = "store_true",
-                      dest = 'gmx45',
-                      help = 'write GMX dihedrals for GMX 4.5',)
+                      action="store_true",
+                      dest='gmx45',
+                      help='write GMX dihedrals for GMX 4.5',)
     parser.add_option('-t', '--cnstop',
-                      action = "store_true",
-                      dest = 'cnstop',
-                      help = 'write CNS topology with allhdg-like parameters (experimental)',)
+                      action="store_true",
+                      dest='cnstop',
+                      help='write CNS topology with allhdg-like parameters (experimental)',)
     parser.add_option('-e', '--engine',
-                      type = 'choice',
-                      choices = ['tleap', 'sleap'],
-                      action = "store",
-                      default = 'tleap',
-                      dest = 'engine',
-                      help = "engine: tleap (default) or sleap (not fully matured)",)
+                      type='choice',
+                      choices=['tleap', 'sleap'],
+                      action="store",
+                      default='tleap',
+                      dest='engine',
+                      help="engine: tleap (default) or sleap (not fully matured)",)
     parser.add_option('-s', '--max_time',
-                      action = "store",
-                      type = 'int',
-                      default = 36000,
-                      dest = 'max_time',
-                      help = "max time (in sec) tolerance for sqm/mopac, default is 10 hours",)
+                      action="store",
+                      type='int',
+                      default=36000,
+                      dest='max_time',
+                      help="max time (in sec) tolerance for sqm/mopac, default is 10 hours",)
     parser.add_option('-y', '--ipython',
-                      action = "store_true",
-                      dest = 'ipython',
-                      help = 'start iPython interpreter',)
+                      action="store_true",
+                      dest='ipython',
+                      help='start iPython interpreter',)
     parser.add_option('-w', '--verboseless',
-                      action = "store_false",
-                      default = True,
-                      dest = 'verboseless',
-                      help = 'print nothing',)
+                      action="store_false",
+                      default=True,
+                      dest='verboseless',
+                      help='print nothing',)
     parser.add_option('-g', '--disambiguate',
-                      action = "store_true",
-                      dest = 'disambiguate',
-                      help = 'disambiguate lower and uppercase atomtypes in GMX top file',)
+                      action="store_true",
+                      dest='disambiguate',
+                      help='disambiguate lower and uppercase atomtypes in GMX top file',)
     parser.add_option('-u', '--direct',
-                      action = "store_true",
-                      dest = 'direct',
-                      help = "for 'amb2gmx' mode, does a direct conversion, for any solvent",)
+                      action="store_true",
+                      dest='direct',
+                      help="for 'amb2gmx' mode, does a direct conversion, for any solvent",)
     parser.add_option('-l', '--sorted',
-                      action = "store_true",
-                      dest = 'sorted',
-                      help = "sort atoms for GMX ordering",)
+                      action="store_true",
+                      dest='sorted',
+                      help="sort atoms for GMX ordering",)
     parser.add_option('-j', '--chiral',
-                      action = "store_true",
-                      dest = 'chiral',
-                      help = "create improper dihedral parameters for chiral atoms in CNS",)
+                      action="store_true",
+                      dest='chiral',
+                      help="create improper dihedral parameters for chiral atoms in CNS",)
 
     options, remainder = parser.parse_args()
 
@@ -3475,24 +3526,24 @@ if __name__ == '__main__':
     try:
         if amb2gmx:
             print("Converting Amber input files to Gromacs ...")
-            system = MolTopol(acFileXyz = options.inpcrd, acFileTop = options.prmtop,
-                              debug = options.debug, basename = options.basename,
-                              verbose = options.verboseless, gmx45 = options.gmx45,
-                              disam = options.disambiguate, direct = options.direct,
-                              is_sorted = options.sorted, chiral = options.chiral)
+            system = MolTopol(acFileXyz=options.inpcrd, acFileTop=options.prmtop,
+                              debug=options.debug, basename=options.basename,
+                              verbose=options.verboseless, gmx45=options.gmx45,
+                              disam=options.disambiguate, direct=options.direct,
+                              is_sorted=options.sorted, chiral=options.chiral)
             system.printDebug("prmtop and inpcrd files parsed")
-            system.writeGromacsTopolFiles(amb2gmx = True)
+            system.writeGromacsTopolFiles(amb2gmx=True)
         else:
-            molecule = ACTopol(options.input, chargeType = options.charge_method,
-                               chargeVal = options.net_charge, debug = options.debug,
-                               multiplicity = options.multiplicity, atomType = options.atom_type,
-                               force = options.force, outTopol = options.outtop,
-                               engine = options.engine, allhdg = options.cnstop,
-                               basename = options.basename, timeTol = options.max_time,
-                               qprog = options.qprog, ekFlag = '''"%s"''' % options.keyword,
-                               verbose = options.verboseless, gmx45 = options.gmx45,
-                               disam = options.disambiguate, direct = options.direct,
-                               is_sorted = options.sorted, chiral = options.chiral)
+            molecule = ACTopol(options.input, chargeType=options.charge_method,
+                               chargeVal=options.net_charge, debug=options.debug,
+                               multiplicity=options.multiplicity, atomType=options.atom_type,
+                               force=options.force, outTopol=options.outtop,
+                               engine=options.engine, allhdg=options.cnstop,
+                               basename=options.basename, timeTol=options.max_time,
+                               qprog=options.qprog, ekFlag='''"%s"''' % options.keyword,
+                               verbose=options.verboseless, gmx45=options.gmx45,
+                               disam=options.disambiguate, direct=options.direct,
+                               is_sorted=options.sorted, chiral=options.chiral)
 
             if not molecule.acExe:
                 molecule.printError("no 'antechamber' executable... aborting ! ")
@@ -3509,7 +3560,7 @@ if __name__ == '__main__':
         exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
         print("ACPYPE FAILED: %s" % exceptionValue)
         if options.debug:
-            traceback.print_tb(exceptionTraceback, file = sys.stdout)
+            traceback.print_tb(exceptionTraceback, file=sys.stdout)
         acpypeFailed = True
 
     execTime = int(round(time.time() - t0))
@@ -3521,15 +3572,19 @@ if __name__ == '__main__':
 
     if options.ipython:
         try:
-            from IPython.Shell import IPShellEmbed # @UnresolvedImport @UnusedImport
+            from IPython.Shell import IPShellEmbed  # @UnresolvedImport @UnusedImport
         except:
-            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed # @UnresolvedImport @Reimport
+            from IPython.frontend.terminal.embed import InteractiveShellEmbed as IPShellEmbed  # @UnresolvedImport @Reimport
         ipshell = IPShellEmbed()
         ipshell()
 
-    try: rmtree(molecule.tmpDir)
-    except: pass
-    if acpypeFailed: sys.exit(1)
-    try: os.chdir(molecule.rootDir)
-    except: pass
-
+    try:
+        rmtree(molecule.tmpDir)
+    except:
+        pass
+    if acpypeFailed:
+        sys.exit(1)
+    try:
+        os.chdir(molecule.rootDir)
+    except:
+        pass
