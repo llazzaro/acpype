@@ -3382,7 +3382,8 @@ class Dihedral(object):
     def __repr__(self):
         return '<%s, ang=%.2f>' % (self.atoms, self.phase * 180 / Pi)
 
-if __name__ == '__main__':
+
+def main():
     t0 = time.time()
     print(header)
 
@@ -3588,3 +3589,7 @@ if __name__ == '__main__':
         os.chdir(molecule.rootDir)
     except:
         pass
+
+
+if __name__ == '__main__':
+    main()
