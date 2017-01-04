@@ -1,0 +1,84 @@
+== A Comparative Test for ACPYPE ==
+
+Running a testing routine, I used `pymol` to generate 22 pdb files.
+They are tripeptides of every amino acid
+including 2 variants for HIS. PDBs with ARG (RRR.pdb) and HIP (JJJ.pdb) are like
+Gly-Res-Gly, because ACPYPE failed when running mopac if the tripeptides mentioned
+are only Arg-Arg-Agr or Hip-Hip-Hip. All peptides have N- and T- termini.
+
+I used GROMACS with all these tripeptides to generate topology files with AMBER99SB
+and OPLSAA parameters as reference.
+
+By the way, JJJ.pdb has another problem: its net charge should be +1, but _gasteiger_
+method (the way how ACPYPE try to guess the net charge of the molecule if not
+given) failed to get the right value, instead it says it is 'Zero'. So be aware
+that ACPYPE may guess a wrong net charge when running it on your own molecule.
+
+The I use ACPYPE to generate the topologies for these 22 entries and compare its
+results with the ones from GROMACS reference.
+
+By using ACPYPE with option '-a amber' (which means parm99.dat + gaff.dat +
+frcmod.ff99SB) seems to give to better results then using just GAFF (the default
+option in ACPYPE) when comparing with GROMACS outputs.
+Anyway, a full test with EM with GROMACS should be carried out eventually.
+
+A more detailed comparison between ACPYPE with option '-a amber' results against
+GROMACS' AMBER99SB results and they *match* except by:
+    - charges (can be either _gasteiger_ or _bcc_ with ACPYPE);
+    - WWW.pdb (Trp-Trp-Trp) which has 6 extra improper dihedrals related
+      to atoms sharing in the 5-ring and 6-ring of the TRP. These improper dihedrals
+      would be there in order to keep the planarity between 5-ring and 6-ring.
+    - RRR.pdb (Gly-Arg-Gly) for which atom CZ (id 25) got atom type CM instead
+      of CA in GROMACS.
+    - YYY.pdb (Tyr-Tyr-Tyr) for which atom CZ (id 15) got atom type CA instead
+      of C in GROMACS.
+    Nevertheless, their influence are neglectful, also in potential energy.
+
+== ACPYPE and OPLS/AA Parameters Generation (Experimental) ==
+
+The biggest problem here is to guess the correct atom type according to OPLS/AA
+forcefield.
+
+Looking at `.../gromacs/top/ffoplsaanb.itp` file and one can see e.g.:
+{{{
+[ atomtypes ]
+; full atom descriptions are available in ffoplsaa.atp
+; name    bond_type    mass         charge   ptype   sigma        epsilon
+...
+ opls_015   C2  6      14.02700     0.285       A    3.80000e-01  4.93712e-01 ; SIG
+ opls_016   C2  6      14.02700    -0.100       A    3.90500e-01  4.93712e-01 ; SIG
+...
+}}}
+
+In this example, atom types `opls_015` and `opls_016` shared the same `bond_type` but differs
+by charge and van der waals parameters. Having the same `bond_type` means that
+they share the same _bonded_ parameters as seen in `.../gromacs/top/ffoplsaabon.itp`.
+
+Since ACPYPE uses ANTECHAMBER, for it, all atom types found will be also the `bond_type`
+and their charges will be calculated specifically. So the "trick" here is to map the
+GAFF or AMBER atom type against OPLS atom type.
+
+I did it by creating a mapping dictionary that links GAFF or AMBER atom type to a list
+of possible OPLS atom types based on the 22 pdb entries mentioned above by comparing
+GROMACS' OPLS output with ACPYPE's GAFF and AMBER results.
+
+This is not ideal, but I hope it can be helpful since it also shows in the ACPYPE
+GROMACS OPLS _itp_ file output a suggestion of possible replacements for the OPLS
+atom type guessed by ACPYPE.
+
+And since that for `bond_types`, the chances that one picked the right `bond_type`
+are almost sure, the _bonded_ parameters determined by ACPYPE are fundamentally
+correct, leaving just one opened end: the _bonded_ parameters may not be present
+in `.../gromacs/top/ffoplsaabon.itp`, and for that `grompp` will fail showing which
+lines in your _itp_ file have missing parameters.
+
+However, calculated parameters derived for AMBER99SB/GAFF are there and one can just
+comment out by removing "`;`" in that line.
+
+*BUT*, this parameters were NOT calculated for OPLS/AA. An ideal solution would
+involve finding the right OPLS atom types and parameters calculation according to
+[http://dx.doi.org/10.1021%2Fja9621760 Jorgensen et al. (1996)]. Be aware of it!
+
+And a last observation. If one finds in the GROMACS OPLS _itp_ file generated an
+atom type like `opls_x` with mass `0.000`, it's because my mapping dictionary failed
+to guess a putative OPLS atom type. Please let me know about it if you run into it.
