@@ -19,7 +19,7 @@ test_requirements = [
 
 setup(
     name='acpype',
-    version='0.1.0',
+    version='0.1.1',
     description="Python Boilerplate contains all the boilerplate you need to create a Python package.",
     long_description=readme + '\n\n' + history,
     author="SOUSA DA SILVA, A. W.; VRANKEN, W. F.; LAUE, E. D. ACPYPE - AnteChamber",
